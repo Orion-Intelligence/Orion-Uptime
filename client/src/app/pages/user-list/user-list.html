@@ -1,0 +1,66 @@
+<div id="user-list-page">
+  <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-6 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
+    <div>
+      <p class="eyebrow">Administration</p>
+      <h1 class="page-title">Registered users</h1>
+      <p class="page-description">View, activate, deactivate, or remove viewer accounts.</p>
+    </div>
+    <a class="header-action header-action--primary tw:max-[700px]:self-end" routerLink="/users/new">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+      New user
+    </a>
+  </header>
+
+  @if (loading()) {
+    <div class="loading-line tw:mb-4"></div>
+  }
+  @if (error()) {
+    <p class="form-error tw:mb-4">{{ error() }}</p>
+  }
+  @if (message()) {
+    <p class="form-success notice app-notification tw:m-0 tw:rounded-[8px] tw:bg-[rgb(52_211_153_/_10%)] tw:px-3.25 tw:py-2.75 tw:text-[13px] tw:leading-[1.45] tw:text-[#027a48] tw:[border:1px_solid_rgb(52_211_153_/_30%)] tw:dark:text-[#6ce9a6]" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+      {{ message() }}
+    </p>
+  }
+
+  <section class="user-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(340px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Registered users">
+    @for (user of users(); track user.id) {
+      <article class="panel user-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
+        <header class="tw:flex tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
+          <div class="identity tw:flex tw:min-w-0 tw:items-center tw:gap-3">
+            <span class="tw:grid tw:size-10 tw:flex-none tw:place-items-center tw:rounded-[10px] tw:border tw:border-[#bcd6ef] tw:bg-[#edf6ff] tw:text-[13px] tw:font-bold tw:text-[#1176d4] tw:dark:border-[#57a5eb]/20 tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">{{ user.username.charAt(0).toUpperCase() }}</span>
+            <div class="tw:grid tw:min-w-0 tw:gap-1">
+              <strong class="tw:text-[14px] tw:font-semibold tw:wrap-anywhere">{{ user.username }}</strong>
+              <small class="tw:text-[11px] tw:capitalize tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ user.role }} account</small>
+            </div>
+          </div>
+          <span class="tw:inline-flex tw:flex-none tw:items-center tw:gap-1.75 tw:text-[11px] tw:font-semibold tw:[&.active]:text-[#16825f] tw:[&.disabled]:text-[#b42318] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#f97066] tw:before:content-[''] tw:[&.active]:before:bg-[#34d399] tw:dark:[&.active]:text-[#70e0bd] tw:dark:[&.disabled]:text-[#fda29b]" [class.active]="user.is_active" [class.disabled]="!user.is_active">{{ user.is_active ? 'Active' : 'Disabled' }}</span>
+        </header>
+        <dl class="tw:grid tw:border-y tw:border-[#d7e2ef] tw:dark:border-white/9">
+          <div class="tw:flex tw:justify-between tw:gap-4 tw:border-b tw:border-[#d7e2ef] tw:px-5.5 tw:py-4 tw:dark:border-white/9">
+            <dt class="tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Created on</dt>
+            <dd class="tw:m-0 tw:text-right tw:text-[12px] tw:font-semibold tw:tabular-nums tw:wrap-anywhere">{{ user.created_at | date: 'MMM d, y, h:mm a' }}</dd>
+          </div>
+          <div class="tw:flex tw:justify-between tw:gap-4 tw:px-5.5 tw:py-4">
+            <dt class="tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Last login</dt>
+            <dd class="tw:m-0 tw:text-right tw:text-[12px] tw:font-semibold tw:tabular-nums tw:wrap-anywhere">{{ user.last_login ? (user.last_login | date: 'MMM d, y, h:mm a') : 'Never' }}</dd>
+          </div>
+        </dl>
+        @if (user.role === 'viewer') {
+          <footer class="tw:mt-auto tw:flex tw:items-center tw:justify-end tw:gap-2 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
+            <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(user)" [disabled]="updatingId() === user.id">
+              {{ updatingId() === user.id ? 'Updating…' : user.is_active ? 'Deactivate' : 'Activate' }}
+            </button>
+            <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deleteUser(user)" [disabled]="deletingId() === user.id">
+              {{ deletingId() === user.id ? 'Deleting…' : 'Delete' }}
+            </button>
+          </footer>
+        }
+      </article>
+    } @empty {
+      @if (!loading() && !error()) {
+        <div class="empty-state panel tw:col-span-full">No registered users were found.</div>
+      }
+    }
+  </section>
+</div>

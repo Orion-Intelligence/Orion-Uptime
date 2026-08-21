@@ -1,0 +1,40 @@
+---
+exclude_paths:
+  - "client/build/**"
+  - "client/coverage/**"
+  - "client/.angular/**"
+  - "client/node_modules/**"
+  - "client/public/**"
+  - "client/src/assets/**"
+  - "client/*.config.*"
+  - "backend/build/**"
+  - "run.sh"
+  - "**/*.md"
+  - "**/*.sh"
+  - "**/*.yml"
+  - "**/*.yaml"
+  - "**/*.json"
+  - "**/*.map"
+  - "**/__init__.py"
+  - "**/eslint.config.js"
+
+engines:
+  metric:
+    config:
+      languages:
+        - "python"
+        - "typescript"
+        - "javascript"
+  duplication:
+    exclude_paths:
+      - "client/build/**"
+      - "client/coverage/**"
+      - "client/.angular/**"
+      - "client/node_modules/**"
+      - "client/public/**"
+      - "client/src/assets/**"
+      - "client/*.config.*"
+      - "backend/build/**"
+      - "run.sh"
+      - "**/__init__.py"
+      - "**/eslint.config.js"

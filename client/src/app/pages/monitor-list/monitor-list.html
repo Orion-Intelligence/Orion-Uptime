@@ -1,0 +1,169 @@
+<div id="resource-list-page">
+  <header class="tw:mb-8 tw:flex tw:items-end tw:justify-between tw:gap-8 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
+    <div>
+      <p class="eyebrow">Configuration</p>
+      <h1 class="page-title">{{ title() }}</h1>
+      <p class="page-description">{{ description() }}</p>
+    </div>
+    @if (canManage()) {
+      <a class="header-action header-action--primary tw:max-[700px]:self-end" [routerLink]="newUrl()">
+        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+        {{ isMonitorList() ? 'New monitor' : 'New profile' }}
+      </a>
+    }
+  </header>
+
+  @if (loading()) {
+    <div class="loading-line tw:mb-5"></div>
+  }
+  @if (error()) {
+    <p class="form-error tw:mb-5" role="alert">{{ error() }}</p>
+  }
+  @if (message() || heartbeatToken()) {
+    <div class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.app-notification--wide]:w-[min(540px,calc(100vw-40px))] tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.app-notification--wide]="heartbeatToken()" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+      @if (message()) {
+        <strong class="tw:text-xs">{{ message() }}</strong>
+      }
+      @if (heartbeatToken()) {
+        <span class="tw:text-xs">Save this heartbeat token now</span>
+        <code class="tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#101a2b] tw:p-3 tw:font-mono tw:text-[11px] tw:leading-relaxed tw:text-white tw:wrap-anywhere">{{ heartbeatToken() }}</code>
+        <small class="tw:text-[11px] tw:text-[#a7bdd5]">It is only shown after creation or regeneration.</small>
+      }
+    </div>
+  }
+
+  @if (isMonitorList() && records().length) {
+    @let summary = monitorSummary();
+    <section class="tw:mb-6 tw:grid tw:grid-cols-4 tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:max-[900px]:grid-cols-2 tw:max-[520px]:grid-cols-1 tw:bg-[#f9fbff] tw:dark:bg-[#172235]" aria-label="Monitor health summary">
+      <article class="tw:grid tw:min-h-25 tw:content-between tw:border-r tw:border-[#d7e2ef] tw:p-4.5 tw:dark:border-white/9 tw:max-[900px]:border-b tw:max-[520px]:border-r-0">
+        <span class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Total monitors</span>
+        <div class="tw:flex tw:items-end tw:justify-between tw:gap-3"><strong class="tw:text-[27px] tw:leading-none tw:tracking-[-0.04em]">{{ summary.total }}</strong>@if (summary.unknown) { <small class="tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">{{ summary.unknown }} unknown</small> }</div>
+      </article>
+      <article class="tw:grid tw:min-h-25 tw:content-between tw:border-r tw:border-[#d7e2ef] tw:p-4.5 tw:dark:border-white/9 tw:max-[900px]:border-r-0 tw:max-[900px]:border-b">
+        <span class="tw:flex tw:items-center tw:gap-2 tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]"><i class="tw:size-1.5 tw:rounded-full tw:bg-[#34d399]"></i>Operational</span>
+        <strong class="tw:text-[27px] tw:leading-none tw:tracking-[-0.04em]">{{ summary.up }}</strong>
+      </article>
+      <article class="tw:grid tw:min-h-25 tw:content-between tw:border-r tw:border-[#d7e2ef] tw:p-4.5 tw:dark:border-white/9 tw:max-[520px]:border-r-0 tw:max-[520px]:border-b">
+        <span class="tw:flex tw:items-center tw:gap-2 tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]"><i class="tw:size-1.5 tw:rounded-full tw:bg-[#f97066]"></i>Needs attention</span>
+        <strong class="tw:text-[27px] tw:leading-none tw:tracking-[-0.04em]">{{ summary.down }}</strong>
+      </article>
+      <article class="tw:grid tw:min-h-25 tw:content-between tw:p-4.5">
+        <span class="tw:flex tw:items-center tw:gap-2 tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]"><i class="tw:size-1.5 tw:rounded-full tw:bg-[#f5b942]"></i>Paused</span>
+        <strong class="tw:text-[27px] tw:leading-none tw:tracking-[-0.04em]">{{ summary.paused }}</strong>
+      </article>
+    </section>
+  }
+
+  <section class="tw:grid tw:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="{{ title() }} list">
+    @for (record of records(); track record.id) {
+      @let stats = overview(record);
+      <article class="panel resource-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:bg-white! tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:bg-[#172235]! tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]" [class.is-up]="stats?.status === 'up' && stats?.is_active" [class.is-down]="stats?.status === 'down' && stats?.is_active" [class.is-paused]="stats && !stats.is_active">
+        <header class="tw:flex tw:min-w-0 tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
+          @if (detailBase()) {
+            <a class="tw:flex tw:min-w-0 tw:flex-1 tw:items-start tw:gap-3.5 tw:text-inherit tw:no-underline" [routerLink]="[detailBase(), record.id]" [attr.title]="record.name">
+              <span class="tw:grid tw:size-10 tw:flex-none tw:place-items-center tw:rounded-[10px] tw:border tw:border-[#c5dcee] tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:border-[#57a5eb]/20 tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">
+                <svg viewBox="0 0 24 24" class="tw:size-4.5 tw:fill-none tw:stroke-current tw:stroke-[1.7]" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21M12 3c-2.4 2.5-3.7 5.5-3.7 9S9.6 18.5 12 21" /></svg>
+              </span>
+              <span class="tw:min-w-0 tw:flex-1">
+                <strong class="tw:line-clamp-2 tw:text-[14px] tw:leading-[1.45] tw:font-semibold tw:tracking-[-0.01em] tw:wrap-anywhere">{{ record.name }}</strong>
+                <small class="tw:mt-1 tw:block tw:overflow-hidden tw:font-mono tw:text-[11px] tw:text-[#5f738f] tw:text-ellipsis tw:whitespace-nowrap tw:dark:text-[#9fb3c8]">{{ recordSubtitle(record) }}</small>
+              </span>
+            </a>
+          } @else {
+            <div class="tw:flex tw:min-w-0 tw:flex-1 tw:items-start tw:gap-3.5">
+              <span class="tw:grid tw:size-10 tw:flex-none tw:place-items-center tw:rounded-[10px] tw:border tw:border-[#c5dcee] tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:border-[#57a5eb]/20 tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">
+                <svg viewBox="0 0 24 24" class="tw:size-4.5 tw:fill-none tw:stroke-current tw:stroke-[1.7]" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
+              </span>
+              <span class="tw:min-w-0 tw:flex-1">
+                <strong class="tw:line-clamp-2 tw:text-[14px] tw:leading-[1.45] tw:font-semibold tw:tracking-[-0.01em] tw:wrap-anywhere">{{ record.name }}</strong>
+                <small class="tw:mt-1 tw:block tw:overflow-hidden tw:font-mono tw:text-[11px] tw:text-[#5f738f] tw:text-ellipsis tw:whitespace-nowrap tw:dark:text-[#9fb3c8]">{{ recordSubtitle(record) }}</small>
+              </span>
+            </div>
+          }
+          @if (stats) {
+            <span class="status-chip tw:inline-flex tw:flex-none tw:items-center tw:gap-1.75 tw:rounded-full tw:px-2.5 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:capitalize tw:[&.down]:bg-[#fff2f0] tw:[&.down]:text-[#b42318] tw:[&.paused]:bg-[#fff8e8] tw:[&.paused]:text-[#8a5d00] tw:[&.unknown]:bg-[#f1f5f9] tw:[&.unknown]:text-[#5f738f] tw:[&.up]:bg-[#effbf6] tw:[&.up]:text-[#16825f] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#9fb3c8] tw:before:content-[''] tw:[&.down]:before:bg-[#f97066] tw:[&.paused]:before:bg-[#f5b942] tw:[&.up]:before:bg-[#34d399] tw:dark:[&.down]:bg-[#f97066]/8 tw:dark:[&.down]:text-[#fda29b] tw:dark:[&.paused]:bg-[#f5b942]/8 tw:dark:[&.paused]:text-[#f7cd6b] tw:dark:[&.unknown]:bg-white/5 tw:dark:[&.unknown]:text-[#9fb3c8] tw:dark:[&.up]:bg-[#34d399]/8 tw:dark:[&.up]:text-[#70e0bd]" [class]="'status-chip ' + (stats.is_active ? stats.status : 'paused')">{{ stats.is_active ? stats.status : 'paused' }}</span>
+          }
+        </header>
+
+        @if (stats) {
+          @if (!stats.is_active) {
+            <div class="tw:mx-5.5 tw:mb-4 tw:flex tw:items-start tw:gap-2 tw:rounded-lg tw:border tw:border-[#f5b942]/25 tw:bg-[#f5b942]/8 tw:px-3 tw:py-2.5 tw:text-[11px] tw:leading-relaxed tw:text-[#8a5d00] tw:dark:text-[#f7cd6b]">
+              <svg viewBox="0 0 20 20" class="tw:mt-0.5 tw:size-3.5 tw:flex-none tw:fill-current" aria-hidden="true"><path d="M5 4h3v12H5zm7 0h3v12h-3z" /></svg>
+              Monitoring is paused; health reflects the last recorded check.
+            </div>
+          }
+          <dl class="monitor-stats tw:grid tw:grid-cols-2 tw:border-y tw:border-[#d7e2ef] tw:dark:border-white/9">
+            <div class="tw:grid tw:min-h-21 tw:content-between tw:gap-2 tw:border-r tw:border-b tw:border-[#d7e2ef] tw:p-4 tw:dark:border-white/9">
+              <dt class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Uptime</dt>
+              <dd class="tw:m-0 tw:text-[19px] tw:font-semibold tw:tracking-[-0.025em] tw:tabular-nums">{{ uptimePercentage(stats) === null ? '—' : (uptimePercentage(stats) | number: '1.0-2') + '%' }}</dd>
+            </div>
+            <div class="tw:grid tw:min-h-21 tw:content-between tw:gap-2 tw:border-b tw:border-[#d7e2ef] tw:p-4 tw:dark:border-white/9">
+              <dt class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Total uptime</dt>
+              <dd class="tw:m-0 tw:text-[14px] tw:font-semibold tw:tabular-nums">{{ formatDuration(uptimeSeconds(stats)) }}</dd>
+            </div>
+            <div class="tw:grid tw:min-h-21 tw:content-between tw:gap-2 tw:border-r tw:border-[#d7e2ef] tw:p-4 tw:dark:border-white/9">
+              <dt class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Total downtime</dt>
+              <dd class="tw:m-0 tw:text-[14px] tw:font-semibold tw:tabular-nums">{{ formatDuration(downtimeSeconds(stats)) }}</dd>
+            </div>
+            <div class="tw:grid tw:min-h-21 tw:content-between tw:gap-2 tw:p-4">
+              <dt class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Last checked</dt>
+              <dd class="tw:m-0 tw:text-[13px] tw:leading-snug tw:font-semibold tw:tabular-nums">{{ stats.last_checked_at ? (stats.last_checked_at | date: 'MMM d, HH:mm') : 'Awaiting first check' }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <dl class="profile-details tw:grid tw:border-y tw:border-[#d7e2ef] tw:dark:border-white/9">
+            <div class="tw:grid tw:min-w-0 tw:grid-cols-[120px_minmax(0,1fr)] tw:gap-3 tw:border-b tw:border-[#d7e2ef] tw:px-5.5 tw:py-3.5 tw:dark:border-white/9">
+              <dt class="tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Method</dt><dd class="tw:m-0 tw:text-right tw:font-mono tw:text-[12px] tw:font-medium">{{ record.method || 'POST' }}</dd>
+            </div>
+            <div class="tw:grid tw:min-w-0 tw:grid-cols-[120px_minmax(0,1fr)] tw:gap-3 tw:border-b tw:border-[#d7e2ef] tw:px-5.5 tw:py-3.5 tw:dark:border-white/9">
+              <dt class="tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Login URL</dt><dd class="tw:m-0 tw:min-w-0 tw:text-right tw:font-mono tw:text-[12px] tw:wrap-anywhere">{{ record.login_url }}</dd>
+            </div>
+            <div class="tw:grid tw:min-w-0 tw:grid-cols-[120px_minmax(0,1fr)] tw:gap-3 tw:border-b tw:border-[#d7e2ef] tw:px-5.5 tw:py-3.5 tw:dark:border-white/9">
+              <dt class="tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Credential fields</dt><dd class="tw:m-0 tw:min-w-0 tw:text-right tw:font-mono tw:text-[12px] tw:wrap-anywhere">{{ record.credential_fields?.join(', ') || 'Configured' }}</dd>
+            </div>
+            <div class="tw:grid tw:min-w-0 tw:grid-cols-[120px_minmax(0,1fr)] tw:gap-3 tw:px-5.5 tw:py-3.5">
+              <dt class="tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Created on</dt><dd class="tw:m-0 tw:text-right tw:font-mono tw:text-[12px]">{{ record.created_at | date: 'MMM d, y' }}</dd>
+            </div>
+          </dl>
+        }
+
+        <footer class="tw:mt-auto tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
+          @if (detailBase()) {
+            <a class="tw:inline-flex tw:min-h-8 tw:items-center tw:gap-1.5 tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#2b90ee] tw:dark:text-[#87c4f5]" [routerLink]="[detailBase(), record.id]">
+              View details <span aria-hidden="true">→</span>
+            </a>
+          } @else {
+            <span class="tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">Created {{ record.created_at | date: 'MMM d, y' }}</span>
+          }
+          @if (canManage()) {
+            <div class="tw:flex tw:items-center tw:gap-2">
+              @if (stats) {
+                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(record)" [disabled]="updatingId() === record.id" [attr.aria-label]="(stats.is_active ? 'Pause ' : 'Start ') + record.name">
+                  {{ updatingId() === record.id ? 'Updating…' : stats.is_active ? 'Pause' : 'Start' }}
+                </button>
+              }
+              <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deleteResource(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
+                {{ deletingId() === record.id ? 'Deleting…' : 'Delete' }}
+              </button>
+            </div>
+          }
+        </footer>
+      </article>
+    } @empty {
+      @if (!loading() && !error()) {
+        <div class="panel tw:col-span-full tw:grid tw:min-h-70 tw:place-items-center tw:rounded-xl tw:border-[#d7e2ef] tw:bg-white tw:px-6 tw:py-10 tw:text-center tw:dark:border-white/9 tw:dark:bg-[#172235]">
+          <div class="tw:grid tw:max-w-95 tw:justify-items-center">
+            <span class="tw:grid tw:size-13 tw:place-items-center tw:rounded-xl tw:border tw:border-[#bcd6ef] tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:border-[#57a5eb]/20 tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">
+              <svg viewBox="0 0 24 24" class="tw:size-6 tw:fill-none tw:stroke-current tw:stroke-[1.6]" aria-hidden="true"><path d="M4 15.5 9 10l3 3 7-8M14 5h5v5" /></svg>
+            </span>
+            <h2 class="tw:mt-4 tw:mb-0 tw:text-[17px] tw:font-semibold">{{ isMonitorList() ? 'No monitors yet' : 'No authentication profiles yet' }}</h2>
+            <p class="tw:mt-2 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ isMonitorList() ? 'Create your first monitor to start tracking availability and incidents.' : 'Create an authentication profile to monitor protected endpoints.' }}</p>
+            @if (canManage()) {
+              <a class="tw:mt-5 tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:bg-[#1176d4] tw:px-4 tw:text-[11px] tw:font-semibold tw:text-white tw:no-underline tw:hover:bg-[#2b90ee]" [routerLink]="newUrl()">{{ isMonitorList() ? 'Create monitor' : 'Create profile' }}</a>
+            }
+          </div>
+        </div>
+      }
+    }
+  </section>
+</div>

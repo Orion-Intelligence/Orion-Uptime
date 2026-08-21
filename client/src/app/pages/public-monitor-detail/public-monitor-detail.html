@@ -1,0 +1,170 @@
+<div id="public-monitor-page" class="tw:min-h-dvh tw:bg-[#f4f7fb] tw:text-[#172235] tw:[color-scheme:light]">
+  <main class="tw:mx-auto tw:min-h-screen tw:w-[min(980px,calc(100%_-_40px))] tw:py-10 tw:max-[640px]:w-[calc(100%_-_24px)] tw:max-[640px]:py-5">
+    @if (loading()) {
+      <div class="loading-line tw:mb-5" role="status" aria-label="Loading monitor status"></div>
+    }
+
+    @if (error() && !detail()) {
+      <section class="tw:mt-[12vh] tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:px-8 tw:py-14 tw:shadow-[0_12px_34px_rgb(30_64_105_/_7%)] tw:max-[640px]:px-5 tw:max-[640px]:py-10">
+        <p class="tw:m-0 tw:text-[11px] tw:font-bold tw:tracking-[0.12em] tw:text-[#1176d4] tw:uppercase">Public status</p>
+        <h1 class="tw:mt-3 tw:mb-0 tw:max-w-145 tw:text-[clamp(28px,5vw,42px)] tw:leading-[1.08] tw:font-semibold tw:tracking-[-0.04em] tw:text-[#172235]">{{ error() }}</h1>
+        <a class="tw:mt-5 tw:inline-flex tw:text-[13px] tw:font-semibold tw:text-[#1176d4] tw:no-underline" [routerLink]="['/status', slug]">← Back to status page</a>
+      </section>
+    }
+
+    @if (detail(); as monitorDetail) {
+      <header class="tw:flex tw:items-center tw:justify-between tw:gap-6 tw:border-b tw:border-[#dce5ef] tw:pb-5">
+        <a class="tw:flex tw:min-w-0 tw:items-center tw:gap-4 tw:text-inherit tw:no-underline" [routerLink]="['/status', monitorDetail.page_slug]">
+          <img ngSrc="assets/images/shared/logo-wide-light.svg" width="186" height="34" alt="Orion Intelligence" class="tw:h-8.5 tw:w-auto tw:max-w-47 tw:flex-none tw:object-contain tw:max-[640px]:max-w-36" />
+          <span class="tw:max-w-52 tw:overflow-hidden tw:border-l tw:border-[#dce5ef] tw:pl-4 tw:text-[12px] tw:font-semibold tw:text-ellipsis tw:whitespace-nowrap tw:text-[#5f738f] tw:max-[640px]:hidden">{{ monitorDetail.page_name }}</span>
+        </a>
+        <a class="tw:flex-none tw:text-[12px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#0f5fa8]" [routerLink]="['/status', monitorDetail.page_slug]">← All services</a>
+      </header>
+
+      <section class="service-summary tw:mt-8 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-t-4 tw:border-[#dce5ef] tw:border-t-[#9fb3c8] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)] tw:[&.down]:border-t-[#f97066] tw:[&.paused]:border-t-[#f5b942] tw:[&.up]:border-t-[#34d399]" [class]="'service-summary ' + monitorStatus(monitorDetail.monitor)">
+        <div class="tw:flex tw:items-start tw:justify-between tw:gap-8 tw:px-6 tw:py-6 tw:max-[700px]:flex-col tw:max-[700px]:gap-5 tw:max-[640px]:px-4.5 tw:max-[640px]:py-5">
+          <div class="tw:min-w-0">
+            <p class="tw:m-0 tw:text-[11px] tw:font-bold tw:tracking-[0.11em] tw:text-[#1176d4] tw:uppercase">Service detail</p>
+            <h1 class="tw:mt-2 tw:mb-0 tw:text-[clamp(25px,4.5vw,38px)] tw:leading-[1.15] tw:font-semibold tw:tracking-[-0.04em] tw:text-[#172235] tw:wrap-anywhere">{{ monitorDetail.monitor.name }}</h1>
+            <span class="tw:mt-2 tw:block tw:text-[12px] tw:text-[#71869c] tw:uppercase">{{ monitorDetail.monitor.monitor_type }} monitor</span>
+          </div>
+          <div class="tw:grid tw:flex-none tw:justify-items-end tw:gap-1.5 tw:text-right tw:max-[700px]:justify-items-start tw:max-[700px]:text-left">
+            <span class="current-status tw:inline-flex tw:items-center tw:gap-2 tw:text-[13px] tw:font-semibold tw:text-[#63788e] tw:[&.down]:text-[#b42318] tw:[&.paused]:text-[#8a5d00] tw:[&.up]:text-[#16825f]" [class]="'current-status ' + monitorStatus(monitorDetail.monitor)">
+              <i class="tw:size-2 tw:rounded-full tw:bg-[#9fb3c8] tw:in-[.current-status.down]:bg-[#f97066] tw:in-[.current-status.paused]:bg-[#f5b942] tw:in-[.current-status.up]:bg-[#34d399]"></i>
+              {{ !monitorDetail.monitor.is_active ? 'Monitoring paused' : monitorDetail.monitor.status === 'up' ? 'Operational' : monitorDetail.monitor.status === 'down' ? 'Service unavailable' : 'Awaiting status' }}
+            </span>
+            <time class="tw:text-[11px] tw:text-[#71869c]">Last checked {{ monitorDetail.monitor.last_checked_at | date: 'MMM d, h:mm a' }}</time>
+          </div>
+        </div>
+      </section>
+
+      <section class="tw:mt-7 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)]" aria-labelledby="availability-heading">
+        <div class="tw:flex tw:items-center tw:justify-between tw:gap-5 tw:border-b tw:border-[#dce5ef] tw:px-6 tw:py-4.5 tw:max-[640px]:px-4.5">
+          <div>
+            <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.09em] tw:text-[#71869c] tw:uppercase">Reliability</p>
+            <h2 id="availability-heading" class="tw:mt-1 tw:mb-0 tw:text-[18px] tw:font-semibold tw:tracking-[-0.02em]">Availability</h2>
+          </div>
+          <span class="tw:text-[12px] tw:text-[#71869c]">Last 90 days</span>
+        </div>
+
+        <div class="tw:grid tw:grid-cols-[140px_minmax(0,1fr)] tw:items-center tw:gap-6 tw:px-6 tw:py-5 tw:max-[700px]:grid-cols-1 tw:max-[640px]:px-4.5">
+          <div class="tw:grid tw:gap-1">
+            <strong class="tw:text-[26px] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ monitorDetail.monitor.uptime_90_days === null ? '—' : (monitorDetail.monitor.uptime_90_days | number: '1.0-2') + '%' }}</strong>
+            <span class="tw:text-[12px] tw:text-[#71869c]">90-day uptime</span>
+          </div>
+          <svg class="tw:block tw:h-auto tw:w-[530px] tw:max-w-full tw:justify-self-end" viewBox="0 0 530 15" width="530" height="15" role="img" aria-label="Daily uptime for the last 90 days">
+            @for (day of monitorDetail.monitor.daily_uptime; track day.date) {
+              <rect class="tw:cursor-help tw:fill-[#687790] tw:[&.down]:fill-[#df484a] tw:[&.no-data]:fill-[#687790] tw:[&.partial]:fill-[#f29030] tw:[&.up]:fill-[#3bd671]" [class]="dayClass(day)" [attr.x]="$index * 5.9" y="0" width="3.25" height="15" rx="1.625" ry="1.625">
+                <title>{{ dayLabel(day) }}</title>
+              </rect>
+            }
+          </svg>
+        </div>
+
+        <div class="tw:grid tw:grid-cols-4 tw:border-t tw:border-[#e6edf4] tw:max-[640px]:grid-cols-2">
+          @for (window of uptimeWindows(monitorDetail.uptime_status); track window.label) {
+            <div class="tw:grid tw:min-h-24 tw:content-center tw:gap-2 tw:border-r tw:border-[#e6edf4] tw:p-5 tw:last:border-r-0 tw:max-[640px]:nth-2:border-r-0 tw:max-[640px]:nth-[-n+2]:border-b">
+              <strong class="tw:text-[clamp(19px,3vw,27px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ window.value === null ? '—' : (window.value | number: '1.0-2') + '%' }}</strong>
+              <span class="tw:text-[12px] tw:text-[#71869c]">{{ window.label }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <section class="tw:mt-7 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)]" aria-labelledby="response-heading">
+        <div class="tw:flex tw:items-center tw:justify-between tw:gap-5 tw:border-b tw:border-[#dce5ef] tw:px-6 tw:py-4.5 tw:max-[640px]:px-4.5">
+          <div>
+            <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.09em] tw:text-[#71869c] tw:uppercase">Performance</p>
+            <h2 id="response-heading" class="tw:mt-1 tw:mb-0 tw:text-[18px] tw:font-semibold tw:tracking-[-0.02em]">Response time</h2>
+          </div>
+          <span class="tw:text-[12px] tw:text-[#71869c]">Last 24 hours</span>
+        </div>
+
+        @if (responsePolyline()) {
+          <div class="tw:h-62 tw:bg-[#fbfcfe] tw:px-6 tw:py-6 tw:max-[640px]:h-52 tw:max-[640px]:px-4.5">
+            <svg class="tw:h-full tw:w-full tw:overflow-visible" viewBox="0 0 900 180" [attr.preserveAspectRatio]="'none'" [attr.role]="'img'" [attr.aria-label]="'Response time over the last 24 hours'">
+              <line class="tw:stroke-[#e5edf5] tw:stroke-1 tw:[vector-effect:non-scaling-stroke]" x1="0" y1="30" x2="900" y2="30" />
+              <line class="tw:stroke-[#e5edf5] tw:stroke-1 tw:[vector-effect:non-scaling-stroke]" x1="0" y1="92" x2="900" y2="92" />
+              <line class="tw:stroke-[#e5edf5] tw:stroke-1 tw:[vector-effect:non-scaling-stroke]" x1="0" y1="155" x2="900" y2="155" />
+              <polyline class="tw:fill-none tw:stroke-[#1176d4] tw:stroke-2 tw:[stroke-linecap:round] tw:[stroke-linejoin:round] tw:[vector-effect:non-scaling-stroke]" [attr.points]="responsePolyline()" />
+              @for (point of chartPoints(); track point.data.checked_at) {
+                <g class="tw:group/chart-point tw:outline-none" [attr.tabindex]="0" [attr.transform]="'translate(' + point.x + ' ' + point.y + ')'">
+                  <title>{{ point.data.checked_at | date: 'MMM d, y, HH:mm:ss' }} — {{ point.data.response_time_ms | number: '1.0-2' }} ms</title>
+                  <circle class="tw:cursor-crosshair tw:fill-transparent" r="12" />
+                  <circle class="tw:pointer-events-none tw:fill-[#1176d4] tw:opacity-0 tw:transition-opacity tw:duration-120 tw:group-focus/chart-point:opacity-100 tw:group-hover/chart-point:opacity-100" r="4" />
+                </g>
+              }
+            </svg>
+          </div>
+        } @else {
+          <div class="tw:grid tw:min-h-44 tw:place-items-center tw:bg-[#fbfcfe] tw:px-6 tw:py-10 tw:text-center tw:text-[13px] tw:text-[#71869c]">No response-time data is available for this monitor.</div>
+        }
+
+        <div class="tw:grid tw:grid-cols-3 tw:border-t tw:border-[#e6edf4] tw:max-[640px]:grid-cols-1">
+          <div class="tw:grid tw:min-h-24 tw:content-center tw:gap-2 tw:border-r tw:border-[#e6edf4] tw:p-5 tw:max-[640px]:border-r-0 tw:max-[640px]:border-b">
+            <strong class="tw:text-[clamp(19px,3vw,27px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ monitorDetail.response_time_metrics.average_ms === null ? '—' : (monitorDetail.response_time_metrics.average_ms | number: '1.0-2') + ' ms' }}</strong>
+            <span class="tw:text-[12px] tw:text-[#71869c]">Average</span>
+          </div>
+          <div class="tw:grid tw:min-h-24 tw:content-center tw:gap-2 tw:border-r tw:border-[#e6edf4] tw:p-5 tw:max-[640px]:border-r-0 tw:max-[640px]:border-b">
+            <strong class="tw:text-[clamp(19px,3vw,27px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ monitorDetail.response_time_metrics.maximum_ms === null ? '—' : (monitorDetail.response_time_metrics.maximum_ms | number: '1.0-2') + ' ms' }}</strong>
+            <span class="tw:text-[12px] tw:text-[#71869c]">Maximum</span>
+          </div>
+          <div class="tw:grid tw:min-h-24 tw:content-center tw:gap-2 tw:p-5">
+            <strong class="tw:text-[clamp(19px,3vw,27px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ monitorDetail.response_time_metrics.minimum_ms === null ? '—' : (monitorDetail.response_time_metrics.minimum_ms | number: '1.0-2') + ' ms' }}</strong>
+            <span class="tw:text-[12px] tw:text-[#71869c]">Minimum</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="tw:mt-7 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)]" aria-labelledby="events-heading">
+        <div class="tw:border-b tw:border-[#dce5ef] tw:px-6 tw:py-4.5 tw:max-[640px]:px-4.5">
+          <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.09em] tw:text-[#71869c] tw:uppercase">History</p>
+          <h2 id="events-heading" class="tw:mt-1 tw:mb-0 tw:text-[18px] tw:font-semibold tw:tracking-[-0.02em]">Recent events</h2>
+        </div>
+
+        @for (event of monitorDetail.recent_events; track event.event_id) {
+          <article class="tw:grid tw:grid-cols-[12px_minmax(220px,1fr)_auto] tw:items-start tw:gap-4 tw:border-b tw:border-[#e6edf4] tw:px-6 tw:py-5 tw:last:border-b-0 tw:max-[700px]:grid-cols-[12px_minmax(0,1fr)] tw:max-[640px]:px-4.5">
+            <span class="event-mark tw:mt-1 tw:size-2.25 tw:rounded-full tw:bg-[#9fb3c8] tw:[&.created]:bg-[#57a5eb] tw:[&.down]:bg-[#f97066] tw:[&.up]:bg-[#34d399]" [class]="'event-mark ' + event.event_type" aria-hidden="true"></span>
+            <div class="tw:grid tw:min-w-0 tw:gap-1.5">
+              <strong class="tw:text-[14px] tw:leading-snug tw:font-semibold">{{ eventTitle(event, monitorDetail.monitor.name) }}</strong>
+              <time class="tw:text-[11px] tw:text-[#71869c]">{{ event.occurred_at | date: 'MMM d, y, HH:mm:ss' }}</time>
+              @if (event.reason) {
+                <p class="tw:mt-0.5 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#5f738f] tw:wrap-anywhere">{{ event.reason }}</p>
+              }
+            </div>
+            <dl class="tw:m-0 tw:flex tw:gap-6 tw:max-[700px]:col-start-2 tw:max-[700px]:flex-wrap">
+              @if (event.status_code !== null) {
+                <div class="tw:grid tw:gap-1">
+                  <dt class="tw:text-[11px] tw:text-[#71869c]">Status code</dt>
+                  <dd class="tw:m-0 tw:text-[12px] tw:font-semibold">HTTP {{ event.status_code }}</dd>
+                </div>
+              }
+              @if (eventDuration(event); as duration) {
+                <div class="tw:grid tw:gap-1">
+                  <dt class="tw:text-[11px] tw:text-[#71869c]">Downtime</dt>
+                  <dd class="tw:m-0 tw:text-[12px] tw:font-semibold">{{ formatDuration(duration) }}</dd>
+                </div>
+              }
+              @if (event.ongoing) {
+                <div class="tw:grid tw:gap-1">
+                  <dt class="tw:text-[11px] tw:text-[#71869c]">State</dt>
+                  <dd class="tw:m-0 tw:text-[12px] tw:font-semibold tw:text-[#b42318]">Ongoing</dd>
+                </div>
+              }
+            </dl>
+          </article>
+        } @empty {
+          <div class="tw:px-6 tw:py-12 tw:text-center tw:text-[13px] tw:text-[#71869c]">No events have been recorded for this monitor.</div>
+        }
+      </section>
+
+      <footer class="tw:flex tw:items-center tw:justify-between tw:gap-5 tw:px-1 tw:py-7 tw:text-[11px] tw:text-[#71869c] tw:max-[640px]:flex-col tw:max-[640px]:items-start tw:max-[640px]:gap-1.5">
+        <span>Powered by Orion Intelligence</span>
+        <span class="connection tw:inline-flex tw:items-center tw:gap-1.75 tw:text-[#9a6700] tw:[&.connected]:text-[#16825f]" [class.connected]="connected()">
+          <i class="tw:size-1.75 tw:rounded-full tw:bg-[#f5b942] tw:in-[.connection.connected]:bg-[#34d399]"></i>
+          {{ connected() ? 'Live updates' : 'Reconnecting' }}
+        </span>
+      </footer>
+    }
+  </main>
+</div>

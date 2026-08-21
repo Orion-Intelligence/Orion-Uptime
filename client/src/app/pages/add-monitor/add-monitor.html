@@ -1,0 +1,144 @@
+<div id="resource-editor-page">
+  <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-6 tw:max-[700px]:flex-col tw:max-[700px]:items-start tw:max-[700px]:gap-4">
+    <div>
+      <p class="eyebrow">Configuration</p>
+      <h1 class="page-title">{{ title }}</h1>
+      <p class="page-description">Complete the settings below, then create the resource.</p>
+    </div>
+    <a class="header-action header-action--secondary tw:max-[700px]:self-end" [routerLink]="backUrl">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
+      Back to list
+    </a>
+  </header>
+
+  <form class="panel tw:grid tw:max-w-205 tw:grid-cols-2 tw:gap-5.5 tw:p-6.5 tw:max-[700px]:grid-cols-1 tw:max-[700px]:p-5" [formGroup]="form" (ngSubmit)="submit()">
+    @if (error()) {
+      <p class="form-error tw:col-span-full tw:max-[700px]:col-auto" role="alert">
+        {{ error() }}
+      </p>
+    }
+
+    <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+      <label for="name">Name</label
+      ><input id="name" formControlName="name" [placeholder]="kind === 'auth-profile' ? 'Profile name' : 'Monitor name'" />
+    </div>
+
+    @switch (kind) {
+      @case ('http') {
+        <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+          <label for="url">URL</label
+          ><input id="url" type="url" formControlName="url" placeholder="https://example.com/health" />
+        </div>
+        <ng-container *ngTemplateOutlet="timingFields" />
+        <div class="field">
+          <label for="status">Expected status</label
+          ><input id="status" type="number" min="100" max="599" formControlName="expected_status_code" />
+        </div>
+      }
+      @case ('ping') {
+        <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+          <label for="host">Host</label
+          ><input id="host" formControlName="host" placeholder="example.com or 192.0.2.1" />
+        </div>
+        <ng-container *ngTemplateOutlet="timingFields" />
+      }
+      @case ('heartbeat') {
+        <div class="field">
+          <label for="heartbeat-interval">Expected heartbeat interval (seconds)</label
+          ><input id="heartbeat-interval" type="number" min="1" formControlName="expected_heartbeat_interval" />
+        </div>
+        <div class="field">
+          <label for="grace">Grace period (seconds)</label
+          ><input id="grace" type="number" min="0" formControlName="grace_period" />
+        </div>
+      }
+      @case ('auth-profile') {
+        <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+          <label for="login-url">Login URL</label
+          ><input id="login-url" type="url" formControlName="login_url" placeholder="https://example.com/api/login" />
+        </div>
+        <div class="field">
+          <label for="credentials">Credentials (JSON)</label
+          ><textarea id="credentials" formControlName="credentials"></textarea>
+        </div>
+        <div class="field">
+          <label for="headers">Headers (JSON)</label
+          ><textarea id="headers" formControlName="headers"></textarea>
+        </div>
+      }
+      @case ('api') {
+        <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+          <label for="url">URL</label
+          ><input id="url" type="url" formControlName="url" placeholder="https://example.com/api/resource" />
+        </div>
+        <div class="field">
+          <label for="method">Method</label
+          ><select id="method" formControlName="method">
+            <option>GET</option>
+            <option>POST</option>
+            <option>PUT</option>
+            <option>PATCH</option>
+            <option>DELETE</option>
+            <option>HEAD</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="status">Expected status</label
+          ><input id="status" type="number" min="100" max="599" formControlName="expected_status_code" />
+        </div>
+        <ng-container *ngTemplateOutlet="timingFields" />
+        <div class="field">
+          <label for="headers">Request headers (JSON)</label
+          ><textarea id="headers" formControlName="headers"></textarea>
+        </div>
+        <div class="field">
+          <label for="request-body">Request body (JSON, optional)</label
+          ><textarea id="request-body" formControlName="request_body" placeholder="{}"></textarea>
+        </div>
+        <div class="field">
+          <label for="expected-json">Expected JSON (optional)</label
+          ><textarea id="expected-json" formControlName="expected_json" placeholder="{}"></textarea>
+        </div>
+        <div class="field">
+          <label for="expected-headers">Expected headers (JSON, optional)</label
+          ><textarea id="expected-headers" formControlName="expected_headers" placeholder="{}"></textarea>
+        </div>
+        <div class="field">
+          <label for="content-type">Expected content type (optional)</label
+          ><input id="content-type" formControlName="expected_content_type" placeholder="application/json" />
+        </div>
+        <div class="field">
+          <label for="auth-profile">Auth profile (optional)</label
+          ><select id="auth-profile" formControlName="auth_profile_id">
+            <option value="">None</option>
+            @for (profile of authProfiles(); track profile.id) {
+              <option [value]="profile.id">{{ profile.name }}</option>
+            }
+          </select>
+        </div>
+      }
+    }
+
+    <div class="tw:col-span-full tw:-mx-6.5 tw:mt-1 tw:-mb-6.5 tw:flex tw:items-center tw:justify-end tw:gap-5.5 tw:border-t tw:px-6.5 tw:py-5 tw:max-[700px]:col-auto tw:max-[700px]:-mx-5 tw:max-[700px]:-mb-5 tw:max-[700px]:px-5 tw:max-[700px]:py-4.5 tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
+      <a class="tw:text-[11px] tw:font-bold tw:no-underline tw:text-[#5f738f] tw:dark:text-[#9fb3c8]" [routerLink]="backUrl">Cancel</a
+      ><button class="button" type="submit" [disabled]="loading()">
+        {{ loading() ? 'Creating…' : 'Create' }}
+      </button>
+    </div>
+    <ng-template #timingFields>
+      <div class="field">
+        <label for="interval">Check interval (seconds)</label
+        ><input id="interval" type="number" min="10" max="86400" formControlName="check_interval" />
+      </div>
+      <div class="field">
+        <label for="timeout">Timeout (seconds)</label
+        ><input id="timeout" type="number" min="1" formControlName="timeout" />
+      </div>
+      <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+        <label for="response-time">Expected response time (milliseconds, optional)</label
+        ><input id="response-time" formControlName="expected_response_time_ms" inputmode="numeric" placeholder="e.g. 500" />
+      </div>
+    </ng-template>
+  </form>
+
+</div>

@@ -1,0 +1,43 @@
+{
+  "extends": "stylelint-config-standard",
+  "customSyntax": "postcss-scss",
+  "plugins": [
+    "stylelint-scss"
+  ],
+  "overrides": [
+    {
+      "files": ["src/tailwind.css"],
+      "rules": {
+        "import-notation": null,
+        "no-invalid-position-at-import-rule": null,
+        "number-max-precision": null,
+        "alpha-value-notation": ["percentage", { "exceptProperties": ["opacity"] }]
+      }
+    }
+  ],
+  "rules": {
+    "alpha-value-notation": "percentage",
+    "color-function-alias-notation": "without-alpha",
+    "color-function-notation": "modern",
+    "color-hex-length": "short",
+    "media-feature-range-notation": "context",
+    "rule-empty-line-before": ["always", {
+      "except": ["first-nested"],
+      "ignore": ["after-comment"]
+    }],
+    "selector-id-pattern": null,
+    "selector-class-pattern": null,
+    "no-descending-specificity": null,
+    "no-duplicate-selectors": null,
+    "block-no-empty": null,
+    "no-empty-source": null,
+    "keyframes-name-pattern": null,
+    "declaration-property-value-no-unknown": null,
+    "selector-pseudo-class-no-unknown": null,
+    "at-rule-descriptor-no-unknown": null,
+    "at-rule-no-unknown": null,
+    "scss/at-rule-no-unknown": [true, {
+      "ignoreAtRules": ["tailwind", "use", "theme", "utility", "variant", "source", "plugin", "custom-variant", "apply", "reference"]
+    }]
+  }
+}
