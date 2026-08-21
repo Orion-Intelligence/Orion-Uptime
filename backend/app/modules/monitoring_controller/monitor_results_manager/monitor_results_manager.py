@@ -32,6 +32,26 @@ class MonitorResultManager:
         result.id = str(inserted.inserted_id)
         return result
 
+    async def seed_history(self, monitor_id: str, monitor_type: MonitorType, days: int = 45) -> None:
+        if await self.collection.count_documents({"monitor_id": monitor_id}, limit=1):
+            return
+        now = datetime.now(UTC)
+        await self.collection.insert_many(
+            [
+                MonitorResultModel(
+                    monitor_id=monitor_id,
+                    monitor_type=monitor_type,
+                    status=MonitorStatus.UP,
+                    status_code=None,
+                    response_time_ms=None,
+                    success=True,
+                    is_slow=False,
+                    checked_at=now - timedelta(days=offset),
+                ).model_dump(exclude={"id"})
+                for offset in range(1, days + 1)
+            ]
+        )
+
     async def average_response_time(self) -> float:
         pipeline = [
             {"$match": {"response_time_ms": {"$ne": None}}},

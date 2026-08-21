@@ -73,6 +73,8 @@ class MonitorScheduler:
                 return
             await self.stop_worker(monitor.persisted_id)
 
+        await self.monitor_service.monitor_result_service.seed_history(monitor.persisted_id, monitor.monitor_type)
+
         worker = MonitorWorker(
             monitor=monitor,
             monitor_service=self.monitor_service,

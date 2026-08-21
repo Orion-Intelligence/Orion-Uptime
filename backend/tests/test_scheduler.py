@@ -23,11 +23,20 @@ class FakeMonitor:
         return self.id
 
 
+class FakeResultService:
+    def __init__(self) -> None:
+        self.seeded: list[str] = []
+
+    async def seed_history(self, monitor_id, monitor_type, days=45):
+        self.seeded.append(monitor_id)
+
+
 @dataclass
 class FakeMonitorService:
     monitors: list[FakeMonitor] = field(default_factory=list)
     checks: list[str] = field(default_factory=list)
     fail_listing: bool = False
+    monitor_result_service: FakeResultService = field(default_factory=FakeResultService)
 
     async def list_active_monitors(self):
         if self.fail_listing:
@@ -56,6 +65,7 @@ async def test_reconcile_starts_stops_and_restarts_workers():
         assert scheduler.status()["alive_workers"] == 2
         assert scheduler.is_healthy()
         assert sorted(service.checks) == ["a", "b"]
+        assert sorted(service.monitor_result_service.seeded) == ["a", "b"]
 
         task = scheduler._workers["a"]._task
         assert task is not None
