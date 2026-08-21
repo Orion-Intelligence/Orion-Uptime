@@ -14,22 +14,24 @@
   }
 
   @if (page(); as statusPage) {
-    <header class="tw:h-[140px] tw:w-full tw:bg-[#131a26] tw:text-white tw:max-[640px]:h-[220px]">
-      <div class="tw:mx-auto tw:flex tw:h-full tw:w-[min(1000px,calc(100%_-_40px))] tw:items-start tw:justify-between tw:gap-8 tw:pt-8 tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:flex-col tw:max-[640px]:justify-start tw:max-[640px]:gap-0 tw:max-[640px]:pt-7.5">
-        <img ngSrc="assets/images/shared/logo-wide-light.svg" width="256" height="46" alt="Orion Intelligence" class="tw:h-[46px] tw:w-auto tw:max-w-[256px] tw:flex-none tw:object-contain tw:brightness-0 tw:invert tw:max-[640px]:h-[42px] tw:max-[640px]:max-w-[234px]" />
-        <div class="tw:grid tw:justify-items-end tw:gap-1.5 tw:text-right tw:max-[640px]:mt-4.5 tw:max-[640px]:justify-items-start tw:max-[640px]:text-left">
-          <strong class="tw:text-[22px] tw:leading-[1.3] tw:font-normal">Service status</strong>
-          <div class="tw:flex tw:flex-wrap tw:justify-end tw:gap-x-2 tw:gap-y-0.5 tw:text-[14px] tw:leading-[1.45] tw:text-[#929aa6] tw:max-[640px]:justify-start">
-            <span>Last updated <time>{{ statusPage.generated_at | date: 'MMM d, h:mm a' }}</time></span>
-            <span aria-hidden="true">|</span>
-            <span class="connection tw:text-[#f29030] tw:[&.connected]:text-[#3bd671]" [class.connected]="connected()">{{ connected() ? 'Live updates' : 'Reconnecting' }}</span>
+    <header class="tw:w-full tw:bg-[#131a26] tw:pt-[30px] tw:pb-[60px] tw:font-[Roboto,_Arial,_sans-serif] tw:text-white">
+      <div class="tw:mx-auto tw:flex tw:w-[min(1000px,calc(100%_-_40px))] tw:flex-wrap tw:items-center tw:justify-between tw:max-[640px]:w-[calc(100%_-_30px)]">
+        <div class="tw:flex tw:h-[50px] tw:flex-none tw:items-center tw:max-[640px]:basis-full">
+          <img ngSrc="assets/images/shared/logo-wide-light.svg" width="256" height="46" alt="Orion Intelligence" class="tw:h-[46px] tw:w-auto tw:max-w-[256px] tw:object-contain tw:brightness-0 tw:invert" />
+        </div>
+        <div class="tw:flex tw:items-center tw:justify-between tw:text-right tw:max-[640px]:my-[15px] tw:max-[640px]:w-full tw:max-[640px]:text-left">
+          <div class="tw:h-[51.0833px]">
+            <h1 class="tw:m-0 tw:text-[21.28px] tw:leading-[29.8px] tw:font-bold tw:tracking-[-0.4256px] tw:text-white">Service status</h1>
+            <div class="tw:mt-[2.3333px] tw:inline-flex">
+              <div class="tw:whitespace-nowrap tw:text-[14px] tw:leading-[18.6167px] tw:font-normal tw:tracking-[0.16px] tw:text-white">Last updated <time>{{ statusPage.generated_at | date: 'h:mm:ss a' }}</time> | Next update in <span>{{ statusPage.refresh_interval_seconds }}</span> sec.</div>
+            </div>
           </div>
         </div>
       </div>
     </header>
 
-    <main class="tw:mx-auto tw:min-h-[calc(100vh_-_140px)] tw:w-[min(1000px,calc(100%_-_40px))] tw:pb-10 tw:max-[640px]:min-h-[calc(100vh_-_220px)] tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:pb-5">
-      <section class="tw:relative tw:z-10 tw:-mt-[29px] tw:mb-[45px] tw:rounded-[6px] tw:bg-white tw:px-10 tw:py-[35px] tw:font-[Roboto,_Arial,_sans-serif] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:max-[640px]:p-7.5" aria-labelledby="overall-status-heading">
+    <main class="tw:mx-auto tw:min-h-[calc(100vh_-_141.0833px)] tw:w-[min(1000px,calc(100%_-_40px))] tw:pb-10 tw:max-[640px]:min-h-[calc(100vh_-_221.0833px)] tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:pb-5">
+      <section class="tw:relative tw:z-10 tw:-mt-[30px] tw:mb-[45px] tw:rounded-[6px] tw:bg-white tw:px-10 tw:py-[35px] tw:font-[Roboto,_Arial,_sans-serif] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:max-[640px]:p-7.5" aria-labelledby="overall-status-heading">
         <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between">
           <div class="tw:flex tw:items-center tw:gap-[30px] tw:max-[640px]:w-full tw:max-[640px]:flex-wrap tw:max-[640px]:justify-center">
             <span class="main-status-dot tw:relative tw:mr-[15px] tw:size-[30px] tw:flex-none tw:rounded-full tw:bg-current tw:text-[#687790] tw:after:absolute tw:after:inset-0 tw:after:rounded-full tw:after:bg-current tw:after:animate-status-pulse tw:after:content-[''] tw:[&.degraded]:text-[#f29030] tw:[&.operational]:text-[#3bd671] tw:[&.outage]:text-[#df484a] tw:motion-reduce:after:animate-none" [class]="statusPage.overall_status" aria-hidden="true"></span>
