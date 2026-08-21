@@ -16,7 +16,6 @@ os.environ.setdefault("TRUSTED_PROXIES", "")
 os.environ.setdefault("DEFAULT_ADMIN_USERNAME", "admin")
 os.environ.setdefault("DEFAULT_ADMIN_PASSWORD", "test-admin-password")
 os.environ.setdefault("MONITOR_FAILURE_THRESHOLD", "3")
-os.environ.setdefault("MONITOR_RECOVERY_THRESHOLD", "2")
 
 
 @pytest.fixture

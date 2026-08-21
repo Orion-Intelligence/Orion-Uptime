@@ -10,6 +10,9 @@ from app.service.constants import Collections
 from app.service.mongo_db.shared_models.db_monitor_state_model import MonitorStateModel, MonitorStateResult, MonitorTransition
 from app.service.mongo_db.shared_models.db_monitoring_controller_model import MonitorStatus, MonitorType
 
+RECOVERY_THRESHOLD = 1
+DEFAULT_FAILURE_THRESHOLD = 3
+
 
 class MonitorStateManager:
     def __init__(self, engine: AIOEngine):
@@ -34,8 +37,8 @@ class MonitorStateManager:
         previous_status = state.status
 
         load_dotenv()
-        recovery_threshold = int(os.environ["MONITOR_RECOVERY_THRESHOLD"])
-        failure_threshold = int(os.environ["MONITOR_FAILURE_THRESHOLD"])
+        recovery_threshold = RECOVERY_THRESHOLD
+        failure_threshold = int(os.environ.get("MONITOR_FAILURE_THRESHOLD", str(DEFAULT_FAILURE_THRESHOLD)))
 
         if success:
             state.consecutive_successes += 1
