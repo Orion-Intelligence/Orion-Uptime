@@ -6,7 +6,7 @@ acme_shared_zone zone=acme_shared:1M;
 
 acme_issuer letsencrypt {
     uri ${ACME_DIRECTORY_URL};
-    contact ${LETSENCRYPT_EMAIL};
+    ${ACME_CONTACT_DIRECTIVE}
     state_path /var/lib/nginx/acme;
     accept_terms_of_service;
 }

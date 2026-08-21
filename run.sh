@@ -98,8 +98,7 @@ ensure_production_settings() {
         exit 1
     fi
     if [ -z "$LETSENCRYPT_EMAIL" ]; then
-        echo "LETSENCRYPT_EMAIL in $ENV_FILE must be set; Let's Encrypt sends certificate expiry notices there." >&2
-        exit 1
+        echo "Note: LETSENCRYPT_EMAIL is empty in $ENV_FILE; the certificate is still issued, but Let's Encrypt cannot send expiry notices."
     fi
     if [ "$(env_value APP_ENV)" = "development" ]; then
         echo "Note: APP_ENV is development in $ENV_FILE; the production stack overrides it to production for its containers."

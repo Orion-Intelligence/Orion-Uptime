@@ -1,0 +1,5 @@
+if [ -n "${LETSENCRYPT_EMAIL:-}" ]; then
+    export ACME_CONTACT_DIRECTIVE="contact ${LETSENCRYPT_EMAIL};"
+else
+    export ACME_CONTACT_DIRECTIVE=""
+fi

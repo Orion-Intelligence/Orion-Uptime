@@ -89,7 +89,7 @@ services:
     environment:
       APP_BACKEND: backend:8000
       PRODUCTION_DOMAIN: ${PRODUCTION_DOMAIN:?PRODUCTION_DOMAIN must be set in .env}
-      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:?LETSENCRYPT_EMAIL must be set in .env}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
       ACME_DIRECTORY_URL: ${ACME_DIRECTORY_URL:-https://acme-v02.api.letsencrypt.org/directory}
     ports:
       - "80:80"
@@ -98,6 +98,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/prod/default.conf.template:/etc/nginx/templates/default.conf.template:ro
       - ./nginx/snippets:/etc/nginx/snippets:ro
+      - ./nginx/docker-entrypoint.d/18-acme-contact.envsh:/docker-entrypoint.d/18-acme-contact.envsh:ro
       - ./nginx/docker-entrypoint.d/35-acme-state-dir.sh:/docker-entrypoint.d/35-acme-state-dir.sh:ro
       - ./client/build:/client_build:ro
       - nginx_acme:/var/lib/nginx/acme
