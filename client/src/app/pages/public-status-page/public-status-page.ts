@@ -15,20 +15,32 @@ export class PublicStatusPageView {
   private source: EventSource | undefined;
   private reconnectTimer: ReturnType<typeof setTimeout> | undefined;
   private reconnectDelayMs = 2000;
+  private clockTimer: ReturnType<typeof setInterval> | undefined;
 
   readonly page = signal<PublicStatusPage | null>(null);
   readonly loading = signal(true);
   readonly connected = signal(false);
   readonly error = signal('');
+  readonly now = signal(Date.now());
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
+      this.clockTimer = setInterval(() => this.now.set(Date.now()), 1000);
       this.connect();
     }
     this.destroyRef.onDestroy(() => {
       this.source?.close();
       this.clearReconnect();
+      if (this.clockTimer) {
+        clearInterval(this.clockTimer);
+      }
     });
+  }
+
+  nextUpdateIn(page: PublicStatusPage): number {
+    const interval = Math.max(1, page.refresh_interval_seconds);
+    const elapsed = Math.max(0, Math.floor((this.now() - Date.parse(page.generated_at)) / 1000));
+    return Math.max(0, interval - elapsed);
   }
 
   monitorStatus(monitor: PublicStatusMonitor): string {
@@ -42,10 +54,19 @@ export class PublicStatusPageView {
     if (day.uptime_percentage >= 100) {
       return 'up';
     }
-    if (day.uptime_percentage <= 0) {
-      return 'down';
+    if (day.uptime_percentage >= 90) {
+      return 'good';
     }
-    return 'partial';
+    if (day.uptime_percentage >= 75) {
+      return 'minor';
+    }
+    if (day.uptime_percentage >= 50) {
+      return 'major';
+    }
+    if (day.uptime_percentage >= 25) {
+      return 'severe';
+    }
+    return 'down';
   }
 
   dayLabel(day: DailyUptime): string {

@@ -27,6 +27,8 @@ services:
       retries: 10
       start_period: 15s
     init: true
+    sysctls:
+      net.ipv4.ping_group_range: "0 2147483647"
     security_opt:
       - no-new-privileges:true
     cap_drop:

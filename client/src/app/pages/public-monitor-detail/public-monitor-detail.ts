@@ -64,10 +64,19 @@ export class PublicMonitorDetailPage {
     if (day.uptime_percentage >= 100) {
       return 'up';
     }
-    if (day.uptime_percentage <= 0) {
-      return 'down';
+    if (day.uptime_percentage >= 90) {
+      return 'good';
     }
-    return 'partial';
+    if (day.uptime_percentage >= 75) {
+      return 'minor';
+    }
+    if (day.uptime_percentage >= 50) {
+      return 'major';
+    }
+    if (day.uptime_percentage >= 25) {
+      return 'severe';
+    }
+    return 'down';
   }
 
   dayLabel(day: DailyUptime): string {

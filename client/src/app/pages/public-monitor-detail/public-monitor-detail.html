@@ -54,7 +54,7 @@
           </div>
           <svg class="tw:block tw:h-auto tw:w-[530px] tw:max-w-full tw:justify-self-end" viewBox="0 0 530 15" width="530" height="15" role="img" aria-label="Daily uptime for the last 90 days">
             @for (day of monitorDetail.monitor.daily_uptime; track day.date) {
-              <rect class="tw:cursor-help tw:fill-[#687790] tw:[&.down]:fill-[#df484a] tw:[&.no-data]:fill-[#687790] tw:[&.partial]:fill-[#f29030] tw:[&.up]:fill-[#3bd671]" [class]="dayClass(day)" [attr.x]="$index * 5.9" y="0" width="3.25" height="15" rx="1.625" ry="1.625">
+              <rect class="tw:cursor-help tw:fill-[#687790] tw:[&.down]:fill-[#b42318] tw:[&.good]:fill-[#9be15d] tw:[&.major]:fill-[#e8781d] tw:[&.minor]:fill-[#f7b267] tw:[&.no-data]:fill-[#687790] tw:[&.severe]:fill-[#f07167] tw:[&.up]:fill-[#3bd671]" [class]="dayClass(day)" [attr.x]="$index * 5.9" y="0" width="3.25" height="15" rx="1.625" ry="1.625">
                 <title>{{ dayLabel(day) }}</title>
               </rect>
             }
