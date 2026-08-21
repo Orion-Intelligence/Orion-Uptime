@@ -34,6 +34,9 @@ export class ResourceListPage {
   readonly loading = signal(true);
   readonly deletingId = signal('');
   readonly updatingId = signal('');
+  readonly editingId = signal('');
+  readonly editName = signal('');
+  readonly renamingId = signal('');
   readonly error = signal('');
   readonly message = signal('');
   readonly heartbeatToken = signal('');
@@ -200,6 +203,48 @@ export class ResourceListPage {
           this.updatingId.set('');
         },
       });
+  }
+
+  startRename(record: ResourceRecord): void {
+    this.editingId.set(record.id);
+    this.editName.set(record.name);
+  }
+
+  cancelRename(): void {
+    this.editingId.set('');
+    this.editName.set('');
+  }
+
+  onEditNameInput(event: Event): void {
+    this.editName.set((event.target as HTMLInputElement).value);
+  }
+
+  onRenameSubmit(event: Event, record: ResourceRecord): void {
+    event.preventDefault();
+    this.saveRename(record);
+  }
+
+  saveRename(record: ResourceRecord): void {
+    const name = this.editName().trim();
+    if (!name || name === record.name) {
+      this.cancelRename();
+      return;
+    }
+    this.renamingId.set(record.id);
+    const endpoint = this.updatePath().replace(':id', record.id);
+    this.api.put<unknown, { name: string }>(endpoint, { name }).subscribe({
+      next: () => {
+        this.records.update((records) => records.map((item) => (item.id === record.id ? { ...item, name } : item)));
+        this.overviews.update((overviews) => (overviews[record.id] ? { ...overviews, [record.id]: { ...overviews[record.id], name } } : overviews));
+        this.showNotice(`“${record.name}” renamed to “${name}”.`);
+        this.renamingId.set('');
+        this.cancelRename();
+      },
+      error: (error: unknown) => {
+        this.error.set(ApiService.errorMessage(error));
+        this.renamingId.set('');
+      },
+    });
   }
 
   private showNotice(message: string, heartbeatToken = ''): void {
