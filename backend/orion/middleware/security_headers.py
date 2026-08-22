@@ -2,7 +2,27 @@ from fastapi import FastAPI, Request
 
 from orion.services.auth.authorization import development_environment
 
-CONTENT_SECURITY_POLICY = "; ".join(["default-src 'self'", "script-src 'self'", "style-src 'self'", "img-src 'self' data:", "font-src 'self'", "connect-src 'self'", "manifest-src 'self'", "media-src 'none'", "object-src 'none'", "frame-src 'none'", "worker-src 'self'", "base-uri 'self'", "form-action 'self'", "frame-ancestors 'none'", "upgrade-insecure-requests"])
+CONTENT_SECURITY_POLICY = "; ".join(
+    [
+        "default-src 'self'",
+        "script-src 'self'",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "font-src 'self'",
+        "connect-src 'self'",
+        "manifest-src 'self'",
+        "media-src 'none'",
+        "object-src 'none'",
+        "frame-src 'none'",
+        "worker-src 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "require-trusted-types-for 'script'",
+        "trusted-types angular angular#bundler",
+        "upgrade-insecure-requests",
+    ]
+)
 
 SECURITY_HEADERS = {"Content-Security-Policy": CONTENT_SECURITY_POLICY, "X-Content-Type-Options": "nosniff", "X-Frame-Options": "DENY", "Referrer-Policy": "no-referrer", "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Resource-Policy": "same-origin", "Permissions-Policy": "accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()"}
 

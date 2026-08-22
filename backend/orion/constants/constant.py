@@ -8,6 +8,7 @@ class Messages:
     USER_NOT_FOUND = "User not found."
     USER_DISABLED = "User account is disabled."
     CURRENT_USER_RETRIEVED = "Current user retrieved successfully."
+    NO_ACTIVE_SESSION = "No active session."
     ACCESS_DENIED = "You do not have permission to perform this action."
     USER_CREATED = "User created successfully."
     USER_UPDATED = "User updated successfully."

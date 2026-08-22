@@ -17,9 +17,13 @@ export class AuthService {
 
   loadCurrentUser(): Observable<CurrentUser> {
     return new Observable((subscriber) => {
-      const subscription = this.api.get<CurrentUser>('/auth/me').subscribe({
+      const subscription = this.api.get<CurrentUser | null>('/auth/session').subscribe({
         next: (response) => {
           this.user.set(response.data);
+          if (response.data === null) {
+            subscriber.error(new Error('No active session.'));
+            return;
+          }
           subscriber.next(response.data);
           subscriber.complete();
         },

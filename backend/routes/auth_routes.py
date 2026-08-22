@@ -4,7 +4,7 @@ from jwt import PyJWTError
 from orion.api.interactive.auth_manager.auth_manager import AuthManager, login_throttle, revoked_access_tokens
 from orion.constants.constant import Messages
 from orion.helper_manager.client_ip import client_ip
-from orion.services.auth.authorization import ACCESS_TOKEN_COOKIE, clear_auth_cookies, get_auth_service, require_viewer, set_auth_cookies
+from orion.services.auth.authorization import ACCESS_TOKEN_COOKIE, clear_auth_cookies, get_auth_service, get_current_user, require_viewer, set_auth_cookies
 from orion.services.mongo_manager.shared_model.db_user_account_model import CurrentUserResponse, LoginRequest
 from orion.shared_models.exceptions import AuthenticationError
 from orion.shared_models.responses import SuccessResponse, success_response
@@ -25,6 +25,15 @@ async def login(request: LoginRequest, http_request: Request, response: Response
     set_auth_cookies(response, data)
 
     return success_response(message=Messages.LOGIN_SUCCESS, data=None)
+
+
+@router.get("/session", response_model=SuccessResponse[CurrentUserResponse | None])
+async def session(http_request: Request, response: Response, service: AuthManager = Depends(get_auth_service)):
+    try:
+        current_user = await get_current_user(http_request, response, service)
+    except AuthenticationError:
+        return success_response(message=Messages.NO_ACTIVE_SESSION, data=None)
+    return success_response(message=Messages.CURRENT_USER_RETRIEVED, data=current_user)
 
 
 @router.get("/me", response_model=SuccessResponse[CurrentUserResponse])

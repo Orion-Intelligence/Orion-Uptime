@@ -67,6 +67,12 @@
                   "minify": true,
                   "inlineCritical": false
                 }
+              },
+              "sourceMap": {
+                "hidden": false,
+                "scripts": true,
+                "styles": false,
+                "vendor": false
               }
             },
             "development": {
