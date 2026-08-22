@@ -3,7 +3,7 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
-    command: ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "1", "--reload"]
+    command: ["hypercorn", "main:app", "--bind", "0.0.0.0:8000", "--workers", "1", "--reload"]
     dns:
       - 1.1.1.1
       - 8.8.8.8
@@ -14,7 +14,11 @@ services:
     expose:
       - "8000"
     volumes:
-      - ./backend/app:/app/app:ro
+      - ./backend/main.py:/app/main.py:ro
+      - ./backend/configs:/app/configs:ro
+      - ./backend/orion:/app/orion:ro
+      - ./backend/routes:/app/routes:ro
+      - ./backend/seeder:/app/seeder:ro
     depends_on:
       mongodb:
         condition: service_healthy
@@ -39,7 +43,7 @@ services:
     build:
       context: backend
       dockerfile: Dockerfile
-    command: ["python", "-m", "app.seeder.seed"]
+    command: ["python", "-m", "seeder.seed"]
     env_file:
       - .env
     environment:

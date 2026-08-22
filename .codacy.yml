@@ -22,7 +22,6 @@ exclude_paths:
   - "**/*.yaml"
   - "**/*.json"
   - "**/*.map"
-  - "**/__init__.py"
   - "**/eslint.config.js"
 
 engines:
@@ -50,5 +49,4 @@ engines:
       - "client/scripts/**"
       - ".github/**"
       - "run.sh"
-      - "**/__init__.py"
-      - "**/eslint.config.js"
+          - "**/eslint.config.js"

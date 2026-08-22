@@ -16,6 +16,6 @@ class FakePingSpawner:
         self._process = process or FakePingProcess()
         self._calls = calls if calls is not None else []
 
-    async def __call__(self, *args, **kwargs):
+    async def __call__(self, *args, **_kwargs):
         self._calls.append(list(args))
         return self._process

@@ -1,0 +1,129 @@
+<div animate.enter="page-enter" id="public-status-page" class="tw:min-h-dvh tw:bg-[#f7f7f7] tw:text-[#172235] tw:[color-scheme:light]">
+  @if (loading()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading service status"></div>
+  }
+
+  @if (error() && !page()) {
+    <main animate.enter="fade-in" animate.leave="fade-out" class="tw:mx-auto tw:min-h-screen tw:w-[min(1000px,calc(100%_-_40px))] tw:py-10 tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:py-5">
+      <section class="tw:mt-[12vh] tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:px-8 tw:py-14 tw:shadow-[0_12px_34px_rgb(30_64_105_/_7%)] tw:max-[640px]:px-5 tw:max-[640px]:py-10">
+        <p class="tw:m-0 tw:text-[11px] tw:font-bold tw:tracking-[0.12em] tw:text-[#1176d4] tw:uppercase">Public status</p>
+        <h1 class="tw:mt-3 tw:mb-0 tw:max-w-145 tw:text-[clamp(28px,5vw,42px)] tw:leading-[1.08] tw:font-semibold tw:tracking-[-0.04em] tw:text-[#172235]">{{ error() }}</h1>
+        <p class="tw:mt-3 tw:mb-0 tw:text-[14px] tw:leading-relaxed tw:text-[#667b91]">Please check the link or try again shortly.</p>
+      </section>
+    </main>
+  }
+
+  @if (page(); as statusPage) {
+    <header class="tw:w-full tw:bg-[#131a26] tw:pt-[30px] tw:pb-[60px] tw:font-[Roboto,_Arial,_sans-serif] tw:text-white">
+      <div class="tw:mx-auto tw:flex tw:w-[min(1000px,calc(100%_-_40px))] tw:flex-wrap tw:items-center tw:justify-between tw:max-[640px]:w-[calc(100%_-_30px)]">
+        <div class="tw:flex tw:h-[50px] tw:flex-none tw:items-center tw:max-[640px]:basis-full">
+          <img ngSrc="assets/images/shared/logo-wide-light.svg" width="256" height="46" alt="Orion Intelligence" class="tw:h-[46px] tw:w-auto tw:max-w-[256px] tw:object-contain tw:brightness-0 tw:invert" />
+        </div>
+        <div class="tw:flex tw:items-center tw:justify-between tw:text-right tw:max-[640px]:my-[15px] tw:max-[640px]:w-full tw:max-[640px]:text-left">
+          <div class="tw:h-[51.0833px]">
+            <h1 class="tw:m-0 tw:text-[21.28px] tw:leading-[29.8px] tw:font-bold tw:tracking-[-0.4256px] tw:text-white">Service status</h1>
+            <div class="tw:mt-[2.3333px] tw:inline-flex">
+              <div class="tw:whitespace-nowrap tw:text-[14px] tw:leading-[18.6167px] tw:font-normal tw:tracking-[0.16px] tw:text-white">Last updated <time>{{ statusPage.generated_at | date: 'h:mm:ss a' }}</time> | Next update in <span>{{ nextUpdateIn(statusPage) }}</span> sec.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="tw:mx-auto tw:min-h-[calc(100vh_-_141.0833px)] tw:w-[min(1000px,calc(100%_-_40px))] tw:pb-10 tw:max-[640px]:min-h-[calc(100vh_-_221.0833px)] tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:pb-5">
+      <section class="tw:relative tw:z-10 tw:-mt-[30px] tw:mb-[45px] tw:rounded-[6px] tw:bg-white tw:px-10 tw:py-[35px] tw:font-[Roboto,_Arial,_sans-serif] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:max-[640px]:p-7.5" aria-labelledby="overall-status-heading">
+        <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-between">
+          <div class="tw:flex tw:items-center tw:gap-[30px] tw:max-[640px]:w-full tw:max-[640px]:flex-wrap tw:max-[640px]:justify-center">
+            <span class="main-status-dot tw:relative tw:mr-[15px] tw:size-[30px] tw:flex-none tw:rounded-full tw:bg-current tw:text-[#687790] tw:after:absolute tw:after:inset-0 tw:after:rounded-full tw:after:bg-current tw:after:animate-status-pulse tw:after:content-[''] tw:[&.degraded]:text-[#f29030] tw:[&.operational]:text-[#3bd671] tw:[&.outage]:text-[#df484a] tw:motion-reduce:after:animate-none" [class]="statusPage.overall_status" aria-hidden="true"></span>
+            <div class="tw:max-[640px]:mt-[15px] tw:max-[640px]:basis-full tw:max-[640px]:text-center">
+              <h2 id="overall-status-heading" class="tw:m-0 tw:text-[32px] tw:leading-[35.0667px] tw:font-bold tw:tracking-[0.16px] tw:max-[640px]:text-[27.2px] tw:max-[640px]:leading-[29.8167px]">
+                @switch (statusPage.overall_status) {
+                  @case ('operational') {
+                    All systems <span class="tw:text-[#3bd671]">Operational</span>
+                  }
+                  @case ('degraded') {
+                    Some systems <span class="tw:text-[#f29030]">Degraded</span>
+                  }
+                  @case ('outage') {
+                    Some systems <span class="tw:text-[#df484a]">Down</span>
+                  }
+                  @default {
+                    System status <span class="tw:text-[#687790]">Unknown</span>
+                  }
+                }
+              </h2>
+            </div>
+          </div>
+          <div class="tw:text-[16px] tw:text-[#687790]" aria-hidden="true"></div>
+        </div>
+      </section>
+
+      <section class="tw:mt-1 tw:font-[Roboto,_Arial,_sans-serif]" aria-labelledby="services-heading">
+        <h2 id="services-heading" class="tw:mt-0 tw:mb-3.5 tw:text-[28px] tw:leading-[1.2] tw:font-bold tw:tracking-[-0.025em] tw:text-[#131a26] tw:max-[640px]:text-[27px]">
+          Uptime <span class="tw:text-[#687790]">Last 90 days</span>
+        </h2>
+
+        <div class="tw:rounded-[6px] tw:bg-white tw:px-5 tw:py-[17.5px] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:max-[640px]:p-7.5">
+          <div class="tw:mb-[15px] tw:pb-2.5">
+            <h3 class="tw:m-0 tw:text-[16px] tw:leading-[1.4] tw:font-semibold">Services</h3>
+          </div>
+
+          @for (monitor of statusPage.monitors; track monitor.id) {
+            <article animate.enter="list-item-enter" class="tw:mb-[15px] tw:border-b tw:border-[#e6e7e8] tw:pb-[15px] tw:last:mb-0 tw:last:border-b-0 tw:last:pb-0">
+              <div class="tw:grid tw:grid-cols-[280px_530px_70px] tw:items-center tw:justify-between tw:max-[640px]:grid-cols-[minmax(0,1fr)_auto] tw:max-[640px]:gap-x-[15px]">
+                <div class="tw:flex tw:min-w-0 tw:items-center tw:justify-between tw:max-[640px]:mb-[5px]">
+                  <a class="tw:flex tw:max-w-[80%] tw:min-w-0 tw:items-center tw:gap-1.5 tw:overflow-hidden tw:text-[16px] tw:leading-[1.33] tw:font-normal tw:text-[#131a26] tw:no-underline tw:hover:text-[#131a26]" [routerLink]="['/status', statusPage.slug, monitor.id]" [attr.title]="monitor.name">
+                    <span class="tw:overflow-hidden tw:text-ellipsis tw:whitespace-nowrap">{{ monitor.name }}</span>
+                    <svg class="tw:size-3.5 tw:flex-none tw:fill-none tw:stroke-[#687790] tw:stroke-[1.8]" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11m-4-4 4 4-4 4" /></svg>
+                  </a>
+                  <strong class="monitor-uptime tw:font-normal tw:text-[#687790] tw:tabular-nums tw:[&.down]:text-[#df484a] tw:[&.paused]:text-[#f29030] tw:[&.up]:text-[#3bd671] tw:max-[640px]:hidden" [class]="'monitor-uptime ' + monitorStatus(monitor)">
+                    {{ monitor.uptime_90_days === null ? '—' : (monitor.uptime_90_days | number: '1.3-3') + '%' }}
+                  </strong>
+                </div>
+
+                <svg class="tw:block tw:h-auto tw:w-[530px] tw:max-w-full tw:max-[640px]:col-span-full tw:max-[640px]:row-start-2" viewBox="0 0 530 15" width="530" height="15" role="img" aria-label="Daily uptime for the last 90 days">
+                  @for (day of monitor.daily_uptime; track day.date) {
+                    <rect class="tw:cursor-help tw:fill-[#687790] tw:[&.down]:fill-[#b42318] tw:[&.good]:fill-[#9be15d] tw:[&.major]:fill-[#e8781d] tw:[&.minor]:fill-[#f7b267] tw:[&.no-data]:fill-[#687790] tw:[&.severe]:fill-[#f07167] tw:[&.up]:fill-[#3bd671]" [class]="dayClass(day)" [attr.x]="$index * 5.9" y="0" width="3.25" height="15" rx="1.625" ry="1.625">
+                      <title>{{ dayLabel(day) }}</title>
+                    </rect>
+                  }
+                </svg>
+
+                <span class="monitor-status tw:inline-flex tw:items-center tw:justify-end tw:gap-2.5 tw:text-[16px] tw:leading-[1.33] tw:font-normal tw:capitalize tw:text-[#687790] tw:[&.down]:text-[#df484a] tw:[&.paused]:text-[#f29030] tw:[&.up]:text-[#3bd671] tw:max-[640px]:col-start-2 tw:max-[640px]:row-start-1" [class]="'monitor-status ' + monitorStatus(monitor)" [title]="monitorStatus(monitor)">
+                  <i class="tw:relative tw:size-3 tw:flex-none tw:rounded-full tw:bg-[#687790] tw:after:absolute tw:after:inset-0 tw:after:rounded-full tw:after:bg-current tw:after:content-[''] tw:in-[.monitor-status.down]:bg-[#df484a] tw:in-[.monitor-status.paused]:bg-[#f29030] tw:in-[.monitor-status.up]:bg-[#3bd671]"></i>
+                  <span class="tw:max-[640px]:hidden">{{ monitorStatus(monitor) }}</span>
+                </span>
+
+                <strong class="monitor-uptime tw:col-start-1 tw:row-start-3 tw:hidden tw:text-[16px] tw:leading-[1.33] tw:font-normal tw:text-[#687790] tw:tabular-nums tw:[&.down]:text-[#df484a] tw:[&.paused]:text-[#f29030] tw:[&.up]:text-[#3bd671] tw:max-[640px]:block" [class]="'monitor-uptime ' + monitorStatus(monitor)">
+                  {{ monitor.uptime_90_days === null ? '—' : (monitor.uptime_90_days | number: '1.3-3') + '%' }}
+                </strong>
+              </div>
+            </article>
+          } @empty {
+            <div class="tw:py-8 tw:text-center tw:text-[14px] tw:text-[#687790]">No monitors are published on this page yet.</div>
+          }
+        </div>
+      </section>
+
+      <section class="tw:mt-7 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)]" aria-labelledby="uptime-heading">
+        <div class="tw:border-b tw:border-[#dce5ef] tw:px-6 tw:py-4.5 tw:max-[640px]:px-4.5">
+          <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.09em] tw:text-[#71869c] tw:uppercase">Availability summary</p>
+          <h2 id="uptime-heading" class="tw:mt-1 tw:mb-0 tw:text-[18px] tw:font-semibold tw:tracking-[-0.02em]">Overall uptime</h2>
+        </div>
+        <div class="tw:grid tw:grid-cols-4 tw:max-[640px]:grid-cols-2">
+          @for (window of uptimeWindows(statusPage); track window.label) {
+            <div animate.enter="list-item-enter" class="tw:grid tw:min-h-26 tw:content-center tw:gap-2 tw:border-r tw:border-[#e6edf4] tw:p-5 tw:last:border-r-0 tw:max-[640px]:nth-2:border-r-0 tw:max-[640px]:nth-[-n+2]:border-b">
+              <strong class="tw:text-[clamp(21px,3vw,29px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ window.value === null ? '—' : (window.value | number: '1.0-2') + '%' }}</strong>
+              <span class="tw:text-[12px] tw:text-[#71869c]">{{ window.label }}</span>
+            </div>
+          }
+        </div>
+      </section>
+
+      <footer class="tw:flex tw:items-center tw:justify-between tw:gap-5 tw:px-1 tw:py-7 tw:text-[11px] tw:text-[#71869c] tw:max-[640px]:flex-col tw:max-[640px]:items-start tw:max-[640px]:gap-1.5">
+        <span>Powered by Orion Intelligence</span>
+        <span>Status updates are delivered automatically.</span>
+      </footer>
+    </main>
+  }
+</div>

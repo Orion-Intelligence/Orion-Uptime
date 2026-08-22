@@ -31,7 +31,7 @@ jobs:
           set -euo pipefail
           export npm_config_loglevel=error
           (cd client && npm ci)
-          python -m pip install --upgrade pip ruff
+          python -m pip install --require-hashes -r backend/requirements.txt
 
       - name: Lint the client (eslint + stylelint) and the backend (ruff)
         run: |
@@ -230,8 +230,7 @@ jobs:
       - name: Install backend dependencies
         run: |
           set -euo pipefail
-          python -m pip install --upgrade pip
-          python -m pip install -r backend/requirements.txt
+          python -m pip install --require-hashes -r backend/requirements.txt
 
       - name: Run backend tests with coverage
         run: |
@@ -308,11 +307,11 @@ jobs:
               lcov_lines.append(line)
           lcov_path.write_text("\n".join(lcov_lines) + "\n", encoding="utf-8")
 
-          # pytest-cov writes filenames relative to the --cov source (backend/app).
+          # pytest-cov writes filenames relative to the --cov source (backend).
           xml_path = root / "backend" / "coverage.xml"
           tree = ET.parse(xml_path)
           coverage = tree.getroot()
-          base = root / "backend" / "app"
+          base = root / "backend"
           for source in coverage.iter("source"):
               text = (source.text or "").strip()
               if text and pathlib.Path(text).is_absolute():

@@ -1,5 +1,6 @@
 @import "tailwindcss" prefix(tw);
 @import "./app/shared/animations/theme.transitions.css";
+@import "./app/shared/animations/animations.css";
 
 @custom-variant dark (&:where(.dark-theme, .dark-theme *));
 

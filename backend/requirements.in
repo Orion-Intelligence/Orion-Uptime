@@ -1,0 +1,14 @@
+pytest
+pytest-cov
+ruff
+fastapi
+hypercorn
+odmantic
+motor
+pydantic
+pymongo
+argon2-cffi
+python-dotenv
+httpx
+PyJWT
+cryptography

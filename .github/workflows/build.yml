@@ -102,16 +102,11 @@ jobs:
           docker compose -p orion-uptime -f docker-compose.yml logs --tail=1000 || true
           exit 1
 
-      - name: Install Lighthouse
-        run: |
-          set -euo pipefail
-          npm install -g lighthouse@13.4.1
-
       - name: Run Lighthouse
         run: |
           set -euo pipefail
           mkdir -p lighthouse-results
-          lighthouse "http://127.0.0.1:${APP_PORT}/" \
+          ./client/node_modules/.bin/lighthouse "http://127.0.0.1:${APP_PORT}/" \
             --chrome-flags="--headless=new --no-sandbox --disable-gpu --disable-dev-shm-usage --window-size=1365,768" \
             --output=json \
             --output=html \

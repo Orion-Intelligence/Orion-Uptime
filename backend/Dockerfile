@@ -16,18 +16,21 @@ RUN apt-get update \
     && python3 -m venv /opt/venv
 
 COPY requirements.txt ./
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt \
+RUN pip install --require-hashes -r requirements.txt \
     && pip uninstall -y pip
 
 RUN groupadd --system app \
     && useradd --system --gid app --create-home app
 
-COPY --chown=app:app app ./app
+COPY --chown=app:app main.py ./
+COPY --chown=app:app configs ./configs
+COPY --chown=app:app orion ./orion
+COPY --chown=app:app routes ./routes
+COPY --chown=app:app seeder ./seeder
 COPY --chown=app:app build ./build
 
 USER app
 
 EXPOSE 8000
 
-CMD ["hypercorn", "app.main:app", "--bind", "0.0.0.0:8000", "--workers", "1"]
+CMD ["hypercorn", "main:app", "--bind", "0.0.0.0:8000", "--workers", "1"]

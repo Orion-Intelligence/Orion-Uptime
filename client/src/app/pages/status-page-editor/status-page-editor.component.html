@@ -1,0 +1,74 @@
+<div animate.enter="page-enter" id="status-page-editor">
+  <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-7.5 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
+    <div>
+      <p class="eyebrow">Status pages</p>
+      <h1 class="page-title">{{ editing ? 'Edit status page' : 'New status page' }}</h1>
+      <p class="page-description">
+        Choose exactly which monitor health information is visible on this public page.
+      </p>
+    </div>
+    <a class="header-action header-action--secondary tw:max-[700px]:self-end" routerLink="/status-pages">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
+      Back to status pages
+    </a>
+  </header>
+
+  @if (loading()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
+  } @else {
+    <form animate.enter="fade-in" class="tw:grid tw:max-w-220 tw:gap-4" [formGroup]="form" (ngSubmit)="submit()">
+      @if (error()) {
+        <p animate.enter="fade-in" animate.leave="fade-out" class="form-error">{{ error() }}</p>
+      }
+
+      <section class="panel details-panel tw:border-[#d7e2ef] tw:grid tw:grid-cols-[220px_1fr] tw:gap-7.5 tw:p-6 tw:dark:border-[rgb(255_255_255_/_9%)] tw:max-[700px]:grid-cols-1">
+        <div class="section-heading tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
+          <h2 class="tw:m-0 tw:text-[14px] tw:font-semibold">Public details</h2>
+          <p class="tw:mt-1.75 tw:mb-0 tw:text-[11px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">The page name and description are visible without signing in.</p>
+        </div>
+        <div class="fields tw:grid tw:gap-4.5">
+          <div class="field">
+            <label for="status-page-name">Name</label>
+            <input id="status-page-name" type="text" formControlName="name" placeholder="Public service status" />
+          </div>
+          <div class="field">
+            <label for="status-page-description">Description</label>
+            <textarea id="status-page-description" formControlName="description" placeholder="A short description of the services shown on this page"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel monitors-panel tw:border-[#d7e2ef] tw:grid tw:grid-cols-[220px_1fr] tw:gap-7.5 tw:p-6 tw:dark:border-[rgb(255_255_255_/_9%)] tw:max-[700px]:grid-cols-1">
+        <div class="section-heading tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
+          <h2 class="tw:m-0 tw:text-[14px] tw:font-semibold">Select monitors</h2>
+          <p class="tw:mt-1.75 tw:mb-0 tw:text-[11px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ selectedIds().size }} of {{ monitors().length }} selected</p>
+        </div>
+
+        <div class="monitor-options tw:grid tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
+          @for (monitor of monitors(); track monitor.id) {
+            <label animate.enter="list-item-enter" class="monitor-option tw:grid tw:min-w-0 tw:cursor-pointer tw:grid-cols-[auto_minmax(0,1fr)_auto] tw:items-center tw:gap-3 tw:border-b tw:border-[#d7e2ef] tw:p-3.5 tw:[transition:background-color_140ms_ease] tw:[&.selected]:bg-[#edf6ff] tw:hover:bg-[#f5f8fc] tw:dark:border-white/9 tw:dark:[&.selected]:bg-[#57a5eb]/10 tw:dark:hover:bg-white/4 tw:last:border-b-0" [class.selected]="isSelected(monitor.id)">
+              <input class="tw:pointer-events-none tw:absolute tw:opacity-0" type="checkbox" [checked]="isSelected(monitor.id)" (change)="toggleMonitor(monitor.id)" />
+              <span class="checkmark tw:grid tw:size-3.75 tw:place-items-center tw:rounded tw:border tw:border-[#5f738f] tw:in-[.selected]:border-[#1176d4] tw:in-[.selected]:bg-[#1176d4] tw:in-[.selected]:after:text-[9px] tw:in-[.selected]:after:text-white tw:in-[.selected]:after:content-['✓'] tw:dark:border-[#8fa5bb] tw:dark:in-[.selected]:border-[#57a5eb] tw:dark:in-[.selected]:bg-[#57a5eb]"></span>
+              <span class="monitor-copy tw:grid tw:min-w-0 tw:gap-1">
+                <strong class="tw:overflow-hidden tw:text-[13px] tw:text-ellipsis tw:whitespace-nowrap">{{ monitor.name }}</strong>
+                <small class="tw:text-[11px] tw:uppercase tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ monitor.monitor_type }} monitor</small>
+              </span>
+              <span class="monitor-status tw:flex tw:items-center tw:gap-1.5 tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:uppercase tw:before:size-1.25 tw:before:rounded-full tw:before:bg-[#aaa] tw:before:content-[''] tw:dark:text-[#9fb3c8] tw:[&.down]:before:border-[#f97066] tw:[&.down]:before:bg-[#f97066]! tw:[&.down]:before:shadow-[0_0_0_3px_rgb(249_112_102_/_10%)] tw:[&.down]:before:border tw:[&.up]:before:bg-[#34d399]! tw:[&.up]:before:shadow-[0_0_0_3px_rgb(52_211_153_/_10%)]" [class]="'monitor-status ' + monitor.status">
+                {{ monitor.is_active ? monitor.status : 'paused' }}
+              </span>
+            </label>
+          } @empty {
+            <p class="empty-state tw:m-0">Create a monitor before adding one to a status page.</p>
+          }
+        </div>
+      </section>
+
+      <div class="form-actions tw:border-[#d7e2ef] tw:flex tw:items-center tw:justify-end tw:gap-4.5 tw:pt-2 tw:dark:border-[rgb(255_255_255_/_9%)]">
+        <a class="tw:text-[11px] tw:text-[#686868] tw:dark:text-[#9fb3c8]" routerLink="/status-pages">Cancel</a>
+        <button class="button" type="submit" [disabled]="submitting()">
+          {{ submitting() ? 'Saving…' : editing ? 'Save changes' : 'Create status page' }}
+        </button>
+      </div>
+    </form>
+  }
+</div>

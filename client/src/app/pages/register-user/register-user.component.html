@@ -1,0 +1,29 @@
+<div animate.enter="page-enter" id="register-user-page">
+  <header class="tw:mb-9.5">
+    <p class="eyebrow">Administration</p>
+    <h1 class="page-title">Register user</h1>
+    <p class="page-description">
+      Create a read-only viewer account for access to the monitoring dashboard.
+    </p>
+  </header>
+
+  <form class="panel user-registration-form tw:grid tw:[width:min(100%,_620px)] tw:gap-5 tw:p-6" [formGroup]="form" (ngSubmit)="submit()">
+    @if (error()) {
+      <p animate.enter="fade-in" animate.leave="fade-out" class="form-error" role="alert">{{ error() }}</p>
+    }
+
+    <div class="field">
+      <label for="new-username">Username</label>
+      <input id="new-username" formControlName="username" autocomplete="off" placeholder="3–50 characters" />
+    </div>
+
+    <div class="field">
+      <label for="new-password">Password</label>
+      <input id="new-password" type="password" formControlName="password" autocomplete="new-password" placeholder="Minimum 8 characters" />
+    </div>
+
+    <button class="button tw:min-w-37.5 tw:justify-self-end" type="submit" [disabled]="loading()">
+      {{ loading() ? 'Registering…' : 'Register account' }}
+    </button>
+  </form>
+</div>

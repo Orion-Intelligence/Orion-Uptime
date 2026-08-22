@@ -1,0 +1,139 @@
+<main animate.enter="page-enter" data-testid="login-page" class="login-page tw:grid tw:min-h-dvh tw:grid-cols-[500px_minmax(0,_1fr)] tw:overflow-hidden tw:bg-[#0e1626] tw:font-[Roboto,_Inter,_sans-serif] tw:max-[943px]:block tw:max-[943px]:min-h-dvh tw:max-[943px]:bg-white">
+  <section class="login-panel tw:relative tw:z-2 tw:flex tw:min-h-187.5 tw:flex-col tw:justify-between tw:border-r tw:border-r-[#d7e2ef] tw:bg-[#fbfdff] tw:p-8 tw:text-[#373637] tw:max-[943px]:min-h-dvh tw:max-[943px]:w-screen tw:max-[600px]:min-h-dvh tw:max-[600px]:p-6" aria-label="Sign in">
+    <header class="login-header tw:flex tw:min-h-7 tw:w-full tw:items-center tw:justify-center">
+      <nav class="tw:flex tw:items-center tw:justify-center tw:gap-6.5 tw:max-[600px]:gap-4.5" aria-label="Orion resources">
+        <a class="tw:text-[14px] tw:text-[#5a6f85] tw:no-underline tw:[transition:color_160ms_ease] tw:hover:text-[#1176d4] tw:max-[600px]:text-[12px]" href="https://orion-search.readthedocs.io/en/latest/app_docs/introduction_to_platform.html" target="_blank" rel="noopener noreferrer">Platform Docs</a>
+        <a class="tw:text-[14px] tw:text-[#5a6f85] tw:no-underline tw:[transition:color_160ms_ease] tw:hover:text-[#1176d4] tw:max-[600px]:text-[12px]" href="https://genesistechnologies.org/" target="_blank" rel="noopener noreferrer">Genesis Technologies</a>
+        <a class="tw:text-[14px] tw:text-[#5a6f85] tw:no-underline tw:[transition:color_160ms_ease] tw:hover:text-[#1176d4] tw:max-[600px]:text-[12px]" href="https://www.orionintelligence.org/" target="_blank" rel="noopener noreferrer">Orion Intelligence</a>
+      </nav>
+      <button class="login-theme-toggle tw:hidden" type="button" (click)="theme.toggle()" aria-label="Toggle color theme">
+        @if (theme.theme() === 'dark') { <span>☼</span> } @else { <span>◐</span> }
+      </button>
+    </header>
+
+    <div class="login-form-wrap tw:mt-23 tw:flex tw:w-full tw:max-w-109 tw:flex-1 tw:flex-col tw:items-center tw:justify-start tw:self-center tw:max-[600px]:mt-16">
+      <img ngSrc="assets/images/shared/logo-wide-light.svg" width="300" height="54" alt="Orion Intelligence" priority class="tw:mb-3.5 tw:h-13.5 tw:w-75 tw:object-contain">
+      <p class="login-intro tw:mx-0 tw:mt-1 tw:mb-8.5 tw:text-center tw:text-[16px] tw:text-[#373637]">Login to get started!</p>
+      <form class="tw:grid tw:w-full tw:gap-2" (ngSubmit)="submit()" [formGroup]="form">
+        @if (error()) {
+          <p animate.enter="fade-in" animate.leave="fade-out" data-testid="login-error" class="form-error tw:m-0 tw:rounded-[8px] tw:bg-[rgb(249_112_102_/_10%)] tw:px-3.25 tw:py-2.75 tw:text-[13px] tw:leading-[1.45] tw:text-[#b42318] tw:[border:1px_solid_rgb(249_112_102_/_36%)] tw:dark:text-[#b42318]" role="alert">{{ error() }}</p>
+        }
+        <div class="field login-field tw:grid tw:gap-2">
+          <label class="tw:font-[Inter,_sans-serif] tw:text-[14px] tw:font-medium tw:text-[#373637]" for="username">Username</label>
+          <div class="input-with-icon tw:relative">
+            <svg class="tw:pointer-events-none tw:absolute tw:top-1/2 tw:left-3 tw:z-1 tw:h-5 tw:w-5 tw:[transform:translateY(-50%)] tw:fill-none tw:stroke-[#7b91a8] tw:stroke-[1.7] tw:[stroke-linecap:round] tw:[stroke-linejoin:round]" viewBox="0 0 24 24"><path d="M20 21a8 8 0 0 0-16 0m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z" /></svg>
+            <input id="username" data-testid="login-user" formControlName="username" autocomplete="username" placeholder="Enter username" class="tw:selection:bg-blue-500/30 tw:h-11 tw:w-full tw:rounded-[8px] tw:border tw:border-[#c7d5e6] tw:bg-[#f8fbff] tw:px-3.25 tw:pt-0 tw:pr-3.5 tw:pb-0 tw:pl-10.5 tw:font-[Inter,_sans-serif] tw:text-[14px] tw:text-[#172235] tw:outline-none tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease,_background-color_160ms_ease] tw:focus:border-[#2b90ee] tw:focus:bg-white tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:placeholder:text-[#9ba9bb] tw:dark:bg-white" />
+          </div>
+        </div>
+        <div class="field login-field tw:grid tw:gap-2 tw:[.login-field+&]:mt-1.75">
+          <label class="tw:font-[Inter,_sans-serif] tw:text-[14px] tw:font-medium tw:text-[#373637]" for="password">Password</label>
+          <div class="input-with-icon tw:relative">
+            <svg class="tw:pointer-events-none tw:absolute tw:top-1/2 tw:left-3 tw:z-1 tw:h-5 tw:w-5 tw:[transform:translateY(-50%)] tw:fill-none tw:stroke-[#7b91a8] tw:stroke-[1.7] tw:[stroke-linecap:round] tw:[stroke-linejoin:round]" viewBox="0 0 24 24"><path d="M6 10V8a6 6 0 0 1 12 0v2M5 10h14v11H5V10Zm7 4v3" /></svg>
+            <input id="password" data-testid="login-pass" type="password" formControlName="password" autocomplete="current-password" placeholder="Enter password" class="tw:selection:bg-blue-500/30 tw:h-11 tw:w-full tw:rounded-[8px] tw:border tw:border-[#c7d5e6] tw:bg-[#f8fbff] tw:px-3.25 tw:pt-0 tw:pr-3.5 tw:pb-0 tw:pl-10.5 tw:font-[Inter,_sans-serif] tw:text-[14px] tw:text-[#172235] tw:outline-none tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease,_background-color_160ms_ease] tw:focus:border-[#2b90ee] tw:focus:bg-white tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:placeholder:text-[#9ba9bb] tw:dark:bg-white" />
+          </div>
+        </div>
+        <p class="account-note tw:mx-0 tw:mt-0.5 tw:mb-5.5 tw:justify-self-end tw:text-[13px] tw:text-[#5a6f85]">Account access is managed by your Orion administrator.</p>
+        <button data-testid="login-button" class="button login-submit tw:mb-2 tw:h-11 tw:min-h-10.5 tw:w-full tw:cursor-pointer tw:rounded-[8px] tw:border-0 tw:border-[#172235] tw:bg-[#172235] tw:px-4.25 tw:py-0 tw:text-[14px] tw:font-medium tw:text-white tw:shadow-[none] tw:[transition:background-color_160ms_ease,_border-color_160ms_ease,_transform_120ms_ease,_box-shadow_160ms_ease] tw:active:not-disabled:[transform:translateY(1px)] tw:hover:not-disabled:border-[#203653] tw:hover:not-disabled:bg-[#203653] tw:hover:not-disabled:[transform:none] tw:hover:not-disabled:shadow-[none] tw:disabled:cursor-wait tw:disabled:opacity-55" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Signing in…' : 'Sign in' }}
+        </button>
+        <p class="login-help tw:mx-0 tw:mt-1.75 tw:mb-0 tw:text-center tw:text-[13px] tw:text-[#373637]">Need an account? <strong class="tw:font-bold">Contact your administrator</strong></p>
+      </form>
+    </div>
+
+    <footer class="login-footer tw:grid tw:gap-1.25 tw:text-center tw:text-[13px] tw:text-[#5a6f85] tw:max-[600px]:mt-10.5">
+      <span>Copyright © 2026. Powered by</span><span>Orion Intelligence</span>
+    </footer>
+  </section>
+
+  <section class="login-visual tw:relative tw:min-w-0 tw:overflow-hidden tw:[background:repeating-linear-gradient(0deg,_transparent_0,_transparent_69px,_rgb(255_255_255_/_5%)_70px),_repeating-linear-gradient(90deg,_transparent_0,_transparent_69px,_rgb(255_255_255_/_5%)_70px),_radial-gradient(circle_at_55%_45%,_#172a4f_0%,_#0e1626_68%)] tw:max-[943px]:hidden" aria-label="Orion Uptime platform overview">
+    <div class="login-grid tw:absolute tw:inset-0 tw:[background:linear-gradient(110deg,_rgb(87_165_235_/_3%),_transparent_45%)]" aria-hidden="true"></div>
+    <div class="tw:pointer-events-none tw:absolute tw:-top-32 tw:left-1/4 tw:h-96 tw:w-96 tw:rounded-full tw:bg-[#1176d4]/15 tw:blur-3xl" aria-hidden="true"></div>
+    <div class="tw:pointer-events-none tw:absolute tw:right-12 tw:bottom-0 tw:h-72 tw:w-72 tw:rounded-full tw:bg-[#13dbc5]/8 tw:blur-3xl" aria-hidden="true"></div>
+
+    <div class="feature-rail tw:absolute tw:top-1/2 tw:[left:clamp(40px,_11vw,_210px)] tw:grid tw:w-75 tw:[transform:translateY(-50%)] tw:gap-2.5 tw:max-[1100px]:left-9">
+      <div class="tw:relative tw:z-1 tw:mb-2 tw:pl-5">
+        <span class="tw:mb-2 tw:block tw:font-semibold tw:tracking-[0.18em] tw:uppercase tw:text-[11px] tw:text-[#a7bdd5]">Always-on operations</span>
+        <h2 class="tw:m-0 tw:text-[21px] tw:leading-tight tw:font-semibold tw:whitespace-nowrap tw:text-white">Clarity from every signal.</h2>
+      </div>
+      <article class="tw:border tw:border-white/8 tw:backdrop-blur-sm tw:grid tw:min-h-17.5 tw:grid-cols-[44px_minmax(0,_1fr)] tw:items-center tw:gap-3 tw:rounded-[34px_0_0_34px] tw:bg-[rgb(5_17_34_/_72%)] tw:px-4.5 tw:py-2.75 tw:text-white tw:shadow-[0_8px_28px_rgb(0_0_0_/_9%)]">
+        <i class="tw:grid tw:h-9 tw:w-9 tw:place-items-center tw:text-[25px] tw:text-[#13dbc5] tw:not-italic"><svg viewBox="0 0 24 24" class="tw:h-5 tw:w-5 tw:fill-none tw:stroke-current tw:stroke-[1.8]" aria-hidden="true"><path d="M4 15.5 9 10l3 3 7-8M14 5h5v5" /></svg></i>
+        <div class="tw:grid tw:gap-1.25"><strong class="tw:text-[16px] tw:font-semibold">Live telemetry</strong><span class="tw:text-[11px] tw:text-[#a7bdd5]">See every check as it happens</span></div>
+      </article>
+      <article class="tw:border tw:border-white/8 tw:backdrop-blur-sm tw:grid tw:min-h-17.5 tw:grid-cols-[44px_minmax(0,_1fr)] tw:items-center tw:gap-3 tw:rounded-[34px_0_0_34px] tw:bg-[rgb(5_17_34_/_72%)] tw:px-4.5 tw:py-2.75 tw:text-white tw:shadow-[0_8px_28px_rgb(0_0_0_/_9%)]">
+        <i class="tw:grid tw:h-9 tw:w-9 tw:place-items-center tw:text-[25px] tw:text-[#13dbc5] tw:not-italic"><svg viewBox="0 0 24 24" class="tw:h-5 tw:w-5 tw:fill-none tw:stroke-current tw:stroke-[1.8]" aria-hidden="true"><path d="M4 12h3l2-5 4 10 2-5h5" /></svg></i>
+        <div class="tw:grid tw:gap-1.25"><strong class="tw:text-[16px] tw:font-semibold">Service intelligence</strong><span class="tw:text-[11px] tw:text-[#a7bdd5]">HTTP, API, ping, and heartbeat</span></div>
+      </article>
+      <article class="tw:border tw:border-white/8 tw:backdrop-blur-sm tw:grid tw:min-h-17.5 tw:grid-cols-[44px_minmax(0,_1fr)] tw:items-center tw:gap-3 tw:rounded-[34px_0_0_34px] tw:bg-[rgb(5_17_34_/_72%)] tw:px-4.5 tw:py-2.75 tw:text-white tw:shadow-[0_8px_28px_rgb(0_0_0_/_9%)]">
+        <i class="tw:grid tw:h-9 tw:w-9 tw:place-items-center tw:text-[25px] tw:text-[#13dbc5] tw:not-italic"><svg viewBox="0 0 24 24" class="tw:h-5 tw:w-5 tw:fill-none tw:stroke-current tw:stroke-[1.8]" aria-hidden="true"><path d="M12 3 4.5 6v5.5c0 4.6 3.1 7.8 7.5 9.5 4.4-1.7 7.5-4.9 7.5-9.5V6L12 3Zm0 5v4m0 3h.01" /></svg></i>
+        <div class="tw:grid tw:gap-1.25"><strong class="tw:text-[16px] tw:font-semibold">Incident context</strong><span class="tw:text-[11px] tw:text-[#a7bdd5]">Respond faster with a clear timeline</span></div>
+      </article>
+      <article class="tw:border tw:border-white/8 tw:backdrop-blur-sm tw:grid tw:min-h-17.5 tw:grid-cols-[44px_minmax(0,_1fr)] tw:items-center tw:gap-3 tw:rounded-[34px_0_0_34px] tw:bg-[rgb(5_17_34_/_72%)] tw:px-4.5 tw:py-2.75 tw:text-white tw:shadow-[0_8px_28px_rgb(0_0_0_/_9%)]">
+        <i class="tw:grid tw:h-9 tw:w-9 tw:place-items-center tw:text-[25px] tw:text-[#13dbc5] tw:not-italic"><svg viewBox="0 0 24 24" class="tw:h-5 tw:w-5 tw:fill-none tw:stroke-current tw:stroke-[1.8]" aria-hidden="true"><path d="M4 5h16v12H8l-4 3V5Zm4 4h8m-8 4h5" /></svg></i>
+        <div class="tw:grid tw:gap-1.25"><strong class="tw:text-[16px] tw:font-semibold">Public status</strong><span class="tw:text-[11px] tw:text-[#a7bdd5]">Keep customers confidently informed</span></div>
+      </article>
+    </div>
+
+    <div class="login-preview tw:absolute tw:top-1/2 tw:[left:calc(clamp(40px,_11vw,_210px)_+_280px)] tw:[height:min(690px,_66vh)] tw:min-h-112.5 tw:[width:min(980px,_74vw)] tw:[transform:translateY(-50%)] tw:overflow-hidden tw:rounded-[46px_0_0_46px] tw:border-4 tw:border-[#151c1e] tw:bg-[#0e1626] tw:shadow-[0_26px_70px_rgb(0_0_0_/_30%)] tw:max-[1100px]:left-79" aria-hidden="true">
+      <div class="preview-top tw:flex tw:h-13 tw:items-center tw:justify-between tw:px-5.5 tw:py-0 tw:text-[#9fb3c8] tw:[border-bottom:1px_solid_rgb(255_255_255_/_7%)]">
+        <img ngSrc="assets/images/shared/logo-wide-light.svg" width="128" height="23" alt="" class="tw:h-5.75 tw:w-auto tw:object-contain tw:brightness-0 tw:invert">
+        <div class="tw:flex tw:items-center tw:gap-4 tw:text-[11px]">
+          <span class="tw:flex tw:items-center tw:gap-1.5 tw:text-[#a7bdd5]"><i class="tw:h-1.5 tw:w-1.5 tw:rounded-full tw:bg-[#33d6a6] tw:shadow-[0_0_0_4px_rgb(51_214_166_/_10%)]"></i>Live telemetry</span>
+          <span class="tw:text-[#536980]">•••</span>
+        </div>
+      </div>
+      <div class="preview-layout tw:grid tw:[height:calc(100%_-_52px)] tw:grid-cols-[150px_minmax(0,_1fr)]">
+        <aside class="tw:grid tw:content-start tw:gap-4.5 tw:bg-[#172235] tw:px-4.5 tw:py-6 tw:[border-right:1px_solid_rgb(255_255_255_/_7%)]">
+          <div class="tw:rounded-lg tw:border tw:border-[#57a5eb]/15 tw:bg-[#203653] tw:p-3">
+            <small class="tw:block tw:text-[9px] tw:tracking-[0.12em] tw:text-[#7b91a8] tw:uppercase">Workspace</small>
+            <strong class="tw:mt-1 tw:block tw:text-[12px] tw:text-white">Orion Uptime</strong>
+          </div>
+          <div class="tw:grid tw:gap-1.5 tw:text-[11px] tw:text-[#8fa5bc]">
+            <span class="tw:rounded-md tw:bg-[#294665] tw:px-3 tw:py-2.5 tw:font-medium tw:text-white">Overview</span>
+            <span class="tw:px-3 tw:py-2">Monitors</span>
+            <span class="tw:px-3 tw:py-2">Incidents</span>
+            <span class="tw:px-3 tw:py-2">Status pages</span>
+          </div>
+        </aside>
+
+        <div class="preview-content tw:grid tw:content-start tw:gap-4.5 tw:px-6 tw:py-7">
+          <header class="tw:flex tw:items-end tw:justify-between">
+            <div>
+              <small class="tw:block tw:text-[9px] tw:font-semibold tw:tracking-[0.14em] tw:text-[#57a5eb] tw:uppercase">System overview</small>
+              <strong class="tw:mt-1 tw:block tw:text-[22px] tw:leading-none tw:text-white">Dashboard</strong>
+            </div>
+            <span class="tw:rounded-full tw:border tw:border-[#33d6a6]/20 tw:bg-[#33d6a6]/8 tw:px-2.5 tw:py-1 tw:text-[10px] tw:text-[#70e0bd]">All systems operational</span>
+          </header>
+
+          <div class="preview-metrics tw:grid tw:grid-cols-4 tw:gap-3">
+            <article class="tw:grid tw:h-20.5 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3">
+              <small class="tw:text-[9px] tw:text-[#7b91a8]">Uptime · 30 days</small><strong class="tw:text-[21px] tw:text-white">99.98%</strong>
+            </article>
+            <article class="tw:grid tw:h-20.5 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3">
+              <small class="tw:text-[9px] tw:text-[#7b91a8]">Active monitors</small><strong class="tw:text-[21px] tw:text-white">24</strong>
+            </article>
+            <article class="tw:grid tw:h-20.5 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3">
+              <small class="tw:text-[9px] tw:text-[#7b91a8]">Open incidents</small><strong class="tw:text-[21px] tw:text-[#70e0bd]">0</strong>
+            </article>
+            <article class="tw:grid tw:h-20.5 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3">
+              <small class="tw:text-[9px] tw:text-[#7b91a8]">Avg. response</small><strong class="tw:text-[21px] tw:text-white">184<small class="tw:ml-0.5 tw:text-[9px] tw:text-[#8fa5bc]">ms</small></strong>
+            </article>
+          </div>
+
+          <div class="preview-chart tw:relative tw:h-45 tw:overflow-hidden tw:rounded-[7px] tw:[background:linear-gradient(rgb(255_255_255_/_4%)_1px,_transparent_1px),_#172235] tw:[border:1px_solid_rgb(255_255_255_/_9%)]">
+            <div class="tw:absolute tw:top-4 tw:right-5 tw:left-5 tw:z-1 tw:flex tw:items-start tw:justify-between">
+              <div><small class="tw:block tw:text-[9px] tw:text-[#7b91a8]">Availability trend</small><strong class="tw:mt-1 tw:block tw:text-[15px] tw:text-white">Stable performance</strong></div>
+              <span class="tw:text-[10px] tw:text-[#70e0bd]">+0.12%</span>
+            </div>
+            <svg class="tw:absolute tw:right-0 tw:bottom-5.5 tw:left-0 tw:h-25 tw:w-full" viewBox="0 0 500 100" preserveAspectRatio="none"><defs><linearGradient id="uptime-area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#57a5eb" stop-opacity=".28" /><stop offset="1" stop-color="#57a5eb" stop-opacity="0" /></linearGradient></defs><path d="M0 68 55 52 110 59 170 31 230 47 290 22 350 39 410 18 500 28V100H0Z" fill="url(#uptime-area)" /><polyline class="tw:fill-none tw:stroke-[#57a5eb] tw:stroke-2" points="0,68 55,52 110,59 170,31 230,47 290,22 350,39 410,18 500,28" /></svg>
+          </div>
+
+          <div class="preview-table tw:grid tw:grid-cols-3 tw:gap-3">
+            <article class="tw:grid tw:h-20 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3"><small class="tw:text-[9px] tw:text-[#7b91a8]">Web application</small><strong class="tw:text-[11px] tw:font-medium tw:text-white">Operational</strong><small class="tw:text-[9px] tw:text-[#70e0bd]">● 142 ms</small></article>
+            <article class="tw:grid tw:h-20 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3"><small class="tw:text-[9px] tw:text-[#7b91a8]">API gateway</small><strong class="tw:text-[11px] tw:font-medium tw:text-white">Operational</strong><small class="tw:text-[9px] tw:text-[#70e0bd]">● 198 ms</small></article>
+            <article class="tw:grid tw:h-20 tw:content-between tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#172235] tw:p-3"><small class="tw:text-[9px] tw:text-[#7b91a8]">Global status</small><strong class="tw:text-[11px] tw:font-medium tw:text-white">Operational</strong><small class="tw:text-[9px] tw:text-[#70e0bd]">● 211 ms</small></article>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>

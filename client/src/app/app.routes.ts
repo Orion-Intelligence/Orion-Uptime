@@ -1,51 +1,51 @@
 import { Routes } from '@angular/router';
-import { adminGuard, authGuard } from './guards/auth.guard';
-import { AppShell } from './layout/app-shell/app-shell';
-import { DashboardPage } from './pages/dashboard/dashboard';
-import { LoginPage } from './pages/login/login';
-import { NewResourcePage } from './pages/add-monitor/add-monitor';
-import { MonitorDetailPage } from './pages/monitor-detail/monitor-detail';
-import { RegisterUserPage } from './pages/register-user/register-user';
-import { ResourceListPage } from './pages/monitor-list/monitor-list';
-import { UserListPage } from './pages/user-list/user-list';
-import { StatusPageListPage } from './pages/status-page-list/status-page-list';
-import { StatusPageEditorPage } from './pages/status-page-editor/status-page-editor';
-import { PublicStatusPageView } from './pages/public-status-page/public-status-page';
-import { PublicMonitorDetailPage } from './pages/public-monitor-detail/public-monitor-detail';
+import { adminGuard, authGuard } from './shared/guards/auth.guard';
+const loadAppShellComponent = () => import('./shared/partials/app-shell/app-shell.component').then((m) => m.AppShellComponent);
+const loadDashboardComponent = () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent);
+const loadLoginComponent = () => import('./pages/login/login.component').then((m) => m.LoginComponent);
+const loadAddMonitorComponent = () => import('./pages/add-monitor/add-monitor.component').then((m) => m.AddMonitorComponent);
+const loadMonitorDetailComponent = () => import('./pages/monitor-detail/monitor-detail.component').then((m) => m.MonitorDetailComponent);
+const loadRegisterUserComponent = () => import('./pages/register-user/register-user.component').then((m) => m.RegisterUserComponent);
+const loadMonitorListComponent = () => import('./pages/monitor-list/monitor-list.component').then((m) => m.MonitorListComponent);
+const loadUserListComponent = () => import('./pages/user-list/user-list.component').then((m) => m.UserListComponent);
+const loadStatusPageListComponent = () => import('./pages/status-page-list/status-page-list.component').then((m) => m.StatusPageListComponent);
+const loadStatusPageEditorComponent = () => import('./pages/status-page-editor/status-page-editor.component').then((m) => m.StatusPageEditorComponent);
+const loadPublicStatusPageComponent = () => import('./pages/public-status-page/public-status-page.component').then((m) => m.PublicStatusPageComponent);
+const loadPublicMonitorDetailComponent = () => import('./pages/public-monitor-detail/public-monitor-detail.component').then((m) => m.PublicMonitorDetailComponent);
 
 export const routes: Routes = [
-  { path: 'login', component: LoginPage, title: 'Sign in · Orion Uptime' },
+  { path: 'login', loadComponent: loadLoginComponent, title: 'Sign in · Orion Uptime' },
   {
     path: 'status/:slug/:monitorId',
-    component: PublicMonitorDetailPage,
+    loadComponent: loadPublicMonitorDetailComponent,
     title: 'Monitor status · Orion Uptime',
   },
   {
     path: 'status/:slug',
-    component: PublicStatusPageView,
+    loadComponent: loadPublicStatusPageComponent,
     title: 'Service status · Orion Uptime',
   },
   {
     path: '',
-    component: AppShell,
+    loadComponent: loadAppShellComponent,
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardPage, title: 'Dashboard · Orion Uptime' },
+      { path: 'dashboard', loadComponent: loadDashboardComponent, title: 'Dashboard · Orion Uptime' },
       {
         path: 'monitors/http/new',
-        component: NewResourcePage,
+        loadComponent: loadAddMonitorComponent,
         canActivate: [adminGuard],
         title: 'New HTTP monitor · Orion Uptime',
         data: { kind: 'http', title: 'New HTTP monitor', backUrl: '/monitors/http' },
       },
       {
         path: 'monitors/http/:id',
-        component: MonitorDetailPage,
+        loadComponent: loadMonitorDetailComponent,
         data: { backUrl: '/monitors/http' },
       },
       {
         path: 'monitors/http',
-        component: ResourceListPage,
+        loadComponent: loadMonitorListComponent,
         data: {
           title: 'HTTP monitors',
           description: 'Website and HTTP endpoint availability checks.',
@@ -58,19 +58,19 @@ export const routes: Routes = [
       },
       {
         path: 'monitors/api/new',
-        component: NewResourcePage,
+        loadComponent: loadAddMonitorComponent,
         canActivate: [adminGuard],
         title: 'New API monitor · Orion Uptime',
         data: { kind: 'api', title: 'New API monitor', backUrl: '/monitors/api' },
       },
       {
         path: 'monitors/api/:id',
-        component: MonitorDetailPage,
+        loadComponent: loadMonitorDetailComponent,
         data: { backUrl: '/monitors/api' },
       },
       {
         path: 'monitors/api',
-        component: ResourceListPage,
+        loadComponent: loadMonitorListComponent,
         data: {
           title: 'API monitors',
           description: 'Request, response, and protected API checks.',
@@ -83,19 +83,19 @@ export const routes: Routes = [
       },
       {
         path: 'monitors/ping/new',
-        component: NewResourcePage,
+        loadComponent: loadAddMonitorComponent,
         canActivate: [adminGuard],
         title: 'New Ping monitor · Orion Uptime',
         data: { kind: 'ping', title: 'New Ping monitor', backUrl: '/monitors/ping' },
       },
       {
         path: 'monitors/ping/:id',
-        component: MonitorDetailPage,
+        loadComponent: loadMonitorDetailComponent,
         data: { backUrl: '/monitors/ping' },
       },
       {
         path: 'monitors/ping',
-        component: ResourceListPage,
+        loadComponent: loadMonitorListComponent,
         data: {
           title: 'Ping monitors',
           description: 'Operating-system ICMP host checks.',
@@ -108,7 +108,7 @@ export const routes: Routes = [
       },
       {
         path: 'monitors/heartbeat/new',
-        component: NewResourcePage,
+        loadComponent: loadAddMonitorComponent,
         canActivate: [adminGuard],
         title: 'New Heartbeat monitor · Orion Uptime',
         data: {
@@ -119,12 +119,12 @@ export const routes: Routes = [
       },
       {
         path: 'monitors/heartbeat/:id',
-        component: MonitorDetailPage,
+        loadComponent: loadMonitorDetailComponent,
         data: { backUrl: '/monitors/heartbeat' },
       },
       {
         path: 'monitors/heartbeat',
-        component: ResourceListPage,
+        loadComponent: loadMonitorListComponent,
         data: {
           title: 'Heartbeat monitors',
           description: 'Passive client heartbeat listeners.',
@@ -137,32 +137,32 @@ export const routes: Routes = [
       },
       {
         path: 'auth-profiles/new',
-        component: NewResourcePage,
+        loadComponent: loadAddMonitorComponent,
         canActivate: [adminGuard],
         title: 'New auth profile · Orion Uptime',
         data: { kind: 'auth-profile', title: 'New auth profile', backUrl: '/auth-profiles' },
       },
       {
         path: 'status-pages/new',
-        component: StatusPageEditorPage,
+        loadComponent: loadStatusPageEditorComponent,
         canActivate: [adminGuard],
         title: 'New status page · Orion Uptime',
       },
       {
         path: 'status-pages/:id/edit',
-        component: StatusPageEditorPage,
+        loadComponent: loadStatusPageEditorComponent,
         canActivate: [adminGuard],
         title: 'Edit status page · Orion Uptime',
       },
       {
         path: 'status-pages',
-        component: StatusPageListPage,
+        loadComponent: loadStatusPageListComponent,
         canActivate: [adminGuard],
         title: 'Status pages · Orion Uptime',
       },
       {
         path: 'auth-profiles',
-        component: ResourceListPage,
+        loadComponent: loadMonitorListComponent,
         canActivate: [adminGuard],
         data: {
           title: 'Auth profiles',
@@ -174,13 +174,13 @@ export const routes: Routes = [
       },
       {
         path: 'users/new',
-        component: RegisterUserPage,
+        loadComponent: loadRegisterUserComponent,
         canActivate: [adminGuard],
         title: 'Register user · Orion Uptime',
       },
       {
         path: 'users',
-        component: UserListPage,
+        loadComponent: loadUserListComponent,
         canActivate: [adminGuard],
         title: 'Registered users · Orion Uptime',
       },

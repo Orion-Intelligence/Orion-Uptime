@@ -1,0 +1,305 @@
+<div animate.enter="page-enter" id="dashboard-page" data-testid="dashboard-main" class="tw:mx-auto tw:max-w-[1600px]">
+
+  @if (loading()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading dashboard"></div>
+  }
+  @if (!loading() || error()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="dashboard-content">
+      <header class="page-header tw:mb-7 tw:flex tw:items-start tw:justify-between tw:gap-6 tw:max-[640px]:flex-col tw:max-[640px]:gap-4">
+        <div class="tw:min-w-0">
+          <p class="eyebrow tw:mb-2 tw:flex tw:items-center tw:gap-2 tw:text-[10px] tw:font-semibold tw:tracking-[0.14em] tw:text-[#1176d4] tw:uppercase tw:dark:text-[#87c4f5]">
+            <span class="tw:h-px tw:w-5 tw:bg-[#57a5eb]" aria-hidden="true"></span>
+            System overview
+          </p>
+          <h1 class="page-title tw:m-0 tw:[font-size:clamp(30px,_3vw,_40px)] tw:leading-[1.05] tw:font-semibold tw:tracking-[-0.04em] tw:text-[#142033] tw:dark:text-white">
+            Dashboard
+          </h1>
+          <p class="page-description tw:mx-0 tw:mt-2.5 tw:mb-0 tw:max-w-165 tw:text-[14px] tw:leading-[1.6] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
+            A live view of monitor health, incidents, and recent checks.
+          </p>
+        </div>
+        <button class="refresh header-action header-action--secondary tw:max-[640px]:self-end" type="button" (click)="loadDashboard()" [disabled]="loading()">
+          <svg viewBox="0 0 20 20" aria-hidden="true">
+            <path d="M16 6.5V2.8m0 0h-3.7M16 2.8l-2.2 2.1a6.3 6.3 0 1 0 1.6 6.6" />
+          </svg>
+          Refresh data
+        </button>
+      </header>
+
+      @if (error()) {
+        <div animate.enter="fade-in" animate.leave="fade-out" class="error-panel tw:mb-6 tw:flex tw:items-center tw:justify-between tw:gap-5 tw:rounded-xl tw:border tw:border-[#f97066]/25 tw:bg-[#fff6f5] tw:p-4 tw:text-[#912018] tw:shadow-[0_6px_18px_rgb(145_32_24_/_5%)] tw:dark:bg-[#f97066]/8 tw:dark:text-[#fda29b] tw:max-[600px]:items-start" role="alert">
+          <div class="tw:flex tw:min-w-0 tw:items-start tw:gap-3">
+            <span class="tw:grid tw:size-8 tw:flex-none tw:place-items-center tw:rounded-lg tw:bg-[#f97066]/12" aria-hidden="true">
+              <svg class="tw:size-4 tw:fill-none tw:stroke-current tw:stroke-[1.8]" viewBox="0 0 20 20">
+                <circle cx="10" cy="10" r="7.5" />
+                <path d="M10 6v5m0 3h.01" />
+              </svg>
+            </span>
+            <div>
+              <strong class="tw:block tw:text-[11px] tw:font-semibold">Dashboard could not be refreshed</strong
+              >
+              <p class="tw:mt-1 tw:mb-0 tw:text-[10px] tw:leading-relaxed tw:opacity-80">
+                {{ error() }}
+              </p>
+            </div>
+          </div>
+          <button class="tw:min-h-8 tw:flex-none tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/30 tw:bg-white tw:px-3 tw:text-[10px] tw:font-semibold tw:text-[#912018] tw:hover:bg-[#fff0ee] tw:dark:bg-transparent tw:dark:text-[#fda29b]" type="button" (click)="loadDashboard()">
+            Try again
+          </button>
+        </div>
+      }
+
+      @if (summary(); as data) {
+        <section class="health-strip tw:relative tw:mb-4 tw:grid tw:grid-cols-[minmax(230px,0.72fr)_minmax(0,1.75fr)] tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_6%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_12%)] tw:max-[900px]:grid-cols-1" aria-label="Overall monitor health">
+          <div class="health-score tw:relative tw:grid tw:min-h-44 tw:content-between tw:overflow-hidden tw:border-r tw:border-[#d7e2ef] tw:p-5.5 tw:before:absolute tw:before:top-0 tw:before:right-0 tw:before:h-full tw:before:w-28 tw:before:bg-[radial-gradient(circle_at_100%_0%,_rgb(87_165_235_/_13%),_transparent_68%)] tw:before:content-[''] tw:dark:border-white/9 tw:dark:before:bg-[radial-gradient(circle_at_100%_0%,_rgb(87_165_235_/_10%),_transparent_68%)] tw:max-[900px]:min-h-39 tw:max-[900px]:border-r-0 tw:max-[900px]:border-b">
+            <span class="tw:relative tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Portfolio availability</span>
+            <div class="tw:relative tw:mt-4">
+              <strong class="tw:block tw:text-[40px] tw:leading-none tw:font-semibold tw:tracking-[-0.055em] tw:tabular-nums">{{ overallUptime() | number: '1.0-2' }}%</strong
+              >
+              <span class="tw:mt-2 tw:block tw:text-[10px] tw:text-[#6f849b] tw:dark:text-[#9fb3c8]">Average uptime over the last 7 days</span
+              >
+            </div>
+          </div>
+
+          <div class="tw:grid tw:min-w-0 tw:content-between tw:gap-6 tw:p-5.5 tw:max-[600px]:p-4.5">
+            <div class="tw:flex tw:items-start tw:justify-between tw:gap-5 tw:max-[600px]:flex-col tw:max-[600px]:gap-3">
+              <div>
+                <span class="tw:block tw:text-[11px] tw:font-semibold tw:text-[#2d3d55] tw:dark:text-[#d9e4ef]">Current monitor health</span
+                >
+              </div>
+              <div class="legend tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:text-[10px]">
+                <span class="tw:inline-flex tw:items-center tw:gap-1.75 tw:rounded-full tw:bg-[#effbf6] tw:px-2.5 tw:py-1.25 tw:font-medium tw:text-[#16825f] tw:dark:bg-[#34d399]/8 tw:dark:text-[#70e0bd]"><i class="tw:size-1.5 tw:rounded-full tw:bg-[#34d399]"></i
+                  >{{ data.monitors_up }} up</span
+                >
+                <span class="tw:inline-flex tw:items-center tw:gap-1.75 tw:rounded-full tw:bg-[#fff2f0] tw:px-2.5 tw:py-1.25 tw:font-medium tw:text-[#b42318] tw:dark:bg-[#f97066]/8 tw:dark:text-[#fda29b]"><i class="tw:size-1.5 tw:rounded-full tw:bg-[#f97066]"></i
+                  >{{ data.monitors_down }} down</span
+                >
+                <span class="tw:inline-flex tw:items-center tw:gap-1.75 tw:rounded-full tw:bg-[#f1f5f9] tw:px-2.5 tw:py-1.25 tw:font-medium tw:text-[#5f738f] tw:dark:bg-white/5 tw:dark:text-[#9fb3c8]"><i class="tw:size-1.5 tw:rounded-full tw:bg-[#9fb3c8]"></i
+                  >{{ data.monitors_unknown }} unknown</span
+                >
+              </div>
+            </div>
+
+            <div>
+              <div class="health-bar tw:flex tw:h-3 tw:gap-1 tw:overflow-hidden tw:rounded-full tw:bg-[#eaf2fb] tw:p-0.75 tw:dark:bg-[#101b2c]" aria-hidden="true">
+                @for (segment of healthSegments(); track $index) {
+                  <span class="{{ segment }} tw:min-w-0 tw:flex-1 tw:rounded-full tw:bg-[#9fb3c8] tw:[&.down]:bg-[#f97066]! tw:[&.unknown]:bg-[#9fb3c8]! tw:[&.up]:bg-[#34d399]!"></span>
+                }
+              </div>
+              <div class="tw:mt-2.5 tw:flex tw:items-center tw:justify-between tw:text-[10px] tw:font-medium tw:tracking-[0.04em] tw:text-[#8ca0b5] tw:uppercase tw:dark:text-[#71869c]">
+                <span>Operational</span>
+                <span>Needs attention</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="metrics tw:mb-5.5 tw:grid tw:grid-cols-4 tw:gap-3.5 tw:max-[1100px]:grid-cols-2 tw:max-[600px]:grid-cols-1" aria-label="Dashboard metrics">
+          <article class="tw:grid tw:min-h-35 tw:grid-cols-[1fr_auto] tw:content-between tw:gap-x-4 tw:rounded-[14px] tw:border tw:border-[#d7e2ef] tw:bg-white tw:p-4.5 tw:shadow-[0_6px_22px_rgb(30_64_105_/_4%)] tw:dark:border-white/9 tw:dark:bg-[#172235]">
+            <div class="tw:col-span-full tw:flex tw:items-start tw:justify-between tw:gap-3">
+              <span class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Total monitors</span
+              >
+              <span class="tw:grid tw:size-8 tw:place-items-center tw:rounded-[9px] tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]" aria-hidden="true">
+                <svg class="tw:size-4 tw:fill-none tw:stroke-current tw:stroke-[1.7]" viewBox="0 0 20 20">
+                  <rect x="3" y="4" width="14" height="11" rx="2" />
+                  <path d="M7 17h6M10 15v2M6 10h2l1.3-3 2.1 6 1.2-3H15" />
+                </svg>
+              </span>
+            </div>
+            <strong class="tw:self-end tw:text-[34px] tw:leading-none tw:font-semibold tw:tracking-[-0.05em] tw:tabular-nums">{{ data.total_monitors }}</strong
+            >
+            <small class="tw:self-end tw:pb-0.5 tw:text-right tw:text-[10px] tw:text-[#73889e] tw:dark:text-[#8fa5bb]">{{ data.active_monitors }} active · {{ data.inactive_monitors }} paused</small
+            >
+          </article>
+
+          <article class="tw:grid tw:min-h-35 tw:grid-cols-[1fr_auto] tw:content-between tw:gap-x-4 tw:rounded-[14px] tw:border tw:border-[#d7e2ef] tw:bg-white tw:p-4.5 tw:shadow-[0_6px_22px_rgb(30_64_105_/_4%)] tw:dark:border-white/9 tw:dark:bg-[#172235]">
+            <div class="tw:col-span-full tw:flex tw:items-start tw:justify-between tw:gap-3">
+              <span class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Open incidents</span
+              >
+              <span class="tw:grid tw:size-8 tw:place-items-center tw:rounded-[9px] tw:bg-[#fff2f0] tw:text-[#b42318] tw:dark:bg-[#f97066]/10 tw:dark:text-[#fda29b]" aria-hidden="true">
+                <svg class="tw:size-4 tw:fill-none tw:stroke-current tw:stroke-[1.7]" viewBox="0 0 20 20">
+                  <path d="M8.3 3.7 2.4 14a1.7 1.7 0 0 0 1.5 2.5h12.2a1.7 1.7 0 0 0 1.5-2.5L11.7 3.7a2 2 0 0 0-3.4 0Z" />
+                  <path d="M10 7v4m0 2.5h.01" />
+                </svg>
+              </span>
+            </div>
+            <strong class="tw:self-end tw:text-[34px] tw:leading-none tw:font-semibold tw:tracking-[-0.05em] tw:tabular-nums">{{ data.open_incidents }}</strong
+            >
+            <small class="tw:self-end tw:pb-0.5 tw:text-right tw:text-[10px] tw:text-[#73889e] tw:dark:text-[#8fa5bb]">Currently unresolved</small
+            >
+          </article>
+
+          <article class="tw:grid tw:min-h-35 tw:grid-cols-[1fr_auto] tw:content-between tw:gap-x-4 tw:rounded-[14px] tw:border tw:border-[#d7e2ef] tw:bg-white tw:p-4.5 tw:shadow-[0_6px_22px_rgb(30_64_105_/_4%)] tw:dark:border-white/9 tw:dark:bg-[#172235]">
+            <div class="tw:col-span-full tw:flex tw:items-start tw:justify-between tw:gap-3">
+              <span class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Slow monitors</span
+              >
+              <span class="tw:grid tw:size-8 tw:place-items-center tw:rounded-[9px] tw:bg-[#fff8e8] tw:text-[#9a6700] tw:dark:bg-[#f5b942]/10 tw:dark:text-[#f7cd6b]" aria-hidden="true">
+                <svg class="tw:size-4 tw:fill-none tw:stroke-current tw:stroke-[1.7]" viewBox="0 0 20 20">
+                  <circle cx="10" cy="11" r="6.5" />
+                  <path d="M10 11 13 8M7.5 2.5h5M10 4.5v-2" />
+                </svg>
+              </span>
+            </div>
+            <strong class="tw:self-end tw:text-[34px] tw:leading-none tw:font-semibold tw:tracking-[-0.05em] tw:tabular-nums">{{ data.slow_monitors }}</strong
+            >
+            <small class="tw:self-end tw:pb-0.5 tw:text-right tw:text-[10px] tw:text-[#73889e] tw:dark:text-[#8fa5bb]">Over response threshold</small
+            >
+          </article>
+
+          <article class="tw:grid tw:min-h-35 tw:grid-cols-[1fr_auto] tw:content-between tw:gap-x-4 tw:rounded-[14px] tw:border tw:border-[#d7e2ef] tw:bg-white tw:p-4.5 tw:shadow-[0_6px_22px_rgb(30_64_105_/_4%)] tw:dark:border-white/9 tw:dark:bg-[#172235]">
+            <div class="tw:col-span-full tw:flex tw:items-start tw:justify-between tw:gap-3">
+              <span class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Average response</span
+              >
+              <span class="tw:grid tw:size-8 tw:place-items-center tw:rounded-[9px] tw:bg-[#f1f0ff] tw:text-[#6656c7] tw:dark:bg-[#8b7be8]/10 tw:dark:text-[#b8aff4]" aria-hidden="true">
+                <svg class="tw:size-4 tw:fill-none tw:stroke-current tw:stroke-[1.7]" viewBox="0 0 20 20">
+                  <path d="M3 12h3l1.5-4 2.3 7 2.1-10 1.7 7H17" />
+                </svg>
+              </span>
+            </div>
+            <strong class="tw:self-end tw:text-[34px] tw:leading-none tw:font-semibold tw:tracking-[-0.05em] tw:tabular-nums">{{ data.average_response_time_ms | number: '1.0-0'
+              }}<em class="tw:ml-1 tw:text-[11px] tw:font-medium tw:tracking-normal tw:text-[#73889e] tw:not-italic tw:dark:text-[#8fa5bb]">ms</em
+              ></strong
+            >
+            <small class="tw:self-end tw:pb-0.5 tw:text-right tw:text-[10px] tw:text-[#73889e] tw:dark:text-[#8fa5bb]">Across recent checks</small
+            >
+          </article>
+        </section>
+      }
+
+      <div class="detail-grid tw:grid tw:grid-cols-[minmax(0,1.65fr)_minmax(290px,0.75fr)] tw:items-start tw:gap-4.5 tw:max-[1100px]:grid-cols-1">
+        <section class="table-panel tw:min-w-0 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
+          <div class="panel-heading tw:flex tw:min-h-20 tw:items-center tw:justify-between tw:gap-5 tw:border-b tw:border-[#d7e2ef] tw:px-5 tw:py-4 tw:dark:border-white/9 tw:max-[600px]:px-4.5">
+            <div class="tw:min-w-0">
+              <p class="tw:mb-1 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#7b91a8] tw:uppercase tw:dark:text-[#8fa5bb]">
+                Latest signals
+              </p>
+              <h2 class="tw:m-0 tw:text-[17px] tw:font-semibold tw:tracking-[-0.015em]">
+                Recent activity
+              </h2>
+            </div>
+          </div>
+
+          @if (activity().length) {
+            <div class="table-scroll tw:max-h-155 tw:overflow-auto tw:[scrollbar-color:#b8cde1_transparent] tw:[scrollbar-width:thin]">
+              <table class="tw:w-full tw:min-w-165 tw:border-collapse tw:text-left tw:text-[#2d3d55] tw:dark:text-[#d8e2ed]" aria-label="Recent monitor checks">
+                <thead class="tw:sticky tw:top-0 tw:z-10">
+                  <tr>
+                    <th class="tw:w-[46%] tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">
+                      Monitor
+                    </th>
+                    <th class="tw:w-[16%] tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">
+                      Status
+                    </th>
+                    <th class="tw:w-[18%] tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">
+                      Response
+                    </th>
+                    <th class="tw:w-[20%] tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">
+                      Checked
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of activity(); track $index) {
+                    <tr class="tw:[transition:background-color_140ms_ease] tw:hover:bg-[#f7fbff] tw:dark:hover:bg-[#1a283d]">
+                      <td class="tw:max-w-0 tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-4 tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">
+                        <strong class="tw:block tw:overflow-hidden tw:text-[14px] tw:font-semibold tw:text-ellipsis tw:whitespace-nowrap" [attr.title]="item.monitor_name">{{ item.monitor_name }}</strong
+                        >
+                        <small class="tw:mt-1.25 tw:block tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">{{ item.status_code ? 'HTTP ' + item.status_code : 'No status code' }}</small
+                        >
+                      </td>
+                      <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-4 tw:whitespace-nowrap tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">
+                        <span class="status tw:inline-flex tw:items-center tw:gap-1.75 tw:rounded-full tw:bg-[#f1f5f9] tw:px-2.5 tw:py-1.5 tw:text-[11px] tw:font-semibold tw:capitalize tw:text-[#5f738f] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#9fb3c8] tw:before:content-[''] tw:[&.down]:bg-[#fff2f0] tw:[&.down]:text-[#b42318] tw:[&.down]:before:bg-[#f97066] tw:[&.up]:bg-[#effbf6] tw:[&.up]:text-[#16825f] tw:[&.up]:before:bg-[#34d399] tw:dark:bg-white/5 tw:dark:text-[#9fb3c8] tw:dark:[&.down]:bg-[#f97066]/8 tw:dark:[&.down]:text-[#fda29b] tw:dark:[&.up]:bg-[#34d399]/8 tw:dark:[&.up]:text-[#70e0bd]" [class]="'status ' + item.status">{{ item.status }}</span
+                        >
+                      </td>
+                      <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-4 tw:font-mono tw:text-[13px] tw:whitespace-nowrap tw:tabular-nums tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">
+                        {{ item.response_time_ms === null ? '—' : item.response_time_ms + ' ms' }}
+                        @if (item.is_slow) {
+                          <small class="tw:ml-1.5 tw:inline-flex tw:rounded-full tw:bg-[#fff8e8] tw:px-1.75 tw:py-0.75 tw:text-[10px] tw:font-semibold tw:text-[#9a6700] tw:dark:bg-[#f5b942]/10 tw:dark:text-[#f7cd6b]">slow</small
+                          >
+                        }
+                      </td>
+                      <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-4 tw:text-[12px] tw:whitespace-nowrap tw:tabular-nums tw:text-[#5f738f] tw:dark:border-white/7 tw:dark:text-[#9fb3c8] tw:in-[tr:last-child]:border-b-0">
+                        {{ item.checked_at | date: 'MMM d, HH:mm' }}
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else if (!loading()) {
+            <div animate.enter="fade-in" animate.leave="fade-out" class="empty-state tw:grid tw:min-h-60 tw:place-items-center tw:px-6 tw:py-10 tw:text-center">
+              <div class="tw:grid tw:max-w-75 tw:justify-items-center">
+                <span class="tw:grid tw:size-11 tw:place-items-center tw:rounded-xl tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]" aria-hidden="true">
+                  <svg class="tw:size-5 tw:fill-none tw:stroke-current tw:stroke-[1.6]" viewBox="0 0 20 20">
+                    <path d="M3 15V9m4 6V5m4 10v-4m4 4V7M2 17h16" />
+                  </svg>
+                </span>
+                <strong class="tw:mt-3.5 tw:text-[14px] tw:font-semibold">No recent activity</strong>
+                <p class="tw:mt-1.5 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#71869c] tw:dark:text-[#8fa5bb]">
+                  Checks will appear here as your monitors begin reporting.
+                </p>
+              </div>
+            </div>
+          }
+        </section>
+
+        <section class="incidents-panel tw:sticky tw:top-20 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)] tw:max-[1100px]:static">
+          <div class="panel-heading tw:flex tw:min-h-20 tw:items-center tw:justify-between tw:gap-5 tw:border-b tw:border-[#d7e2ef] tw:px-5 tw:py-4 tw:dark:border-white/9 tw:max-[600px]:px-4.5">
+            <div>
+              <p class="tw:mb-1 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#7b91a8] tw:uppercase tw:dark:text-[#8fa5bb]">
+                Event log
+              </p>
+              <h2 class="tw:m-0 tw:text-[17px] tw:font-semibold tw:tracking-[-0.015em]">Incidents</h2>
+            </div>
+          </div>
+
+          @if (incidents().length) {
+            <div class="incident-list tw:max-h-155 tw:overflow-y-auto tw:[scrollbar-color:#b8cde1_transparent] tw:[scrollbar-width:thin]" aria-label="Incident event log">
+              @for (incident of incidents(); track incident.id) {
+                <article class="tw:group tw:relative tw:border-b tw:border-[#e3ebf3] tw:px-5 tw:py-4.5 tw:last:border-0 tw:before:absolute tw:before:top-4.5 tw:before:bottom-4.5 tw:before:left-0 tw:before:w-0.75 tw:before:rounded-r-full tw:before:bg-[#f97066] tw:before:content-[''] tw:[&.resolved]:before:bg-[#34d399] tw:dark:border-white/7" [class.resolved]="!!incident.resolved_at">
+                  <div class="tw:min-w-0">
+                    <div class="tw:flex tw:min-w-0 tw:items-start tw:justify-between tw:gap-3">
+                      <strong class="tw:min-w-0 tw:overflow-hidden tw:text-[14px] tw:font-semibold tw:text-ellipsis tw:whitespace-nowrap" [attr.title]="incident.monitor_name">{{ incident.monitor_name }}</strong
+                      >
+                      <time class="tw:flex-none tw:pt-0.5 tw:text-[11px] tw:font-medium tw:text-[#8ca0b5] tw:tabular-nums tw:dark:text-[#71869c]">{{ incident.started_at | date: 'MMM d' }}</time
+                      >
+                    </div>
+                    <div class="tw:mt-2 tw:flex tw:flex-wrap tw:items-center tw:gap-2">
+                      <span class="tw:inline-flex tw:items-center tw:gap-1.5 tw:rounded-full tw:bg-[#fff2f0] tw:px-2.25 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:before:size-1 tw:before:rounded-full tw:before:bg-[#f97066] tw:before:content-[''] tw:in-[article.resolved]:bg-[#effbf6] tw:in-[article.resolved]:text-[#16825f] tw:in-[article.resolved]:before:bg-[#34d399] tw:dark:bg-[#f97066]/8 tw:dark:text-[#fda29b] tw:dark:in-[article.resolved]:bg-[#34d399]/8 tw:dark:in-[article.resolved]:text-[#70e0bd]">{{ incident.resolved_at ? 'Resolved' : 'Open' }}</span
+                      >
+                      <span class="tw:text-[11px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">Duration {{ incidentDuration(incident) }}</span
+                      >
+                    </div>
+                    <p class="tw:mt-2.5 tw:mb-0 tw:text-[12px] tw:leading-[1.6] tw:text-[#5f738f] tw:wrap-anywhere tw:dark:text-[#9fb3c8]">
+                      @if (incident.status_code !== null) {
+                        <span class="tw:font-mono tw:font-semibold tw:text-[#415b76] tw:dark:text-[#b9cee3]">HTTP {{ incident.status_code }}</span
+                        >
+                        <span aria-hidden="true"> · </span>
+                      }
+                      {{ incident.reason }}
+                    </p>
+                  </div>
+                </article>
+              }
+            </div>
+          } @else if (!loading()) {
+            <div animate.enter="fade-in" animate.leave="fade-out" class="empty-state tw:grid tw:min-h-60 tw:place-items-center tw:px-6 tw:py-10 tw:text-center">
+              <div class="tw:grid tw:max-w-65 tw:justify-items-center">
+                <span class="tw:grid tw:size-11 tw:place-items-center tw:rounded-full tw:bg-[#effbf6] tw:text-[#16825f] tw:dark:bg-[#34d399]/8 tw:dark:text-[#70e0bd]" aria-hidden="true">
+                  <svg class="tw:size-5 tw:fill-none tw:stroke-current tw:stroke-[1.7] tw:[stroke-linecap:round] tw:[stroke-linejoin:round]" viewBox="0 0 20 20">
+                    <path d="m5.5 10 3 3 6-7" />
+                    <circle cx="10" cy="10" r="8" />
+                  </svg>
+                </span>
+                <strong class="tw:mt-3.5 tw:text-[14px] tw:font-semibold">Everything is quiet</strong>
+                <p class="tw:mt-1.5 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#71869c] tw:dark:text-[#8fa5bb]">
+                  No incidents have been recorded.
+                </p>
+              </div>
+            </div>
+          }
+        </section>
+      </div>
+    </div>
+  }
+</div>

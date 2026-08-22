@@ -36,7 +36,7 @@ Usage:
   ./run.sh test         Run the backend test suite (pytest)
   ./run.sh test -c      Run the backend test suite with coverage and write backend/coverage.xml
   ./run.sh build        Install client dependencies, build the client, build images and start the stack
-  ./run.sh build -d     Build and start the backend only, with live reload on backend/app changes
+  ./run.sh build -d     Build and start the backend only, with live reload on backend changes
   ./run.sh build -b     Rebuild images and start the stack, reusing the existing client build
   ./run.sh build -t     Build an Istanbul-instrumented client for Cypress coverage, then build images and start the stack
   ./run.sh build -p     Same as ./run.sh production
@@ -186,7 +186,7 @@ lint_backend() {
         echo "ruff is not installed; run .venv/bin/python -m pip install ruff" >&2
         return 1
     fi
-    "$ruff" check backend/app "$@"
+    "$ruff" check backend/main.py backend/configs backend/orion backend/routes backend/seeder backend/tests "$@"
 }
 
 lint_client() {
@@ -317,7 +317,7 @@ case "$COMMAND" in
                 exit $?
                 ;;
             -c)
-                run_backend_tests --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+                run_backend_tests --cov=. --cov-report=term-missing --cov-report=xml:coverage.xml
                 exit $?
                 ;;
             *)
