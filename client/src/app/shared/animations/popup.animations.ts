@@ -1,6 +1,5 @@
 import { animate, style, transition, trigger } from '@angular/animations';
 
-/** Dropdown menus and floating panels: fade in on open, fade out on close. */
 export const popupAnimation = trigger('popup', [
   transition(':enter', [
     style({ opacity: 0 }),
@@ -11,7 +10,6 @@ export const popupAnimation = trigger('popup', [
   ]),
 ]);
 
-/** Full-screen backdrops (mobile navigation scrim): background fade only. */
 export const overlayAnimation = trigger('overlay', [
   transition(':enter', [
     style({ opacity: 0 }),

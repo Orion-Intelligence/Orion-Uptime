@@ -34,7 +34,6 @@ const rootEnv = readRootEnv();
 const adminUsername = process.env["ORION_ADMIN_USERNAME"] || rootEnv["DEFAULT_ADMIN_USERNAME"] || "admin";
 const adminPassword = process.env["ORION_ADMIN_PASSWORD"] || rootEnv["DEFAULT_ADMIN_PASSWORD"] || "";
 
-// Coverage is opt-in: build the client with "npm run build:instrumented" and run Cypress with ORION_COVERAGE=true.
 const coverageEnabled = process.env["ORION_COVERAGE"] === "true";
 
 export default defineConfig({
@@ -59,7 +58,7 @@ export default defineConfig({
         coverage: coverageEnabled,
     },
     e2e: {
-        specPattern: "cypress/e2e/**/*.{cy,spec}.{ts,js}",
+        specPattern: "cypress/e2e*.{cy,spec}.{ts,js}",
         supportFile: "cypress/support/e2e.ts",
         testIsolation: true,
         setupNodeEvents(on, config) {

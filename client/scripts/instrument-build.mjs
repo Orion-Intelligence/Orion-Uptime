@@ -1,13 +1,4 @@
 #!/usr/bin/env node
-// Instruments the Angular application bundles in the build output with Istanbul so
-// Cypress (@cypress/code-coverage) can collect `window.__coverage__` from the running app.
-//
-// The Angular esbuild builder (@angular/build:application) offers no hook to instrument
-// TypeScript sources before compilation, so the compiled chunks are instrumented after the
-// build instead. Each chunk's source map is passed to Istanbul as an input source map, which
-// lets nyc remap the collected coverage back onto the original `src/app/**/*.ts` files.
-//
-// Usage: node scripts/instrument-build.mjs [buildDir]   (defaults to ./build)
 
 import fs from "node:fs";
 import path from "node:path";

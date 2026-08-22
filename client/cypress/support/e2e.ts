@@ -69,7 +69,6 @@ Cypress.on("window:before:load", (win) => {
                     animation.cancel();
                 }
                 catch {
-                    // Ignore animations that cannot be finished or canceled.
                 }
             }
         });

@@ -1,6 +1,5 @@
 import { animate, style, transition, trigger } from '@angular/animations';
 
-/** Notices, alerts, loading bars and summary panels: fade in when shown, fade out when removed. */
 export const fadeInOutAnimation = trigger('fadeInOut', [
   transition(':enter', [
     style({ opacity: 0 }),
@@ -11,7 +10,6 @@ export const fadeInOutAnimation = trigger('fadeInOut', [
   ]),
 ]);
 
-/** Content blocks that swap with a sibling (inline forms, chart fallbacks): fade in only, so the outgoing block never overlaps the incoming one. */
 export const fadeInAnimation = trigger('fadeIn', [
   transition(':enter', [
     style({ opacity: 0 }),
@@ -19,7 +17,6 @@ export const fadeInAnimation = trigger('fadeIn', [
   ]),
 ]);
 
-/** Bound to a value (chart range, selected tab): every change re-fades the block's content in place. */
 export const crossFadeAnimation = trigger('crossFade', [
   transition('* => *', [
     style({ opacity: 0.35 }),

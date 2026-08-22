@@ -1,12 +1,4 @@
-/*
- * Global colour/background transitions so theme switches, hover states and
- * active navigation change smoothly. Only colour-related properties and
- * opacity are transitioned: nothing here moves or scales text, icons or images.
- * Declared in the base layer so component-level transition utilities still win.
- */
 @layer base {
-  /* The document is painted with the light colours before the theme class lands;
-     only transition html/body once the first frame is on screen (see providePageAnimations). */
   html.orion-animations-ready,
   html.orion-animations-ready body {
     transition:
