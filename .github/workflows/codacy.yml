@@ -77,6 +77,51 @@ jobs:
               name = run.get("tool", {}).get("driver", {}).get("name") or ""
               return slug(name).removesuffix("-reported-by-codacy")
 
+          def glob_to_regex(pattern):
+              out = ""
+              i = 0
+              while i < len(pattern):
+                  char = pattern[i]
+                  if pattern.startswith("**/", i):
+                      out += "(?:.*/)?"
+                      i += 3
+                      continue
+                  if pattern.startswith("**", i):
+                      out += ".*"
+                      i += 2
+                      continue
+                  if char == "*":
+                      out += "[^/]*"
+                  elif char == "?":
+                      out += "[^/]"
+                  else:
+                      out += re.escape(char)
+                  i += 1
+              return re.compile("^" + out + "$")
+
+          def excluded_paths():
+              patterns = []
+              config = Path(".codacy.yml")
+              if config.exists():
+                  inside = False
+                  for line in config.read_text().splitlines():
+                      if not line.startswith(" ") and line.strip():
+                          inside = line.strip() == "exclude_paths:"
+                          continue
+                      if inside and line.strip().startswith("- "):
+                          patterns.append(glob_to_regex(line.strip()[2:].strip().strip('"')))
+              return patterns
+
+          excludes = excluded_paths()
+
+          def keep_result(result):
+              for location in result.get("locations") or []:
+                  uri = location.get("physicalLocation", {}).get("artifactLocation", {}).get("uri") or ""
+                  uri = uri.removeprefix("file://").removeprefix("./").removeprefix("/")
+                  if any(pattern.match(uri) for pattern in excludes):
+                      return False
+              return True
+
           selected = {}
           for run in runs:
               key = tool_key(run)
@@ -99,6 +144,10 @@ jobs:
               run_sarif = copy.deepcopy(sarif)
               run_sarif["runs"] = [copy.deepcopy(selected[key])]
               run_output = run_sarif["runs"][0]
+              dropped = [result for result in run_output.get("results") or [] if not keep_result(result)]
+              if dropped:
+                  run_output["results"] = [result for result in run_output["results"] if keep_result(result)]
+                  print(f"Dropped {len(dropped)} {key} result(s) located in .codacy.yml exclude_paths")
               automation = run_output.setdefault("automationDetails", {})
               automation["id"] = f"codacy/{key}-reported-by-codacy/{index}"
 

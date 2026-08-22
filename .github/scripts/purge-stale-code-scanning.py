@@ -6,7 +6,9 @@ import urllib.request
 
 REPO = "Orion-Intelligence/Orion-Uptime"
 KEEP = {"Agentlinter", "Bandit", "CodeQL", "Eslint-8", "Jacksonlinter", "Markdownlint", "Opengrep", "Pmd", "Prospector", "Pylintpython3", "Scorecard", "Shellcheck", "Stylelint", "Trivy"}
-TOKEN = os.environ.get("GITHUB_TOKEN") or sys.exit("set GITHUB_TOKEN (classic PAT with repo scope, or fine-grained with code scanning alerts: read/write)")
+TOKEN = os.environ.get("GITHUB_TOKEN")
+if not TOKEN:
+    raise SystemExit("set GITHUB_TOKEN (classic PAT with repo scope, or fine-grained with code scanning alerts: read/write)")
 DRY_RUN = os.environ.get("DRY_RUN", "1") != "0"
 
 
@@ -17,8 +19,8 @@ def call(url, method="GET"):
         return json.loads(body) if body else {}
 
 
-def tool_name(analysis):
-    return analysis["tool"]["name"].replace(" (reported by Codacy)", "")
+def tool_name(entry):
+    return entry["tool"]["name"].replace(" (reported by Codacy)", "")
 
 
 analyses = []
@@ -46,10 +48,10 @@ if DRY_RUN:
 
 for (tool, category), items in sorted(by_category.items()):
     latest = max(items, key=lambda a: a["created_at"])
-    url = f"https://api.github.com/repos/{REPO}/code-scanning/analyses/{latest['id']}?confirm_delete"
+    next_url = f"https://api.github.com/repos/{REPO}/code-scanning/analyses/{latest['id']}?confirm_delete"
     deleted = 0
-    while url:
-        result = call(url, method="DELETE")
+    while next_url:
+        result = call(next_url, method="DELETE")
         deleted += 1
-        url = result.get("confirm_delete_url")
+        next_url = result.get("confirm_delete_url")
     print(f"deleted {deleted} analyses for {tool} / {category}")
