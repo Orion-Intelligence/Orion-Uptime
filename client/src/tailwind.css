@@ -1,4 +1,5 @@
 @import "tailwindcss" prefix(tw);
+@import "./app/shared/animations/theme.transitions.css";
 
 @custom-variant dark (&:where(.dark-theme, .dark-theme *));
 
@@ -8,7 +9,6 @@
     --orion-muted: #5f738f;
     --orion-subtle: #7b91a8;
     --orion-surface: #fff;
-    --orion-surface-soft: #f8fbff;
     --orion-border: #d7e2ef;
     --orion-input: #fbfdff;
     --orion-shadow: 0 8px 28px rgb(30 64 105 / 5%);
@@ -20,7 +20,6 @@
       --orion-muted: #9fb3c8;
       --orion-subtle: #8fa5bb;
       --orion-surface: #172235;
-      --orion-surface-soft: #131e30;
       --orion-border: rgb(255 255 255 / 9%);
       --orion-input: #111d2f;
       --orion-shadow: 0 10px 30px rgb(0 0 0 / 12%);
@@ -299,21 +298,7 @@
 }
 
 @theme {
-  --animate-profile-dropdown-in: profile-dropdown-in 160ms cubic-bezier(0.16, 1, 0.3, 1) both;
-  --animate-loading-line: loading-line 1.2s ease-in-out infinite;
   --animate-status-pulse: status-pulse 2s ease infinite;
-
-  @keyframes profile-dropdown-in {
-    from {
-      opacity: 0;
-      transform: translate3d(0, -6px, 0) scale(0.98);
-    }
-
-    to {
-      opacity: 1;
-      transform: translate3d(0, 0, 0) scale(1);
-    }
-  }
 
   @keyframes loading-line {
     from { transform: translateX(-110%); }

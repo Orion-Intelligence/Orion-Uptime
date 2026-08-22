@@ -1,10 +1,10 @@
-<div id="public-status-page" class="tw:min-h-dvh tw:bg-[#f7f7f7] tw:text-[#172235] tw:[color-scheme:light]">
+<div [@pageEnter] id="public-status-page" class="tw:min-h-dvh tw:bg-[#f7f7f7] tw:text-[#172235] tw:[color-scheme:light]">
   @if (loading()) {
-    <div class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-50" role="status" aria-label="Loading service status"></div>
+    <div [@fadeInOut] class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading service status"></div>
   }
 
   @if (error() && !page()) {
-    <main class="tw:mx-auto tw:min-h-screen tw:w-[min(1000px,calc(100%_-_40px))] tw:py-10 tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:py-5">
+    <main [@fadeInOut] class="tw:mx-auto tw:min-h-screen tw:w-[min(1000px,calc(100%_-_40px))] tw:py-10 tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:py-5">
       <section class="tw:mt-[12vh] tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:px-8 tw:py-14 tw:shadow-[0_12px_34px_rgb(30_64_105_/_7%)] tw:max-[640px]:px-5 tw:max-[640px]:py-10">
         <p class="tw:m-0 tw:text-[11px] tw:font-bold tw:tracking-[0.12em] tw:text-[#1176d4] tw:uppercase">Public status</p>
         <h1 class="tw:mt-3 tw:mb-0 tw:max-w-145 tw:text-[clamp(28px,5vw,42px)] tw:leading-[1.08] tw:font-semibold tw:tracking-[-0.04em] tw:text-[#172235]">{{ error() }}</h1>
@@ -63,7 +63,7 @@
           Uptime <span class="tw:text-[#687790]">Last 90 days</span>
         </h2>
 
-        <div class="tw:rounded-[6px] tw:bg-white tw:px-5 tw:py-[17.5px] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:max-[640px]:p-7.5">
+        <div [@listStagger]="statusPage.monitors.length" class="tw:rounded-[6px] tw:bg-white tw:px-5 tw:py-[17.5px] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:max-[640px]:p-7.5">
           <div class="tw:mb-[15px] tw:pb-2.5">
             <h3 class="tw:m-0 tw:text-[16px] tw:leading-[1.4] tw:font-semibold">Services</h3>
           </div>
@@ -110,7 +110,7 @@
           <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.09em] tw:text-[#71869c] tw:uppercase">Availability summary</p>
           <h2 id="uptime-heading" class="tw:mt-1 tw:mb-0 tw:text-[18px] tw:font-semibold tw:tracking-[-0.02em]">Overall uptime</h2>
         </div>
-        <div class="tw:grid tw:grid-cols-4 tw:max-[640px]:grid-cols-2">
+        <div [@listStagger]="uptimeWindows(statusPage).length" class="tw:grid tw:grid-cols-4 tw:max-[640px]:grid-cols-2">
           @for (window of uptimeWindows(statusPage); track window.label) {
             <div class="tw:grid tw:min-h-26 tw:content-center tw:gap-2 tw:border-r tw:border-[#e6edf4] tw:p-5 tw:last:border-r-0 tw:max-[640px]:nth-2:border-r-0 tw:max-[640px]:nth-[-n+2]:border-b">
               <strong class="tw:text-[clamp(21px,3vw,29px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ window.value === null ? '—' : (window.value | number: '1.0-2') + '%' }}</strong>

@@ -5,11 +5,13 @@ import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { MonitorOverview, StatusPage } from '../../models/models';
 import { RealtimeService } from '../../services/realtime.service';
+import { fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-status-page-list',
   imports: [DatePipe, RouterLink],
   templateUrl: './status-page-list.html',
+  animations: [fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class StatusPageListPage {
   private readonly api = inject(ApiService);

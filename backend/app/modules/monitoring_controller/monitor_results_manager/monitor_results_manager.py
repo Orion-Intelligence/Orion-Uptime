@@ -77,12 +77,16 @@ class MonitorResultManager:
         results = await self.collection.aggregate(pipeline).to_list(None)
         return {result["_id"]: result["checked_at"] for result in results}
 
-    async def get_recent(self, limit: int = 20) -> list[MonitorResultModel]:
-        cursor = self.collection.find().sort("checked_at", -1).limit(limit)
-        results = []
-        async for document in cursor:
-            results.append(MonitorResultModel(**with_string_id(document)))
-        return results
+    async def get_latest_per_monitor(self, limit: int = 20) -> list[MonitorResultModel]:
+        pipeline = [
+            {"$sort": {"monitor_id": 1, "checked_at": -1}},
+            {"$group": {"_id": "$monitor_id", "latest": {"$first": "$$ROOT"}}},
+            {"$replaceRoot": {"newRoot": "$latest"}},
+            {"$sort": {"checked_at": -1}},
+            {"$limit": limit},
+        ]
+        results = await self.collection.aggregate(pipeline).to_list(None)
+        return [MonitorResultModel(**with_string_id(document)) for document in results]
 
     async def get_response_history(self, monitor_id: str, days: int = 7) -> list[MonitorResultModel]:
         start_date = datetime.now(UTC) - timedelta(days=days)

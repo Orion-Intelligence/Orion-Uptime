@@ -1,0 +1,8 @@
+{
+  "name": "orion-uptime",
+  "private": true,
+  "scripts": {
+    "test": "npm --prefix client test --",
+    "cypress": "npm --prefix client run cypress --"
+  }
+}

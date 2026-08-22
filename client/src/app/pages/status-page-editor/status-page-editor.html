@@ -1,4 +1,4 @@
-<div id="status-page-editor">
+<div [@pageEnter] id="status-page-editor">
   <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-7.5 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
     <div>
       <p class="eyebrow">Status pages</p>
@@ -14,11 +14,11 @@
   </header>
 
   @if (loading()) {
-    <div class="loading-line"></div>
+    <div [@fadeInOut] class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   } @else {
-    <form class="tw:grid tw:max-w-220 tw:gap-4" [formGroup]="form" (ngSubmit)="submit()">
+    <form [@fadeIn] class="tw:grid tw:max-w-220 tw:gap-4" [formGroup]="form" (ngSubmit)="submit()">
       @if (error()) {
-        <p class="form-error">{{ error() }}</p>
+        <p [@fadeInOut] class="form-error">{{ error() }}</p>
       }
 
       <section class="panel details-panel tw:border-[#d7e2ef] tw:grid tw:grid-cols-[220px_1fr] tw:gap-7.5 tw:p-6 tw:dark:border-[rgb(255_255_255_/_9%)] tw:max-[700px]:grid-cols-1">
@@ -44,7 +44,7 @@
           <p class="tw:mt-1.75 tw:mb-0 tw:text-[11px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ selectedIds().size }} of {{ monitors().length }} selected</p>
         </div>
 
-        <div class="monitor-options tw:grid tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
+        <div [@listStagger]="monitors().length" class="monitor-options tw:grid tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
           @for (monitor of monitors(); track monitor.id) {
             <label class="monitor-option tw:grid tw:min-w-0 tw:cursor-pointer tw:grid-cols-[auto_minmax(0,1fr)_auto] tw:items-center tw:gap-3 tw:border-b tw:border-[#d7e2ef] tw:p-3.5 tw:[transition:background-color_140ms_ease] tw:[&.selected]:bg-[#edf6ff] tw:hover:bg-[#f5f8fc] tw:dark:border-white/9 tw:dark:[&.selected]:bg-[#57a5eb]/10 tw:dark:hover:bg-white/4 tw:last:border-b-0" [class.selected]="isSelected(monitor.id)">
               <input class="tw:pointer-events-none tw:absolute tw:opacity-0" type="checkbox" [checked]="isSelected(monitor.id)" (change)="toggleMonitor(monitor.id)" />

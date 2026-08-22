@@ -6,11 +6,13 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { MonitorOverview, RealtimeResources, ResourceRecord } from '../../models/models';
 import { RealtimeService } from '../../services/realtime.service';
+import { fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-resource-list-page',
   imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './monitor-list.html',
+  animations: [fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class ResourceListPage {
   private readonly route = inject(ActivatedRoute);

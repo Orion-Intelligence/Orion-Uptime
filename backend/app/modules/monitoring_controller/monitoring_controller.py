@@ -306,32 +306,3 @@ class MonitorManager:
             raise ValueError(
                 f"Unsupported monitor type: {monitor_type}"
             ) from exc
-
-    @staticmethod
-    def _heartbeat_timing_message(monitor: HeartbeatMonitorModel, received_at: datetime) -> str:
-        if monitor.last_heartbeat_at is None:
-            return (
-                "first beat received; next beat expected in "
-                f"{monitor.expected_heartbeat_interval} seconds"
-            )
-
-        elapsed_seconds = max(
-            0.0,
-            (received_at - monitor.last_heartbeat_at).total_seconds(),
-        )
-        difference = monitor.expected_heartbeat_interval - elapsed_seconds
-
-        if difference > 0:
-            return (
-                f"beat received {difference:.2f} seconds earlier than the "
-                f"expected {monitor.expected_heartbeat_interval}-second interval"
-            )
-        if difference < 0:
-            return (
-                f"beat received {abs(difference):.2f} seconds later than the "
-                f"expected {monitor.expected_heartbeat_interval}-second interval"
-            )
-        return (
-            "beat received exactly at the expected "
-            f"{monitor.expected_heartbeat_interval}-second interval"
-        )

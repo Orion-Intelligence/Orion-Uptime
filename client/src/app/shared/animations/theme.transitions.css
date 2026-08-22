@@ -1,0 +1,96 @@
+/*
+ * Global colour/background transitions so theme switches, hover states and
+ * active navigation change smoothly. Only colour-related properties and
+ * opacity are transitioned: nothing here moves or scales text, icons or images.
+ * Declared in the base layer so component-level transition utilities still win.
+ */
+@layer base {
+  /* The document is painted with the light colours before the theme class lands;
+     only transition html/body once the first frame is on screen (see providePageAnimations). */
+  html.orion-animations-ready,
+  html.orion-animations-ready body {
+    transition:
+      background-color 260ms ease,
+      color 260ms ease;
+  }
+
+  .app-topbar,
+  .app-sidebar,
+  .app-main,
+  .panel,
+  .profile-dropdown,
+  .profile-dropdown__identity,
+  .login-panel,
+  article,
+  section,
+  table,
+  thead,
+  tbody,
+  tr,
+  th,
+  td,
+  dl,
+  footer,
+  header {
+    transition:
+      background-color 220ms ease,
+      border-color 220ms ease,
+      color 220ms ease,
+      box-shadow 220ms ease;
+  }
+
+  a,
+  button,
+  label,
+  input,
+  select,
+  textarea,
+  summary {
+    transition:
+      background-color 180ms ease,
+      border-color 180ms ease,
+      color 180ms ease,
+      box-shadow 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .sidebar-nav a {
+    transition:
+      background-color 200ms ease,
+      border-color 200ms ease,
+      color 200ms ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html.orion-animations-ready,
+    html.orion-animations-ready body,
+    .app-topbar,
+    .app-sidebar,
+    .app-main,
+    .panel,
+    .profile-dropdown,
+    .profile-dropdown__identity,
+    .login-panel,
+    article,
+    section,
+    table,
+    thead,
+    tbody,
+    tr,
+    th,
+    td,
+    dl,
+    footer,
+    header,
+    a,
+    button,
+    label,
+    input,
+    select,
+    textarea,
+    summary,
+    .sidebar-nav a {
+      transition: none;
+    }
+  }
+}

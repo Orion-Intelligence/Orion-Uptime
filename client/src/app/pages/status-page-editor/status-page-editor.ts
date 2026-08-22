@@ -5,11 +5,13 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { MonitorOverview, StatusPage } from '../../models/models';
 import { RealtimeService } from '../../services/realtime.service';
+import { fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-status-page-editor',
   imports: [ReactiveFormsModule, RouterLink],
   templateUrl: './status-page-editor.html',
+  animations: [fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class StatusPageEditorPage {
   private readonly api = inject(ApiService);

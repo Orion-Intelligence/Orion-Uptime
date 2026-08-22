@@ -1,4 +1,4 @@
-<div id="register-user-page">
+<div [@pageEnter] id="register-user-page">
   <header class="tw:mb-9.5">
     <p class="eyebrow">Administration</p>
     <h1 class="page-title">Register user</h1>
@@ -9,7 +9,7 @@
 
   <form class="panel user-registration-form tw:grid tw:[width:min(100%,_620px)] tw:gap-5 tw:p-6" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
-      <p class="form-error" role="alert">{{ error() }}</p>
+      <p [@fadeInOut] class="form-error" role="alert">{{ error() }}</p>
     }
 
     <div class="field">

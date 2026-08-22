@@ -4,7 +4,7 @@ export interface ApiResponse<T> {
   data: T;
 }
 
-export type UserRole = 'admin' | 'viewer';
+type UserRole = 'admin' | 'viewer';
 
 export interface CurrentUser {
   id: string;
@@ -214,11 +214,6 @@ export interface ResponseHistory {
   points: ResponseHistoryPoint[];
 }
 
-export interface RealtimeChange {
-  kind: 'monitor' | 'auth_profile' | 'user' | 'status_page';
-  entity_id: string | null;
-}
-
 export interface RealtimeResources {
   HTTP: ResourceRecord[];
   API: ResourceRecord[];
@@ -232,7 +227,6 @@ export interface RealtimeResources {
 export interface RealtimeSnapshot {
   revision: number;
   generated_at: string;
-  changed: RealtimeChange[];
   summary: DashboardSummary;
   incidents: DashboardIncident[];
   activity: DashboardActivity[];

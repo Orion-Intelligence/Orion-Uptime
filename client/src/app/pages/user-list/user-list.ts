@@ -5,11 +5,13 @@ import { Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { UserResponse } from '../../models/models';
 import { RealtimeService } from '../../services/realtime.service';
+import { fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-user-list-page',
   imports: [DatePipe, RouterLink],
   templateUrl: './user-list.html',
+  animations: [fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class UserListPage {
   private readonly api = inject(ApiService);

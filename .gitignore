@@ -101,3 +101,9 @@ tmp/
 *.orig
 *.rej
 nginx/certs/local/
+
+client/cypress/downloads/*
+client/cypress/screenshots/*
+client/cypress/videos/*
+client/cypress/error/*
+!client/cypress/error/.gitkeep

@@ -6,11 +6,13 @@ import { finalize } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { ThemeService } from '../../services/theme.service';
+import { fadeInOutAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-login-page',
   imports: [NgOptimizedImage, ReactiveFormsModule],
   templateUrl: './login.html',
+  animations: [fadeInOutAnimation, pageEnterAnimation],
 })
 export class LoginPage {
   private readonly fb = inject(FormBuilder);

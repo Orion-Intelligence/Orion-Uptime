@@ -6,6 +6,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { MonitorDetail, MonitorIncident, MonitorOverview, RealtimeSnapshot, ResponseHistory, ResponseHistoryPoint, StatusHistory, StatusHistoryPoint, } from '../../models/models';
 import { RealtimeService } from '../../services/realtime.service';
+import { crossFadeAnimation, fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 interface ChartPoint<T> {
   data: T;
@@ -17,6 +18,7 @@ interface ChartPoint<T> {
   selector: 'app-monitor-detail-page',
   imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './monitor-detail.html',
+  animations: [crossFadeAnimation, fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class MonitorDetailPage {
   private readonly route = inject(ActivatedRoute);

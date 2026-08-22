@@ -2,11 +2,13 @@ import { DatePipe, DecimalPipe, NgOptimizedImage, isPlatformBrowser } from '@ang
 import { Component, DestroyRef, inject, PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DailyUptime, PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus, } from '../../models/models';
+import { fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-public-status-page',
   imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink],
   templateUrl: './public-status-page.html',
+  animations: [fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class PublicStatusPageView {
   private readonly destroyRef = inject(DestroyRef);
@@ -19,7 +21,6 @@ export class PublicStatusPageView {
 
   readonly page = signal<PublicStatusPage | null>(null);
   readonly loading = signal(true);
-  readonly connected = signal(false);
   readonly error = signal('');
   readonly now = signal(Date.now());
 
@@ -92,7 +93,6 @@ export class PublicStatusPageView {
     const source = new EventSource(`/api/status-pages/public/${encodeURIComponent(this.slug)}/events`,);
     this.source = source;
     source.onopen = () => {
-      this.connected.set(true);
       this.error.set('');
       this.reconnectDelayMs = 2000;
     };
@@ -100,7 +100,6 @@ export class PublicStatusPageView {
       try {
         this.page.set(JSON.parse((event as MessageEvent<string>).data) as PublicStatusPage);
         this.loading.set(false);
-        this.connected.set(true);
         this.error.set('');
       }
       catch {
@@ -110,13 +109,11 @@ export class PublicStatusPageView {
     source.addEventListener('deleted', () => {
       this.source?.close();
       this.clearReconnect();
-      this.connected.set(false);
       this.loading.set(false);
       this.page.set(null);
       this.error.set('This status page is no longer available.');
     });
     source.onerror = () => {
-      this.connected.set(false);
       if (!this.page()) {
         this.loading.set(false);
         this.error.set('This status page is unavailable.');

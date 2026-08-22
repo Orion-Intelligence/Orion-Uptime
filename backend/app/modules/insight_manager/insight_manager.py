@@ -202,7 +202,7 @@ class DashboardManager:
         return max(0.0, (overlap_end - overlap_start).total_seconds())
 
     async def get_recent_activity(self) -> list[DashboardActivityResponse]:
-        results = await self.monitor_result_service.get_recent()
+        results = await self.monitor_result_service.get_latest_per_monitor()
         _, monitor_map = await self.monitor_service.get_monitors_with_lookup()
         activities = []
 

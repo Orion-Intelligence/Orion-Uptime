@@ -1,15 +1,12 @@
-black
 pytest
 ruff
 fastapi
-uvicorn
 hypercorn
 odmantic
 motor
 pydantic
 pymongo
 argon2-cffi
-python-multipart
 python-dotenv
 httpx
 PyJWT

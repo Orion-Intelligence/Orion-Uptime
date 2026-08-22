@@ -1,11 +1,11 @@
-<div id="public-monitor-page" class="tw:min-h-dvh tw:bg-[#f4f7fb] tw:text-[#172235] tw:[color-scheme:light]">
+<div [@pageEnter] id="public-monitor-page" class="tw:min-h-dvh tw:bg-[#f4f7fb] tw:text-[#172235] tw:[color-scheme:light]">
   <main class="tw:mx-auto tw:min-h-screen tw:w-[min(980px,calc(100%_-_40px))] tw:py-10 tw:max-[640px]:w-[calc(100%_-_24px)] tw:max-[640px]:py-5">
     @if (loading()) {
-      <div class="loading-line tw:mb-5" role="status" aria-label="Loading monitor status"></div>
+      <div [@fadeInOut] class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading monitor status"></div>
     }
 
     @if (error() && !detail()) {
-      <section class="tw:mt-[12vh] tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:px-8 tw:py-14 tw:shadow-[0_12px_34px_rgb(30_64_105_/_7%)] tw:max-[640px]:px-5 tw:max-[640px]:py-10">
+      <section [@fadeInOut] class="tw:mt-[12vh] tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:px-8 tw:py-14 tw:shadow-[0_12px_34px_rgb(30_64_105_/_7%)] tw:max-[640px]:px-5 tw:max-[640px]:py-10">
         <p class="tw:m-0 tw:text-[11px] tw:font-bold tw:tracking-[0.12em] tw:text-[#1176d4] tw:uppercase">Public status</p>
         <h1 class="tw:mt-3 tw:mb-0 tw:max-w-145 tw:text-[clamp(28px,5vw,42px)] tw:leading-[1.08] tw:font-semibold tw:tracking-[-0.04em] tw:text-[#172235]">{{ error() }}</h1>
         <a class="tw:mt-5 tw:inline-flex tw:text-[13px] tw:font-semibold tw:text-[#1176d4] tw:no-underline" [routerLink]="['/status', slug]">← Back to status page</a>
@@ -61,7 +61,7 @@
           </svg>
         </div>
 
-        <div class="tw:grid tw:grid-cols-4 tw:border-t tw:border-[#e6edf4] tw:max-[640px]:grid-cols-2">
+        <div [@listStagger]="uptimeWindows(monitorDetail.uptime_status).length" class="tw:grid tw:grid-cols-4 tw:border-t tw:border-[#e6edf4] tw:max-[640px]:grid-cols-2">
           @for (window of uptimeWindows(monitorDetail.uptime_status); track window.label) {
             <div class="tw:grid tw:min-h-24 tw:content-center tw:gap-2 tw:border-r tw:border-[#e6edf4] tw:p-5 tw:last:border-r-0 tw:max-[640px]:nth-2:border-r-0 tw:max-[640px]:nth-[-n+2]:border-b">
               <strong class="tw:text-[clamp(19px,3vw,27px)] tw:font-semibold tw:tracking-[-0.04em] tw:tabular-nums">{{ window.value === null ? '—' : (window.value | number: '1.0-2') + '%' }}</strong>
@@ -81,7 +81,7 @@
         </div>
 
         @if (responsePolyline()) {
-          <div class="tw:h-62 tw:bg-[#fbfcfe] tw:px-6 tw:py-6 tw:max-[640px]:h-52 tw:max-[640px]:px-4.5">
+          <div [@fadeIn] class="tw:h-62 tw:bg-[#fbfcfe] tw:px-6 tw:py-6 tw:max-[640px]:h-52 tw:max-[640px]:px-4.5">
             <svg class="tw:h-full tw:w-full tw:overflow-visible" viewBox="0 0 900 180" [attr.preserveAspectRatio]="'none'" [attr.role]="'img'" [attr.aria-label]="'Response time over the last 24 hours'">
               <line class="tw:stroke-[#e5edf5] tw:stroke-1 tw:[vector-effect:non-scaling-stroke]" x1="0" y1="30" x2="900" y2="30" />
               <line class="tw:stroke-[#e5edf5] tw:stroke-1 tw:[vector-effect:non-scaling-stroke]" x1="0" y1="92" x2="900" y2="92" />
@@ -97,7 +97,7 @@
             </svg>
           </div>
         } @else {
-          <div class="tw:grid tw:min-h-44 tw:place-items-center tw:bg-[#fbfcfe] tw:px-6 tw:py-10 tw:text-center tw:text-[13px] tw:text-[#71869c]">No response-time data is available for this monitor.</div>
+          <div [@fadeIn] class="tw:grid tw:min-h-44 tw:place-items-center tw:bg-[#fbfcfe] tw:px-6 tw:py-10 tw:text-center tw:text-[13px] tw:text-[#71869c]">No response-time data is available for this monitor.</div>
         }
 
         <div class="tw:grid tw:grid-cols-3 tw:border-t tw:border-[#e6edf4] tw:max-[640px]:grid-cols-1">
@@ -116,7 +116,7 @@
         </div>
       </section>
 
-      <section class="tw:mt-7 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)]" aria-labelledby="events-heading">
+      <section [@listStagger]="monitorDetail.recent_events.length" class="tw:mt-7 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_5%)]" aria-labelledby="events-heading">
         <div class="tw:border-b tw:border-[#dce5ef] tw:px-6 tw:py-4.5 tw:max-[640px]:px-4.5">
           <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.09em] tw:text-[#71869c] tw:uppercase">History</p>
           <h2 id="events-heading" class="tw:mt-1 tw:mb-0 tw:text-[18px] tw:font-semibold tw:tracking-[-0.02em]">Recent events</h2>

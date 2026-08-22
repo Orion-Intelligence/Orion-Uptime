@@ -4,11 +4,13 @@ import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { CreateUserRequest, UserResponse } from '../../models/models';
+import { fadeInOutAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-register-user-page',
   imports: [ReactiveFormsModule],
   templateUrl: './register-user.html',
+  animations: [fadeInOutAnimation, pageEnterAnimation],
 })
 export class RegisterUserPage {
   private readonly fb = inject(FormBuilder);

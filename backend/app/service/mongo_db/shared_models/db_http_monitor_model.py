@@ -11,8 +11,6 @@ class HTTPMonitorModel(BaseMonitorModel):
     monitor_type: MonitorType = MonitorType.HTTP
     url: str
     expected_status_code: int
-    failure_count: int = 0
-    success_count: int = 0
     expected_response_time_ms: int | None = None
 
 class CreateHTTP_monitorRequest(BaseModel):

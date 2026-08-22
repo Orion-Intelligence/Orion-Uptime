@@ -1,4 +1,4 @@
-<div id="monitor-detail-page" class="tw:mx-auto tw:max-w-[1600px]">
+<div [@pageEnter] id="monitor-detail-page" class="tw:mx-auto tw:max-w-[1600px]">
   <header class="page-header tw:mb-7 tw:flex tw:items-start tw:justify-between tw:gap-8 tw:max-[700px]:flex-col tw:max-[700px]:gap-4">
     <div class="tw:min-w-0 tw:flex-1">
       <p class="eyebrow tw:flex tw:items-center tw:gap-2">
@@ -15,15 +15,15 @@
   </header>
 
   @if (loading()) {
-    <div class="loading-line tw:mb-5" role="status" aria-label="Loading monitor details"></div>
+    <div [@fadeInOut] class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading monitor details"></div>
   }
 
   @if (error()) {
-    <p class="form-error tw:mb-5" role="alert">{{ error() }}</p>
+    <p [@fadeInOut] class="form-error tw:mb-5" role="alert">{{ error() }}</p>
   }
 
   @if (detail(); as monitor) {
-    <section class="summary-panel tw:mb-5 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_6%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_12%)]" aria-label="Monitor health summary">
+    <section [@fadeInOut] class="summary-panel tw:mb-5 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_10px_30px_rgb(30_64_105_/_6%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_12%)]" aria-label="Monitor health summary">
       <div class="monitor-heading tw:flex tw:min-h-16 tw:items-center tw:justify-between tw:gap-5 tw:border-b tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5 tw:py-3.5 tw:dark:border-white/9 tw:dark:bg-[#131e30] tw:max-[700px]:items-start">
         <div class="tw:flex tw:flex-wrap tw:items-center tw:gap-2">
           <span class="status tw:inline-flex tw:items-center tw:gap-1.75 tw:rounded-full tw:bg-[#f1f5f9] tw:px-2.5 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:capitalize tw:text-[#5f738f] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#9fb3c8] tw:before:content-[''] tw:[&.down]:bg-[#fff2f0] tw:[&.down]:text-[#b42318] tw:[&.down]:before:bg-[#f97066] tw:[&.up]:bg-[#effbf6] tw:[&.up]:text-[#16825f] tw:[&.up]:before:bg-[#34d399] tw:dark:bg-white/5 tw:dark:text-[#9fb3c8] tw:dark:[&.down]:bg-[#f97066]/8 tw:dark:[&.down]:text-[#fda29b] tw:dark:[&.up]:bg-[#34d399]/8 tw:dark:[&.up]:text-[#70e0bd]" [class]="'status ' + monitor.status">{{ monitor.status }}</span>
@@ -56,7 +56,7 @@
     </section>
 
     <div class="charts-grid tw:mb-5 tw:grid tw:grid-cols-2 tw:gap-4.5 tw:max-[1050px]:grid-cols-1">
-      <section class="chart-panel tw:min-w-0 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
+      <section [@fadeInOut] class="chart-panel tw:min-w-0 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
         <div class="chart-heading tw:flex tw:min-h-20 tw:items-center tw:justify-between tw:gap-4 tw:border-b tw:border-[#d7e2ef] tw:px-5 tw:py-4 tw:dark:border-white/9 tw:max-[520px]:items-start">
           <div>
             <p class="eyebrow tw:mb-1">Reliability</p>
@@ -69,7 +69,7 @@
           </div>
         </div>
         @if (statusHistory().length) {
-          <div class="chart-body status-chart tw:relative tw:grid tw:min-h-58 tw:grid-cols-[54px_1fr] tw:items-stretch tw:px-5 tw:pt-7 tw:pb-3 tw:max-[600px]:px-3.5">
+          <div [@crossFade]="statusHistory()" class="chart-body status-chart tw:relative tw:grid tw:min-h-58 tw:grid-cols-[54px_1fr] tw:items-stretch tw:px-5 tw:pt-7 tw:pb-3 tw:max-[600px]:px-3.5">
             <div class="y-labels tw:flex tw:h-40 tw:flex-col tw:justify-between tw:pt-4 tw:pb-3 tw:text-[10px] tw:font-medium tw:text-[#71869c] tw:dark:text-[#8fa5bb]"><span>Up</span><span>Unknown</span><span>Down</span></div>
             <svg class="tw:col-start-2 tw:h-40 tw:w-full tw:overflow-visible" viewBox="0 0 760 140" [attr.preserveAspectRatio]="'none'" [attr.role]="'img'" [attr.aria-label]="'Monitor status history'">
               <line class="tw:stroke-[#e3ebf3] tw:stroke-1 tw:[vector-effect:non-scaling-stroke] tw:dark:stroke-white/10" x1="0" y1="20" x2="760" y2="20" />
@@ -87,11 +87,11 @@
           </div>
           <div class="chart-dates tw:flex tw:justify-between tw:px-5 tw:pb-4 tw:text-[10px] tw:text-[#71869c] tw:tabular-nums tw:dark:text-[#8fa5bb]"><span>{{ firstDate(statusHistory()) | date: 'MMM d, y' }}</span><span>{{ lastDate(statusHistory()) | date: 'MMM d, y' }}</span></div>
         } @else {
-          <div class="empty-state">No status data in this period.</div>
+          <div [@fadeIn] class="empty-state">No status data in this period.</div>
         }
       </section>
 
-      <section class="chart-panel tw:min-w-0 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
+      <section [@fadeInOut] class="chart-panel tw:min-w-0 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
         <div class="chart-heading tw:flex tw:min-h-20 tw:items-center tw:justify-between tw:gap-4 tw:border-b tw:border-[#d7e2ef] tw:px-5 tw:py-4 tw:dark:border-white/9 tw:max-[520px]:items-start">
           <div>
             <p class="eyebrow tw:mb-1">Performance</p>
@@ -104,7 +104,7 @@
           </div>
         </div>
         @if (responsePolyline()) {
-          <div class="chart-body response-chart tw:relative tw:grid tw:min-h-58 tw:items-stretch tw:px-5 tw:pt-7 tw:pb-3 tw:max-[600px]:px-3.5">
+          <div [@crossFade]="responseHistory()" class="chart-body response-chart tw:relative tw:grid tw:min-h-58 tw:items-stretch tw:px-5 tw:pt-7 tw:pb-3 tw:max-[600px]:px-3.5">
             <div class="response-maximum tw:absolute tw:top-3 tw:left-5 tw:rounded-full tw:bg-[#edf6ff] tw:px-2 tw:py-1 tw:font-mono tw:text-[10px] tw:font-medium tw:text-[#1176d4] tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">Peak {{ maximumResponseTime() | number: '1.0-0' }} ms</div>
             <svg class="tw:h-40 tw:w-full tw:overflow-visible" viewBox="0 0 760 140" [attr.preserveAspectRatio]="'none'" [attr.role]="'img'" [attr.aria-label]="'Monitor response time history'">
               <line class="tw:stroke-[#e3ebf3] tw:stroke-1 tw:[vector-effect:non-scaling-stroke] tw:dark:stroke-white/10" x1="0" y1="20" x2="760" y2="20" />
@@ -122,12 +122,12 @@
           </div>
           <div class="chart-dates tw:flex tw:justify-between tw:px-5 tw:pb-4 tw:text-[10px] tw:text-[#71869c] tw:tabular-nums tw:dark:text-[#8fa5bb]"><span>{{ firstDate(responseHistory()) | date: 'MMM d, y' }}</span><span>{{ lastDate(responseHistory()) | date: 'MMM d, y' }}</span></div>
         } @else {
-          <div class="empty-state">No response-time data in this period.</div>
+          <div [@fadeIn] class="empty-state">No response-time data in this period.</div>
         }
       </section>
     </div>
 
-    <section class="incidents tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
+    <section [@listStagger]="monitor.incidents.length" class="incidents tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235] tw:dark:shadow-[0_12px_32px_rgb(0_0_0_/_10%)]">
       <div class="section-heading tw:flex tw:min-h-20 tw:items-center tw:border-b tw:border-[#d7e2ef] tw:px-5 tw:py-4 tw:dark:border-white/9">
         <div>
           <p class="eyebrow tw:mb-1">History</p>
@@ -162,7 +162,7 @@
           </dl>
         </article>
       } @empty {
-        <div class="empty-state tw:min-h-52">
+        <div [@fadeIn] class="empty-state tw:min-h-52">
           <div>
             <span class="tw:mx-auto tw:mb-3 tw:grid tw:size-10 tw:place-items-center tw:rounded-full tw:bg-[#effbf6] tw:text-[#16825f] tw:dark:bg-[#34d399]/8 tw:dark:text-[#70e0bd]" aria-hidden="true"><svg class="tw:size-4.5 tw:fill-none tw:stroke-current tw:stroke-[1.8]" viewBox="0 0 20 20"><path d="m5.5 10 3 3 6-7" /><circle cx="10" cy="10" r="8" /></svg></span>
             No incidents have occurred for this monitor.

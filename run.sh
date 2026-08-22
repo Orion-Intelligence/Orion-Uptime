@@ -16,7 +16,7 @@ CLIENT_DIR="client"
 CLIENT_BUILD_DIR="client/build"
 BACKEND_BUILD_DIR="backend/build"
 NG_SERVE_PID_FILE="/tmp/orion-uptime-ng-serve.pid"
-NG_SERVE_PORT="${NG_SERVE_PORT:-4300}"
+NG_SERVE_PORT="${NG_SERVE_PORT:-4400}"
 NG_SERVE_URL="http://127.0.0.1:${NG_SERVE_PORT}/"
 READY_TIMEOUT="${READY_TIMEOUT:-300}"
 
@@ -38,13 +38,13 @@ Usage:
   ./run.sh build -d     Build and start the backend only, with live reload on backend/app changes
   ./run.sh build -b     Rebuild images and start the stack, reusing the existing client build
   ./run.sh build -p     Same as ./run.sh production
-  ./run.sh serve        Start the stack and run the Angular dev server on :4300
+  ./run.sh serve        Start the stack and run the Angular dev server on :4400
   ./run.sh production   Build the client and images and start the production stack (nginx on :80/:443 with Let's Encrypt for PRODUCTION_DOMAIN)
   ./run.sh stop         Stop the Angular dev server and the stack
   ./run.sh              Start the stack from the images that already exist
 
 The stack is published on APP_PORT (.env, default 8600). After ./run.sh build -d,
-run the client yourself with "cd client && ng serve", which opens on :4300.
+run the client yourself with "cd client && ng serve", which opens on :4400.
 EOF
 }
 

@@ -1,6 +1,3 @@
-[tool.black]
-line-length = 400
-
 [tool.ruff]
 line-length = 400
 target-version = "py312"

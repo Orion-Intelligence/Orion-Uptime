@@ -1,4 +1,4 @@
-<div id="user-list-page">
+<div [@pageEnter] id="user-list-page">
   <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-6 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
     <div>
       <p class="eyebrow">Administration</p>
@@ -12,18 +12,18 @@
   </header>
 
   @if (loading()) {
-    <div class="loading-line tw:mb-4"></div>
+    <div [@fadeInOut] class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   }
   @if (error()) {
-    <p class="form-error tw:mb-4">{{ error() }}</p>
+    <p [@fadeInOut] class="form-error tw:mb-4">{{ error() }}</p>
   }
   @if (message()) {
-    <p class="form-success notice app-notification tw:m-0 tw:rounded-[8px] tw:bg-[rgb(52_211_153_/_10%)] tw:px-3.25 tw:py-2.75 tw:text-[13px] tw:leading-[1.45] tw:text-[#027a48] tw:[border:1px_solid_rgb(52_211_153_/_30%)] tw:dark:text-[#6ce9a6]" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+    <p [@fadeInOut] class="form-success notice app-notification tw:m-0 tw:rounded-[8px] tw:bg-[rgb(52_211_153_/_10%)] tw:px-3.25 tw:py-2.75 tw:text-[13px] tw:leading-[1.45] tw:text-[#027a48] tw:[border:1px_solid_rgb(52_211_153_/_30%)] tw:dark:text-[#6ce9a6]" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
       {{ message() }}
     </p>
   }
 
-  <section class="user-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(340px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Registered users">
+  <section [@listStagger]="users().length" class="user-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(340px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Registered users">
     @for (user of users(); track user.id) {
       <article class="panel user-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
         <header class="tw:flex tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
@@ -59,7 +59,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div class="empty-state panel tw:col-span-full">No registered users were found.</div>
+        <div [@fadeInOut] class="empty-state panel tw:col-span-full">No registered users were found.</div>
       }
     }
   </section>

@@ -19,7 +19,6 @@ export class RealtimeService {
   private stopped = true;
 
   readonly snapshot = signal<RealtimeSnapshot | null>(null);
-  readonly connected = signal(false);
   readonly error = signal('');
   readonly now = signal(Date.now());
   readonly summary = computed(() => this.snapshot()?.summary ?? null);
@@ -46,7 +45,6 @@ export class RealtimeService {
     }
     this.source?.close();
     this.source = undefined;
-    this.connected.set(false);
     this.retryAttempt = 0;
     this.stopped = false;
     this.openStream();
@@ -54,7 +52,6 @@ export class RealtimeService {
 
   disconnect(): void {
     this.stopped = true;
-    this.connected.set(false);
     this.source?.close();
     this.source = undefined;
     this.recovery?.unsubscribe();
@@ -131,7 +128,6 @@ export class RealtimeService {
     const source = new EventSource('/api/events', { withCredentials: true });
     this.source = source;
     source.onopen = () => {
-      this.connected.set(true);
       this.error.set('');
       this.retryAttempt = 0;
     };
@@ -155,7 +151,6 @@ export class RealtimeService {
   }
 
   private handleStreamFailure(): void {
-    this.connected.set(false);
     this.source?.close();
     this.source = undefined;
     if (this.stopped) {

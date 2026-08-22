@@ -1,4 +1,4 @@
-<div id="status-page-list">
+<div [@pageEnter] id="status-page-list">
   <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-7.5 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
     <div>
       <p class="eyebrow">Publishing</p>
@@ -14,18 +14,18 @@
   </header>
 
   @if (loading()) {
-    <div class="loading-line tw:mb-4"></div>
+    <div [@fadeInOut] class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   }
   @if (error()) {
-    <p class="form-error tw:mb-4">{{ error() }}</p>
+    <p [@fadeInOut] class="form-error tw:mb-4">{{ error() }}</p>
   }
   @if (message()) {
-    <div class="notification app-notification tw:text-xs" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+    <div [@fadeInOut] class="notification app-notification tw:text-xs" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
       {{ message() }}
     </div>
   }
 
-  <section class="page-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Status pages">
+  <section [@listStagger]="pages().length" class="page-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Status pages">
     @for (page of pages(); track page.id) {
       <article class="panel status-page-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
         <header class="tw:min-w-0 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
@@ -59,7 +59,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div class="empty-state panel tw:col-span-full">No status pages have been created yet.</div>
+        <div [@fadeInOut] class="empty-state panel tw:col-span-full">No status pages have been created yet.</div>
       }
     }
   </section>

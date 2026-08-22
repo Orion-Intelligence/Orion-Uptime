@@ -2,11 +2,13 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { DashboardIncident } from '../../models/models';
 import { RealtimeService } from '../../services/realtime.service';
+import { fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-dashboard-page',
   imports: [DatePipe, DecimalPipe],
   templateUrl: './dashboard.html',
+  animations: [fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class DashboardPage {
   readonly realtime = inject(RealtimeService);

@@ -1,4 +1,4 @@
-<div id="resource-editor-page">
+<div [@pageEnter] id="resource-editor-page">
   <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-6 tw:max-[700px]:flex-col tw:max-[700px]:items-start tw:max-[700px]:gap-4">
     <div>
       <p class="eyebrow">Configuration</p>
@@ -13,7 +13,7 @@
 
   <form class="panel tw:grid tw:max-w-205 tw:grid-cols-2 tw:gap-5.5 tw:p-6.5 tw:max-[700px]:grid-cols-1 tw:max-[700px]:p-5" [formGroup]="form" (ngSubmit)="submit()">
     @if (error()) {
-      <p class="form-error tw:col-span-full tw:max-[700px]:col-auto" role="alert">
+      <p [@fadeInOut] class="form-error tw:col-span-full tw:max-[700px]:col-auto" role="alert">
         {{ error() }}
       </p>
     }

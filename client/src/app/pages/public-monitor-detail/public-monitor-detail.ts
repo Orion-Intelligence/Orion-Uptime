@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe, NgOptimizedImage, isPlatformBrowser } from '@ang
 import { Component, computed, DestroyRef, inject, PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { DailyUptime, PublicMonitorDetail, PublicMonitorEvent, PublicResponseTimePoint, PublicStatusMonitor, PublicUptimeStatus, } from '../../models/models';
+import { fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation } from '../../shared/animations';
 
 interface ChartPoint {
   data: PublicResponseTimePoint;
@@ -13,6 +14,7 @@ interface ChartPoint {
   selector: 'app-public-monitor-detail',
   imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink],
   templateUrl: './public-monitor-detail.html',
+  animations: [fadeInAnimation, fadeInOutAnimation, listStaggerAnimation, pageEnterAnimation],
 })
 export class PublicMonitorDetailPage {
   private readonly destroyRef = inject(DestroyRef);

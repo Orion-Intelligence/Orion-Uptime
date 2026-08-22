@@ -5,6 +5,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../services/api.service';
 import { AuthProfileOption } from '../../models/models';
+import { fadeInOutAnimation, pageEnterAnimation } from '../../shared/animations';
 
 type ResourceKind = 'http' | 'api' | 'ping' | 'heartbeat' | 'auth-profile';
 
@@ -17,6 +18,7 @@ interface CreatedResource {
   selector: 'app-new-resource-page',
   imports: [ReactiveFormsModule, RouterLink, NgTemplateOutlet],
   templateUrl: './add-monitor.html',
+  animations: [fadeInOutAnimation, pageEnterAnimation],
 })
 export class NewResourcePage {
   private readonly fb = inject(FormBuilder);

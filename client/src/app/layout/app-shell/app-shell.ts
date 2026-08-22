@@ -5,11 +5,13 @@ import { finalize } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { RealtimeService } from '../../services/realtime.service';
 import { ThemeService } from '../../services/theme.service';
+import { overlayAnimation, pageEnterAnimation, popupAnimation } from '../../shared/animations';
 
 @Component({
   selector: 'app-shell',
   imports: [NgOptimizedImage, RouterLink, RouterLinkActive, RouterOutlet],
   templateUrl: './app-shell.html',
+  animations: [overlayAnimation, pageEnterAnimation, popupAnimation],
 })
 export class AppShell {
   private readonly realtime = inject(RealtimeService);
