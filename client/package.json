@@ -40,7 +40,7 @@
     "@angular/compiler-cli": "^21.2.0",
     "@cypress/code-coverage": "4.0.3",
     "@tailwindcss/postcss": "^4.3.3",
-    "@types/node": "^20.17.19",
+    "@types/node": "^26.2.0",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
     "cypress": "^15.20.1",
