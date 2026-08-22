@@ -58,7 +58,7 @@ export default defineConfig({
         coverage: coverageEnabled,
     },
     e2e: {
-        specPattern: "cypress/e2e*.{cy,spec}.{ts,js}",
+        specPattern: "cypress/e2e/**/*.{cy,spec}.{ts,js}",
         supportFile: "cypress/support/e2e.ts",
         testIsolation: true,
         setupNodeEvents(on, config) {
