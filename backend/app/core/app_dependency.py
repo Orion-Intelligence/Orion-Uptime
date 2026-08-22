@@ -10,6 +10,10 @@ from jwt import PyJWTError
 from app.service.mongo_db.shared_models.db_user_account_model import TokenType, UserRole
 
 
+def jwt_signing_key() -> str:
+    return os.environ["JWT_SECRET"]
+
+
 class AppDependency:
     def create_access_token(self, user_id: str, username: str, role: UserRole) -> str:
         load_dotenv()
@@ -22,7 +26,7 @@ class AppDependency:
             "exp": expire,
             "jti": uuid.uuid4().hex,
         }
-        return jwt.encode(payload, os.environ["JWT_SECRET"], algorithm=os.environ["JWT_ALGORITHM"])
+        return jwt.encode(payload, jwt_signing_key(), algorithm=os.environ["JWT_ALGORITHM"])
 
     def create_refresh_token(self, user_id: str, username: str, role: UserRole) -> tuple[str, datetime]:
         load_dotenv()
@@ -37,16 +41,12 @@ class AppDependency:
             "exp": expires_at,
             "jti": uuid.uuid4().hex,
         }
-        token = jwt.encode(
-            payload,
-            os.environ["JWT_SECRET"],
-            algorithm=os.environ["JWT_ALGORITHM"],
-        )
+        token = jwt.encode(payload, jwt_signing_key(), algorithm=os.environ["JWT_ALGORITHM"])
         return token, expires_at
 
     def decode_token(self, token: str) -> dict[str, Any]:
         load_dotenv()
-        return jwt.decode(token, os.environ["JWT_SECRET"], algorithms=[os.environ["JWT_ALGORITHM"]])
+        return jwt.decode(token, jwt_signing_key(), algorithms=[os.environ["JWT_ALGORITHM"]])
 
     def verify_access_token(self, token: str) -> dict[str, Any]:
         payload = self.decode_token(token)

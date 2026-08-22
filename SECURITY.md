@@ -11,7 +11,8 @@ release. Older revisions, forks, and modified third-party deployments are not ma
 ## Report a Vulnerability
 
 Please **do not** disclose a suspected vulnerability through a public issue, discussion, pull request, or social-media
-post. Submit it privately through this repository's GitHub private vulnerability reporting form (Security → Report a vulnerability).
+post. Submit it privately through this repository's GitHub private vulnerability reporting form:
+https://github.com/Orion-Intelligence/Orion-Uptime/security/advisories/new (Security → Report a vulnerability).
 
 
 Include as much of the following information as possible:

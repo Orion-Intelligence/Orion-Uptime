@@ -1,2 +1,6 @@
+[MASTER]
+ignore=requirements.txt
+ignore-patterns=.*\.txt$
+
 [MESSAGES CONTROL]
 disable=C,R,broad-exception-caught,unused-argument,django-not-configured
