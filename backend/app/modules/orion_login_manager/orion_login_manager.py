@@ -18,7 +18,7 @@ from app.service.secrets import secret_box
 class AuthProfileManager:
     DEPRECATED_FIELDS = {
         "credential_location": "",
-        "token_field": "",
+        "token_field": "",  # nosec B105
         "expires_in_field": "",
     }
 

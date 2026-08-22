@@ -34,7 +34,9 @@ export class StatusPageListPage {
     if (initialMessage) {
       this.showNotice(initialMessage);
     }
-    this.destroyRef.onDestroy(() => this.clearNoticeTimers());
+    this.destroyRef.onDestroy(() => {
+      this.clearNoticeTimers(); 
+    });
     this.realtime.connect();
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
       if (!snapshot.resources) {
@@ -48,9 +50,9 @@ export class StatusPageListPage {
   }
 
   monitorNames(page: StatusPage): string[] {
-    const overviews = this.overviews();
+    const overviews = new Map(Object.entries(this.overviews()));
     return page.monitor_ids
-      .map((monitorId) => overviews[monitorId]?.name)
+      .map((monitorId) => overviews.get(monitorId)?.name)
       .filter((name): name is string => Boolean(name));
   }
 

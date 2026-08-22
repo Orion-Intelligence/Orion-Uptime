@@ -35,7 +35,9 @@ export class RegisterUserPage {
     const request: CreateUserRequest = this.form.getRawValue();
     this.api
       .post<UserResponse, CreateUserRequest>('/users/create', request)
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.loading.set(false); 
+      }))
       .subscribe({
         next: (response) => {
           void this.router.navigateByUrl('/users', {
@@ -44,7 +46,9 @@ export class RegisterUserPage {
             },
           });
         },
-        error: (error: unknown) => this.error.set(ApiService.errorMessage(error)),
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error)); 
+        },
       });
   }
 }

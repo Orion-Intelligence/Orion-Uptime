@@ -160,7 +160,7 @@
 
   .button:disabled {
     cursor: wait;
-    opacity: 0.55;
+    opacity: 55%;
   }
 
   .header-action {
@@ -233,7 +233,7 @@
 
   .header-action:disabled {
     cursor: wait;
-    opacity: 0.5;
+    opacity: 50%;
   }
 
   .loading-line {
@@ -307,14 +307,14 @@
   }
 
   @keyframes status-pulse {
-    0% { opacity: 0.5; }
+    0% { opacity: 50%; }
 
     70% {
-      opacity: 0;
+      opacity: 0%;
       transform: scale(1.6);
     }
 
-    100% { opacity: 0; }
+    100% { opacity: 0%; }
   }
 }
 

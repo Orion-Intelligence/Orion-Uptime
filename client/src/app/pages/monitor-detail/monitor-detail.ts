@@ -50,7 +50,9 @@ export class MonitorDetailPage {
     this.loadInitialData();
     this.realtime.snapshots$
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((snapshot) => this.applySnapshot(snapshot));
+      .subscribe((snapshot) => {
+        this.applySnapshot(snapshot); 
+      });
   }
 
   private loadInitialData(): void {
@@ -88,7 +90,9 @@ export class MonitorDetailPage {
             this.statusHistory.set(this.mergeStatusPoints([], response.data.history));
           }
         },
-        error: (error: unknown) => this.error.set(ApiService.errorMessage(error)),
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error)); 
+        },
       });
   }
 
@@ -103,7 +107,9 @@ export class MonitorDetailPage {
             this.responseHistory.set(this.mergeResponsePoints([], response.data.points));
           }
         },
-        error: (error: unknown) => this.error.set(ApiService.errorMessage(error)),
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error)); 
+        },
       });
   }
 

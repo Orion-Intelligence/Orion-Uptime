@@ -1,7 +1,7 @@
 class Messages:
     LOGIN_SUCCESS = "Login successful."
     LOGOUT_SUCCESS = "Logout successful."
-    INVALID_REFRESH_TOKEN = "Invalid or expired refresh token."
+    INVALID_REFRESH_TOKEN = "Invalid or expired refresh token."  # nosec B105
     INVALID_CREDENTIALS = "Invalid username or password."
     TOO_MANY_LOGIN_ATTEMPTS = "Too many failed login attempts. Try again in a few minutes."
 

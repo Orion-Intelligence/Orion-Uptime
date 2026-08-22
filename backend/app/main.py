@@ -4,6 +4,7 @@ import os
 import signal
 from contextlib import asynccontextmanager, suppress
 from datetime import UTC, datetime
+from typing import NamedTuple
 
 from dotenv import load_dotenv
 from fastapi import APIRouter, FastAPI
@@ -85,28 +86,30 @@ async def health():
     }
     return JSONResponse(body, status_code=200 if healthy else 503)
 
-@asynccontextmanager
-async def lifespan(_app: FastAPI):
-    await db_manager.connect()
+class Services(NamedTuple):
+    auth_profile_service: AuthProfileManager
+    http_monitor_service: HTTP_monitorManager
+    api_monitor_manager: API_monitorManager
+    ping_monitor_service: PingMonitorManager
+    heartbeat_monitor_service: HeartbeatMonitorManager
+    user_service: UserManager
+    checker_factory: CheckerFactory
+    monitor_service: MonitorManager
+    dashboard_service: DashboardManager
+    status_page_service: StatusPageManager
 
-    engine = db_manager.engine
 
+async def build_services(engine) -> Services:
     auth_profile_service = AuthProfileManager(engine)
     await auth_profile_service.create_indexes()
+    auth_token_state.token_manager = AccessTokenCookieManager(auth_profile_service)
+    checker_factory = CheckerFactory(token_manager=auth_token_state.token_manager)
     http_monitor_service = HTTP_monitorManager(engine)
     api_monitor_manager = API_monitorManager(engine, auth_profile_service)
     ping_monitor_service = PingMonitorManager(engine)
     heartbeat_monitor_service = HeartbeatMonitorManager(engine)
     incident_service = IncidentManager(engine)
     monitor_result_service = MonitorResultManager(engine)
-    monitor_state_service = MonitorStateManager(engine)
-    user_service = UserManager(engine, password_service)
-    if await user_service.default_admin_password_in_use(os.environ["DEFAULT_ADMIN_USERNAME"], os.environ["DEFAULT_ADMIN_PASSWORD"]):
-        logger.warning("The default administrator account still uses DEFAULT_ADMIN_PASSWORD from the environment; change it from the Users page.")
-
-    auth_token_state.token_manager = AccessTokenCookieManager(auth_profile_service)
-    checker_factory = CheckerFactory(token_manager=auth_token_state.token_manager)
-
     monitor_service = MonitorManager(
         http_monitor_service=http_monitor_service,
         api_monitor_manager=api_monitor_manager,
@@ -114,113 +117,128 @@ async def lifespan(_app: FastAPI):
         heartbeat_monitor_service=heartbeat_monitor_service,
         incident_service=incident_service,
         monitor_result_service=monitor_result_service,
-        monitor_state_service=monitor_state_service,
+        monitor_state_service=MonitorStateManager(engine),
         checker_factory=checker_factory,
     )
     heartbeat_monitor_service.monitor_service = monitor_service
-
     dashboard_service = DashboardManager(
         monitor_service=monitor_service,
         monitor_result_service=monitor_result_service,
         incident_service=incident_service,
     )
-    status_page_service = StatusPageManager(
-        engine,
-        monitor_service,
-        dashboard_service,
+    return Services(
+        auth_profile_service=auth_profile_service,
+        http_monitor_service=http_monitor_service,
+        api_monitor_manager=api_monitor_manager,
+        ping_monitor_service=ping_monitor_service,
+        heartbeat_monitor_service=heartbeat_monitor_service,
+        user_service=UserManager(engine, password_service),
+        checker_factory=checker_factory,
+        monitor_service=monitor_service,
+        dashboard_service=dashboard_service,
+        status_page_service=StatusPageManager(engine, monitor_service, dashboard_service),
     )
 
+
+async def changed_monitor_details(dashboard_service: DashboardManager, changed) -> dict:
+    details = {}
+    for kind, entity_id in changed:
+        if kind != "monitor" or entity_id is None:
+            continue
+        with suppress(NotFoundError):
+            details[entity_id] = await dashboard_service.get_monitor_detail(entity_id)
+    return details
+
+
+def viewer_resources(overviews) -> dict:
+    resources = {
+        "HTTP": [],
+        "API": [],
+        "ping": [],
+        "heartbeat": [],
+        "auth_profiles": [],
+        "users": [],
+        "status_pages": [],
+    }
+    for overview in overviews:
+        if overview.monitor_type not in resources:
+            continue
+        resources[overview.monitor_type].append(
+            {
+                "id": overview.id,
+                "name": overview.name,
+                "monitor_type": overview.monitor_type,
+                "status": overview.status,
+                "is_active": overview.is_active,
+                "created_at": overview.created_at,
+                "last_checked_at": overview.last_checked_at,
+            }
+        )
+    return resources
+
+
+async def admin_resources(services: Services) -> dict:
+    (
+        http_monitors,
+        api_monitors,
+        ping_monitors,
+        heartbeat_monitors,
+        auth_profiles,
+        users,
+        status_pages,
+    ) = await asyncio.gather(
+        services.http_monitor_service.list_monitors(),
+        services.api_monitor_manager.list_monitors(),
+        services.ping_monitor_service.list_monitors(),
+        services.heartbeat_monitor_service.list_monitors(),
+        services.auth_profile_service.list_profiles(),
+        services.user_service.list_users(),
+        services.status_page_service.list_pages(),
+    )
+    return {
+        "HTTP": http_monitors,
+        "API": api_monitors,
+        "ping": ping_monitors,
+        "heartbeat": heartbeat_monitors,
+        "auth_profiles": auth_profiles,
+        "users": users,
+        "status_pages": status_pages,
+    }
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    await db_manager.connect()
+    services = await build_services(db_manager.engine)
+    if await services.user_service.default_admin_password_in_use(os.environ["DEFAULT_ADMIN_USERNAME"], os.environ["DEFAULT_ADMIN_PASSWORD"]):
+        logger.warning("The default administrator account still uses DEFAULT_ADMIN_PASSWORD from the environment; change it from the Users page.")
+
     async def build_realtime_snapshot(changed, include_admin):
-        (
-            summary,
-            incidents,
-            activity,
-            overviews,
-        ) = await asyncio.gather(
+        dashboard_service = services.dashboard_service
+        summary, incidents, activity, overviews = await asyncio.gather(
             dashboard_service.get_summary(),
             dashboard_service.get_recent_incidents(),
             dashboard_service.get_recent_activity(),
             dashboard_service.get_monitor_overviews(),
         )
-        changed_monitor_details = {}
-        for kind, entity_id in changed:
-            if kind != "monitor" or entity_id is None:
-                continue
-            with suppress(NotFoundError):
-                changed_monitor_details[entity_id] = (
-                    await dashboard_service.get_monitor_detail(entity_id)
-                )
-        viewer_resources = {
-            "HTTP": [],
-            "API": [],
-            "ping": [],
-            "heartbeat": [],
-            "auth_profiles": [],
-            "users": [],
-            "status_pages": [],
-        }
-        for overview in overviews:
-            monitor_type = overview.monitor_type
-            if monitor_type not in viewer_resources:
-                continue
-            viewer_resources[monitor_type].append(
-                {
-                    "id": overview.id,
-                    "name": overview.name,
-                    "monitor_type": monitor_type,
-                    "status": overview.status,
-                    "is_active": overview.is_active,
-                    "created_at": overview.created_at,
-                    "last_checked_at": overview.last_checked_at,
-                }
-            )
-
         common = {
             "generated_at": datetime.now(UTC),
             "summary": summary,
             "incidents": incidents,
             "activity": activity,
             "overviews": overviews,
-            "changed_monitor_details": changed_monitor_details,
-            "resources": viewer_resources,
+            "changed_monitor_details": await changed_monitor_details(dashboard_service, changed),
+            "resources": viewer_resources(overviews),
         }
         admin = common
         if include_admin:
-            (
-                http_monitors,
-                api_monitors,
-                ping_monitors,
-                heartbeat_monitors,
-                auth_profiles,
-                users,
-                status_pages,
-            ) = await asyncio.gather(
-                http_monitor_service.list_monitors(),
-                api_monitor_manager.list_monitors(),
-                ping_monitor_service.list_monitors(),
-                heartbeat_monitor_service.list_monitors(),
-                auth_profile_service.list_profiles(),
-                user_service.list_users(),
-                status_page_service.list_pages(),
-            )
-            admin = {
-                **common,
-                "resources": {
-                    "HTTP": http_monitors,
-                    "API": api_monitors,
-                    "ping": ping_monitors,
-                    "heartbeat": heartbeat_monitors,
-                    "auth_profiles": auth_profiles,
-                    "users": users,
-                    "status_pages": status_pages,
-                },
-            }
+            admin = {**common, "resources": await admin_resources(services)}
         return common, admin
 
     realtime_broker.configure(build_realtime_snapshot)
 
     scheduler_state.scheduler = MonitorScheduler(
-        monitor_service=monitor_service,
+        monitor_service=services.monitor_service,
         on_fatal=lambda exc: terminate_process(f"The monitor scheduler failed: {exc!r}."),
     )
     scheduler_task = asyncio.create_task(scheduler_state.scheduler.start())
@@ -238,7 +256,7 @@ async def lifespan(_app: FastAPI):
         with suppress(asyncio.CancelledError):
             await scheduler_task
 
-        await checker_factory.close()
+        await services.checker_factory.close()
         await realtime_broker.shutdown()
         auth_token_state.token_manager = None
         await db_manager.disconnect()

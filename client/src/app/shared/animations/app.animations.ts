@@ -30,7 +30,9 @@ export function providePageAnimations(): EnvironmentProviders {
       const root = inject(DOCUMENT).documentElement;
       afterNextRender(() => {
         requestAnimationFrame(() => {
-          requestAnimationFrame(() => root.classList.add(ANIMATIONS_READY_CLASS));
+          requestAnimationFrame(() => {
+            root.classList.add(ANIMATIONS_READY_CLASS); 
+          });
         });
       });
     }),

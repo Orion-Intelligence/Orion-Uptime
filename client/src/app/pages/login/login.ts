@@ -37,10 +37,14 @@ export class LoginPage {
     this.error.set('');
     this.auth
       .login(this.form.getRawValue())
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.loading.set(false); 
+      }))
       .subscribe({
         next: () => void this.router.navigate(['/dashboard']),
-        error: (error: unknown) => this.error.set(ApiService.errorMessage(error)),
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error)); 
+        },
       });
   }
 }

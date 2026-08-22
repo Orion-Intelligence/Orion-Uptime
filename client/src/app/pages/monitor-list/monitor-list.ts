@@ -73,7 +73,9 @@ export class ResourceListPage {
     if (initialMessage || initialToken) {
       this.showNotice(initialMessage, initialToken);
     }
-    this.destroyRef.onDestroy(() => this.clearNoticeTimers());
+    this.destroyRef.onDestroy(() => {
+      this.clearNoticeTimers(); 
+    });
     this.realtime.connect();
     effect(() => {
       const error = this.realtime.error();
@@ -97,7 +99,7 @@ export class ResourceListPage {
       if (!resourceType) {
         return;
       }
-      const resources = snapshot.resources?.[resourceType];
+      const resources = this.resourcesOf(snapshot.resources, resourceType);
       if (resources) {
         this.records.set(resources as ResourceRecord[]);
       }
@@ -157,6 +159,25 @@ export class ResourceListPage {
 
   private isMonitorResource(resourceType: keyof RealtimeResources,): resourceType is 'HTTP' | 'API' | 'ping' | 'heartbeat' {
     return ['HTTP', 'API', 'ping', 'heartbeat'].includes(resourceType);
+  }
+
+  private resourcesOf(resources: RealtimeResources | undefined, resourceType: keyof RealtimeResources): unknown[] | undefined {
+    switch (resourceType) {
+      case 'HTTP':
+        return resources?.HTTP;
+      case 'API':
+        return resources?.API;
+      case 'ping':
+        return resources?.ping;
+      case 'heartbeat':
+        return resources?.heartbeat;
+      case 'auth_profiles':
+        return resources?.auth_profiles;
+      case 'users':
+        return resources?.users;
+      case 'status_pages':
+        return resources?.status_pages;
+    }
   }
 
   deleteResource(record: ResourceRecord): void {

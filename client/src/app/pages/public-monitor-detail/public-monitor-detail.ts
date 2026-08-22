@@ -137,7 +137,9 @@ export class PublicMonitorDetailPage {
 
   private connect(): void {
     if (!this.clockTimer) {
-      this.clockTimer = setInterval(() => this.now.set(Date.now()), 1000);
+      this.clockTimer = setInterval(() => {
+        this.now.set(Date.now()); 
+      }, 1000);
     }
     this.source = new EventSource(`/api/status-pages/public/${encodeURIComponent(this.slug)}/monitors/${encodeURIComponent(this.monitorId)}/events`,);
     this.source.onopen = () => {

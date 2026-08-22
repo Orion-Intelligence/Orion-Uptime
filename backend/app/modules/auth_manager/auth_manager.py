@@ -345,8 +345,8 @@ class AuthManager:
             {"_id": object_id},
             {
                 "$set": {
-                    "refresh_token_hash": None,
-                    "refresh_token_expires_at": None,
+                    "refresh_token_hash": None,  # nosec B105
+                    "refresh_token_expires_at": None,  # nosec B105
                     "updated_at": datetime.now(UTC),
                 }
             },

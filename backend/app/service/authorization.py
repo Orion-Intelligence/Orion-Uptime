@@ -18,8 +18,8 @@ from app.service.mongo_db.shared_models.db_user_account_model import (
     UserRole,
 )
 
-ACCESS_TOKEN_COOKIE = "access_token"
-REFRESH_TOKEN_COOKIE = "refresh_token"
+ACCESS_TOKEN_COOKIE = "access_token"  # nosec B105
+REFRESH_TOKEN_COOKIE = "refresh_token"  # nosec B105
 AUTH_COOKIE_PATH = "/api"
 
 def get_auth_service(engine: AIOEngine = Depends(get_engine)) -> AuthManager:

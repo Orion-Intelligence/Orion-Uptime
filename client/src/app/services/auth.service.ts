@@ -28,11 +28,15 @@ export class AuthService {
           subscriber.error(error);
         },
       });
-      return () => subscription.unsubscribe();
+      return () => {
+        subscription.unsubscribe(); 
+      };
     });
   }
 
   logout(): Observable<unknown> {
-    return this.api.post<null>('/auth/logout', {}).pipe(tap(() => this.user.set(null)));
+    return this.api.post<null>('/auth/logout', {}).pipe(tap(() => {
+      this.user.set(null); 
+    }));
   }
 }

@@ -29,7 +29,9 @@ export class AppShell {
     const storedSidebar = window.localStorage.getItem('orion-uptime-sidebar');
     this.sidebarCollapsed.set(storedSidebar === 'collapsed');
     this.realtime.connect();
-    this.destroyRef.onDestroy(() => this.realtime.disconnect());
+    this.destroyRef.onDestroy(() => {
+      this.realtime.disconnect(); 
+    });
   }
 
   closeMenu(): void {
@@ -128,7 +130,9 @@ export class AppShell {
     this.loggingOut.set(true);
     this.auth
       .logout()
-      .pipe(finalize(() => this.loggingOut.set(false)))
+      .pipe(finalize(() => {
+        this.loggingOut.set(false); 
+      }))
       .subscribe({
         next: () => {
           this.realtime.disconnect();

@@ -111,7 +111,7 @@ class UserManager:
         realtime_broker.notify("user", user_id)
 
     async def default_admin_password_in_use(self, username: str, password: str) -> bool:
-        document = await self.collection.find_one({"username": username}, {"password_hash": 1}) or {}
+        document = await self.collection.find_one({"username": username}, {"password_hash": 1}) or {}  # nosec B105
         password_hash = document.get("password_hash")
         if not isinstance(password_hash, str):
             return False

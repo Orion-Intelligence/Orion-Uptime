@@ -14,7 +14,7 @@ from app.service.mongo_db.shared_models.db_orion_login_model import AuthProfileM
 if TYPE_CHECKING:
     from app.modules.orion_login_manager.orion_login_manager import AuthProfileManager
 
-ACCESS_TOKEN_COOKIE_NAME = "access_token"
+ACCESS_TOKEN_COOKIE_NAME = "access_token"  # nosec B105
 TOKEN_CACHE_TTL_SECONDS = 14 * 60
 
 class AuthTokenError(RuntimeError):

@@ -34,7 +34,9 @@ export class UserListPage {
     if (navigationMessage) {
       this.showNotice(navigationMessage);
     }
-    this.destroyRef.onDestroy(() => this.clearNoticeTimers());
+    this.destroyRef.onDestroy(() => {
+      this.clearNoticeTimers(); 
+    });
     this.realtime.connect();
     effect(() => {
       const error = this.realtime.error();

@@ -26,7 +26,9 @@ export class PublicStatusPageView {
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      this.clockTimer = setInterval(() => this.now.set(Date.now()), 1000);
+      this.clockTimer = setInterval(() => {
+        this.now.set(Date.now()); 
+      }, 1000);
       this.connect();
     }
     this.destroyRef.onDestroy(() => {

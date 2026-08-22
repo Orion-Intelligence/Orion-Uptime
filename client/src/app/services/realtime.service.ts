@@ -146,8 +146,12 @@ export class RealtimeService {
         this.handleStreamFailure();
       }
     });
-    source.addEventListener('reauthenticate', () => this.handleStreamFailure());
-    source.onerror = () => this.handleStreamFailure();
+    source.addEventListener('reauthenticate', () => {
+      this.handleStreamFailure(); 
+    });
+    source.onerror = () => {
+      this.handleStreamFailure(); 
+    };
   }
 
   private handleStreamFailure(): void {
@@ -159,7 +163,9 @@ export class RealtimeService {
 
     this.recovery?.unsubscribe();
     this.recovery = this.http.get('/api/auth/me', { withCredentials: true }).subscribe({
-      next: () => this.scheduleReconnect(),
+      next: () => {
+        this.scheduleReconnect(); 
+      },
       error: (error: unknown) => {
         if (error instanceof HttpErrorResponse && error.status === 401) {
           this.disconnect();
@@ -192,7 +198,9 @@ export class RealtimeService {
       return;
     }
     this.now.set(Date.now());
-    this.clockTimer = setInterval(() => this.now.set(Date.now()), 1000);
+    this.clockTimer = setInterval(() => {
+      this.now.set(Date.now()); 
+    }, 1000);
   }
 
   private elapsedSince(timestamp: string): number {

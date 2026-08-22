@@ -56,7 +56,9 @@ export class NewResourcePage {
   constructor() {
     if (this.kind === 'api') {
       this.api.get<AuthProfileOption[]>('/auth-profiles/list_all').subscribe({
-        next: (response) => this.authProfiles.set(response.data),
+        next: (response) => {
+          this.authProfiles.set(response.data); 
+        },
       });
     }
   }
@@ -82,7 +84,9 @@ export class NewResourcePage {
     this.loading.set(true);
     this.api
       .post<CreatedResource, Record<string, unknown>>(request.endpoint, request.body)
-      .pipe(finalize(() => this.loading.set(false)))
+      .pipe(finalize(() => {
+        this.loading.set(false); 
+      }))
       .subscribe({
         next: (response) => {
           const data = response.data;
@@ -97,7 +101,9 @@ export class NewResourcePage {
             },
           });
         },
-        error: (error: unknown) => this.error.set(ApiService.errorMessage(error)),
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error)); 
+        },
       });
   }
 
@@ -119,16 +125,16 @@ export class NewResourcePage {
   }
 
   private invalidFieldMessage(): string {
-    const messages: Record<string, string> = {
-      name: 'Name is required (up to 100 characters).',
-      check_interval: 'Check interval must be between 10 and 86400 seconds.',
-      timeout: 'Timeout must be at least 1 second.',
-      expected_status_code: 'Expected status must be between 100 and 599.',
-      expected_heartbeat_interval: 'Expected heartbeat interval must be at least 1 second.',
-      grace_period: 'Grace period cannot be negative.',
-    };
+    const messages = new Map<string, string>([
+      ['name', 'Name is required (up to 100 characters).'],
+      ['check_interval', 'Check interval must be between 10 and 86400 seconds.'],
+      ['timeout', 'Timeout must be at least 1 second.'],
+      ['expected_status_code', 'Expected status must be between 100 and 599.'],
+      ['expected_heartbeat_interval', 'Expected heartbeat interval must be at least 1 second.'],
+      ['grace_period', 'Grace period cannot be negative.'],
+    ]);
     const invalid = Object.keys(this.form.controls).find((key) => this.form.get(key)?.invalid);
-    return (invalid && messages[invalid]) || 'Check the highlighted fields.';
+    return (invalid && messages.get(invalid)) || 'Check the highlighted fields.';
   }
 
   private buildRequest(): { endpoint: string; body: Record<string, unknown> } {
