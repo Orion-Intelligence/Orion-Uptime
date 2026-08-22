@@ -54,32 +54,57 @@ jobs:
           sarif = json.loads(source.read_text())
           runs = sarif.get("runs") or []
           batch_size = 20
-
-          if not runs:
-              raise SystemExit("results.sarif does not contain any SARIF runs")
+          tools = [
+              "agentlinter",
+              "bandit",
+              "eslint-8",
+              "jacksonlinter",
+              "markdownlint",
+              "opengrep",
+              "pmd",
+              "prospector",
+              "pylintpython3",
+              "shellcheck",
+              "stylelint",
+              "trivy",
+          ]
 
           def slug(value):
               value = re.sub(r"[^A-Za-z0-9_.-]+", "-", value or "codacy").strip("-").lower()
               return value or "codacy"
 
-          for index, run in enumerate(runs, 1):
+          def tool_key(run):
+              name = run.get("tool", {}).get("driver", {}).get("name") or ""
+              return slug(name).removesuffix("-reported-by-codacy")
+
+          selected = {}
+          for run in runs:
+              key = tool_key(run)
+              if key in tools and key not in selected:
+                  selected[key] = run
+              elif key not in tools:
+                  print(f"Skipping {key}: not part of the reported tool set")
+
+          for key in tools:
+              if key not in selected:
+                  selected[key] = {
+                      "tool": {"driver": {"name": f"{key.capitalize()} (reported by Codacy)"}},
+                      "results": [],
+                  }
+                  print(f"No findings for {key}: registering an empty run")
+
+          for index, key in enumerate(tools, 1):
               output_dir = Path(f"sarif-results-{((index - 1) // batch_size) + 1:02d}")
               output_dir.mkdir(exist_ok=True)
-              tool_name = (
-                  run.get("tool", {})
-                  .get("driver", {})
-                  .get("name")
-                  or f"run-{index}"
-              )
               run_sarif = copy.deepcopy(sarif)
-              run_sarif["runs"] = [copy.deepcopy(run)]
+              run_sarif["runs"] = [copy.deepcopy(selected[key])]
               run_output = run_sarif["runs"][0]
               automation = run_output.setdefault("automationDetails", {})
-              automation["id"] = f"codacy/{slug(tool_name)}/{index}"
+              automation["id"] = f"codacy/{key}-reported-by-codacy/{index}"
 
-              target = output_dir / f"{index:02d}-{slug(tool_name)}.sarif"
+              target = output_dir / f"{index:02d}-{key}.sarif"
               target.write_text(json.dumps(run_sarif), encoding="utf-8")
-              print(f"Wrote {target} with category {automation['id']}")
+              print(f"Wrote {target} with category {automation['id']} ({len(run_output.get('results') or [])} results)")
           PY
 
       - name: Upload SARIF results to GitHub batch 01

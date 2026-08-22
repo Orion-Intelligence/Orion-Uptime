@@ -67,9 +67,9 @@ When investigating a potential vulnerability:
 
 ## Coordinated Disclosure
 
-We will work with reporters to understand, validate, and remediate confirmed vulnerabilities. When appropriate, we will
-coordinate publication of a GitHub security advisory after a fix or mitigation is available. Reporters may receive
-credit unless they prefer to remain anonymous.
+Maintainers validate every report, reproduce confirmed vulnerabilities, and remediate them in a patch release.
+Once a fix or mitigation is available, maintainers publish a GitHub security advisory for the confirmed vulnerability.
+Reporters are credited in the advisory unless they ask to remain anonymous.
 
 ## Safe Harbor
 
