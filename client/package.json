@@ -6,6 +6,7 @@
     "start": "ng serve",
     "serve": "ng serve",
     "build": "ng build --configuration=production",
+    "build:instrumented": "ng build --configuration=instrumented && node scripts/instrument-build.mjs",
     "watch": "ng build --watch --configuration development",
     "test": "cypress",
     "lint": "npm run lint:styles && npx eslint src/app --max-warnings=1000",
@@ -15,7 +16,8 @@
     "lint:watch": "npx eslint src/app --watch",
     "cypress": "cypress",
     "cypress:open": "cypress open --e2e",
-    "cypress:run": "cypress run --e2e"
+    "cypress:run": "cypress run --e2e",
+    "cypress:run:coverage": "ORION_COVERAGE=true cypress run --e2e"
   },
   "private": true,
   "packageManager": "npm@10.9.7",
@@ -37,12 +39,14 @@
     "@angular/build": "^21.2.7",
     "@angular/cli": "^21.2.7",
     "@angular/compiler-cli": "^21.2.0",
+    "@cypress/code-coverage": "4.0.3",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20.17.19",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
     "@typescript-eslint/parser": "^8.67.0",
     "cypress": "^15.20.1",
     "eslint": "^10.8.1",
+    "istanbul-lib-instrument": "6.0.3",
     "postcss": "^8.5.26",
     "postcss-scss": "^4.0.9",
     "prettier": "^3.8.1",
@@ -51,5 +55,25 @@
     "stylelint-scss": "^7.1.1",
     "tailwindcss": "^4.3.3",
     "typescript": "~5.9.2"
+  },
+  "nyc": {
+    "all": false,
+    "include": [
+      "src/app/**/*.ts"
+    ],
+    "exclude": [
+      "src/**/*.spec.ts",
+      "src/**/*.d.ts"
+    ],
+    "extension": [
+      ".ts"
+    ],
+    "excludeAfterRemap": true,
+    "report-dir": "coverage",
+    "reporter": [
+      "lcov",
+      "json-summary",
+      "text-summary"
+    ]
   }
 }

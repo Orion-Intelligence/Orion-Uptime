@@ -27,6 +27,7 @@ export class RegisterUserPage {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.error.set('Username must be 3–50 characters and the password at least 8 characters.');
       return;
     }
     this.loading.set(true);

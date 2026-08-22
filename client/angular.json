@@ -73,6 +73,18 @@
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
+            },
+            "instrumented": {
+              "optimization": false,
+              "extractLicenses": false,
+              "outputHashing": "none",
+              "namedChunks": true,
+              "sourceMap": {
+                "scripts": true,
+                "styles": false,
+                "vendor": false,
+                "hidden": false
+              }
             }
           },
           "defaultConfiguration": "production"

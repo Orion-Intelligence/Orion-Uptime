@@ -1,5 +1,10 @@
 import "./commands";
 
+if (Cypress.expose("coverage")) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@cypress/code-coverage/support");
+}
+
 Cypress.on("window:before:load", (win) => {
     const doc = win.document;
     const originalDocumentGetAnimations = win.Document.prototype.getAnimations?.bind(doc);

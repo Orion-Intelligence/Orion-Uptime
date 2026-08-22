@@ -14,3 +14,11 @@ ignore = ["E501", "B008", "UP042", "UP046", "UP047"]
 testpaths = ["tests"]
 pythonpath = ["."]
 filterwarnings = ["error::DeprecationWarning:app.*"]
+
+[tool.coverage.run]
+branch = true
+omit = ["*/__init__.py", "*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

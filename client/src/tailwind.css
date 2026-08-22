@@ -317,3 +317,9 @@
     100% { opacity: 0; }
   }
 }
+
+.field input.ng-invalid.ng-touched,
+.field select.ng-invalid.ng-touched,
+.field textarea.ng-invalid.ng-touched {
+  border-color: #e5484d;
+}

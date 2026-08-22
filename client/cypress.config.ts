@@ -1,4 +1,5 @@
 import { defineConfig } from "cypress";
+import registerCodeCoverageTasks from "@cypress/code-coverage/task";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -33,6 +34,9 @@ const rootEnv = readRootEnv();
 const adminUsername = process.env["ORION_ADMIN_USERNAME"] || rootEnv["DEFAULT_ADMIN_USERNAME"] || "admin";
 const adminPassword = process.env["ORION_ADMIN_PASSWORD"] || rootEnv["DEFAULT_ADMIN_PASSWORD"] || "";
 
+// Coverage is opt-in: build the client with "npm run build:instrumented" and run Cypress with ORION_COVERAGE=true.
+const coverageEnabled = process.env["ORION_COVERAGE"] === "true";
+
 export default defineConfig({
     allowCypressEnv: false,
     video: false,
@@ -45,10 +49,14 @@ export default defineConfig({
     experimentalFastVisibility: true,
     retries: 0,
     env: {
+        coverage: coverageEnabled,
         language: "en",
         ADMIN_USERNAME: adminUsername,
         ADMIN_PASSWORD: adminPassword,
         takeScreenshots: false,
+    },
+    expose: {
+        coverage: coverageEnabled,
     },
     e2e: {
         specPattern: "cypress/e2e/**/*.{cy,spec}.{ts,js}",
@@ -78,6 +86,9 @@ export default defineConfig({
 
                 return { path: targetPath };
             });
+            if (coverageEnabled) {
+                registerCodeCoverageTasks(on, config);
+            }
             on("before:browser:launch", (browser, launchOptions) => {
                 if (browser.family === "chromium") {
                     launchOptions.args.push("--start-maximized");

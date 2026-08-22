@@ -1,3 +1,11 @@
 [tool.pytest.ini_options]
 testpaths = ["backend/tests"]
 pythonpath = ["backend"]
+
+[tool.coverage.run]
+branch = true
+omit = ["*/__init__.py", "*/tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true

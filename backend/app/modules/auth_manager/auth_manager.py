@@ -184,6 +184,8 @@ class AuthManager:
             password=password,
             hashed_password=user.password_hash):
             raise AuthenticationError(Messages.INVALID_CREDENTIALS)
+        if not user.is_active:
+            raise AuthenticationError(Messages.USER_DISABLED)
 
         refresh_token, refresh_token_expires_at = (
             self.jwt_service.create_refresh_token(
@@ -322,7 +324,7 @@ class AuthManager:
             raise NotFoundError(Messages.USER_NOT_FOUND)
         user = UserModel(**with_string_id(document))
         if not user.is_active:
-            raise AuthenticationError("User account is disabled.")
+            raise AuthenticationError(Messages.USER_DISABLED)
         return CurrentUserResponse(
             id=user.persisted_id,
             username=user.username,

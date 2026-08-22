@@ -64,6 +64,7 @@ export class NewResourcePage {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.error.set(this.invalidFieldMessage());
       return;
     }
 
@@ -115,6 +116,19 @@ export class NewResourcePage {
           ? `Auth profile “${name}” created · Login HTTP ${data.login_status_code}.`
           : `Auth profile “${name}” created.`;
     }
+  }
+
+  private invalidFieldMessage(): string {
+    const messages: Record<string, string> = {
+      name: 'Name is required (up to 100 characters).',
+      check_interval: 'Check interval must be between 10 and 86400 seconds.',
+      timeout: 'Timeout must be at least 1 second.',
+      expected_status_code: 'Expected status must be between 100 and 599.',
+      expected_heartbeat_interval: 'Expected heartbeat interval must be at least 1 second.',
+      grace_period: 'Grace period cannot be negative.',
+    };
+    const invalid = Object.keys(this.form.controls).find((key) => this.form.get(key)?.invalid);
+    return (invalid && messages[invalid]) || 'Check the highlighted fields.';
   }
 
   private buildRequest(): { endpoint: string; body: Record<string, unknown> } {

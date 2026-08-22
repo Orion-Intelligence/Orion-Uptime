@@ -30,6 +30,7 @@ export class LoginPage {
   submit(): void {
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.error.set('Enter your username (at least 3 characters) and password (at least 8 characters).');
       return;
     }
     this.loading.set(true);

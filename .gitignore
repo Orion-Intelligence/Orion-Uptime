@@ -79,6 +79,9 @@ bazel-out/
 .sass-cache/
 connect.lock
 coverage/
+.nyc_output/
+coverage-merged/
+lighthouse-results/
 libpeerconnection.log
 testem.log
 typings/

@@ -34,16 +34,20 @@ Usage:
   ./run.sh lint         Lint the client (eslint + stylelint) and the backend (ruff)
   ./run.sh lint -f      Lint and apply every available auto-fix
   ./run.sh test         Run the backend test suite (pytest)
+  ./run.sh test -c      Run the backend test suite with coverage and write backend/coverage.xml
   ./run.sh build        Install client dependencies, build the client, build images and start the stack
   ./run.sh build -d     Build and start the backend only, with live reload on backend/app changes
   ./run.sh build -b     Rebuild images and start the stack, reusing the existing client build
+  ./run.sh build -t     Build an Istanbul-instrumented client for Cypress coverage, then build images and start the stack
   ./run.sh build -p     Same as ./run.sh production
   ./run.sh serve        Start the stack and run the Angular dev server on :4400
   ./run.sh production   Build the client and images and start the production stack (nginx on :80/:443 with Let's Encrypt for PRODUCTION_DOMAIN)
   ./run.sh stop         Stop the Angular dev server and the stack
   ./run.sh              Start the stack from the images that already exist
 
-The stack is published on APP_PORT (.env, default 8600). After ./run.sh build -d,
+The stack is published on APP_PORT (.env, default 8600). After ./run.sh build -t, run
+"cd client && npm run cypress:run:coverage" against https://127.0.0.1:APP_HTTPS_PORT to
+collect client coverage in client/coverage/lcov.info. After ./run.sh build -d,
 run the client yourself with "cd client && ng serve", which opens on :4400.
 EOF
 }
@@ -163,6 +167,18 @@ ruff_bin() {
     fi
 }
 
+backend_python() {
+    if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
+        echo "$ROOT_DIR/.venv/bin/python"
+    else
+        command -v python3
+    fi
+}
+
+run_backend_tests() {
+    (cd "$ROOT_DIR/backend" && "$(backend_python)" -m pytest -q "$@")
+}
+
 lint_backend() {
     local ruff
     ruff="$(ruff_bin)"
@@ -204,7 +220,11 @@ install_client_dependencies() {
 }
 
 client_build() {
-    (cd "$CLIENT_DIR" && npx ng build --configuration production)
+    local configuration="${1:-production}"
+    (cd "$CLIENT_DIR" && npx ng build --configuration "$configuration")
+    if [ "$configuration" = "instrumented" ]; then
+        (cd "$CLIENT_DIR" && node scripts/instrument-build.mjs build)
+    fi
 
     if [ ! -f "$CLIENT_BUILD_DIR/index.html" ]; then
         echo "Client build produced no $CLIENT_BUILD_DIR/index.html" >&2
@@ -291,12 +311,21 @@ case "$COMMAND" in
         esac
         ;;
     test)
-        if [ -x "$ROOT_DIR/.venv/bin/python" ]; then
-            (cd "$ROOT_DIR/backend" && "$ROOT_DIR/.venv/bin/python" -m pytest -q)
-        else
-            (cd "$ROOT_DIR/backend" && python3 -m pytest -q)
-        fi
-        exit $?
+        case "$FLAG" in
+            "")
+                run_backend_tests
+                exit $?
+                ;;
+            -c)
+                run_backend_tests --cov=app --cov-report=term-missing --cov-report=xml:coverage.xml
+                exit $?
+                ;;
+            *)
+                echo "Unknown test flag: $FLAG" >&2
+                usage >&2
+                exit 1
+                ;;
+        esac
         ;;
     stop)
         stop_ng_serve
@@ -319,6 +348,11 @@ case "$COMMAND" in
             -b)
                 stop_docker
                 ensure_client_build
+                ;;
+            -t)
+                stop_docker
+                install_client_dependencies
+                client_build instrumented
                 ;;
             -p)
                 start_production_stack

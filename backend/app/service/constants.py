@@ -6,6 +6,7 @@ class Messages:
     TOO_MANY_LOGIN_ATTEMPTS = "Too many failed login attempts. Try again in a few minutes."
 
     USER_NOT_FOUND = "User not found."
+    USER_DISABLED = "User account is disabled."
     CURRENT_USER_RETRIEVED = "Current user retrieved successfully."
     ACCESS_DENIED = "You do not have permission to perform this action."
     USER_CREATED = "User created successfully."

@@ -17,14 +17,19 @@ class DashboardManager:
         self.incident_service = incident_service
 
     async def get_summary(self) -> DashboardSummaryResponse:
-        monitors, _ = await self.monitor_service.get_monitors_with_lookup()
+        monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
         total_monitors = len(monitors)
         active_monitors = sum(1 for monitor in monitors if monitor.is_active)
         inactive_monitors = total_monitors - active_monitors
         monitors_up = sum(1 for monitor in monitors if monitor.status == MonitorStatus.UP)
         monitors_down = sum(1 for monitor in monitors if monitor.status == MonitorStatus.DOWN)
         monitors_unknown = sum(1 for monitor in monitors if monitor.status == MonitorStatus.UNKNOWN)
-        slow_monitors = sum(1 for monitor in monitors if getattr(monitor, "is_slow", False))
+        latest_results = await self.monitor_result_service.get_latest_per_monitor(limit=max(total_monitors, 1))
+        slow_monitors = sum(
+            1
+            for result in latest_results
+            if result.is_slow and (monitor := monitor_map.get(result.monitor_id)) is not None and monitor.is_active
+        )
         open_incidents = await self.incident_service.count_open()
         average_response_time = await self.monitor_result_service.average_response_time()
         overviews = await self.get_monitor_overviews()
