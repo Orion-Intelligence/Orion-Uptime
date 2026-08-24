@@ -12,6 +12,7 @@ from orion.middleware.security_headers import register_security_headers
 from orion.services.auth.authorization import development_environment
 from routes.api_monitor_routes import router as api_monitor_router
 from routes.auth_routes import router as auth_router
+from routes.email_integration_routes import router as email_integration_router
 from routes.frontend_routes import router as frontend_router
 from routes.heartbeat_monitor_routes import router as heartbeat_router
 from routes.http_monitor_routes import router as http_monitor_router
@@ -35,6 +36,7 @@ api_router.include_router(auth_profiles_router)
 api_router.include_router(realtime_router)
 api_router.include_router(status_page_router)
 api_router.include_router(slack_integration_router)
+api_router.include_router(email_integration_router)
 
 
 @api_router.get("/health", include_in_schema=False)

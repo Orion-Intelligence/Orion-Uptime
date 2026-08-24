@@ -45,3 +45,4 @@ class Collections:
     AUTH_PROFILES = "auth_profiles"
     STATUS_PAGES = "status_pages"
     SLACK_INTEGRATIONS = "slack_integrations"
+    EMAIL_INTEGRATIONS = "email_integrations"

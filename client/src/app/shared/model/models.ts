@@ -126,6 +126,16 @@ export interface SlackIntegrationDetail extends SlackIntegration {
   webhook_url: string;
 }
 
+export interface EmailIntegration {
+  id: string;
+  name: string;
+  email: string;
+  monitor_ids: string[];
+  monitor_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface PublicStatusPage {
   name: string;
   slug: string;
@@ -236,6 +246,7 @@ export interface RealtimeResources {
   users: UserResponse[];
   status_pages: StatusPage[];
   slack_integrations: SlackIntegration[];
+  email_integrations: EmailIntegration[];
 }
 
 export interface RealtimeSnapshot {

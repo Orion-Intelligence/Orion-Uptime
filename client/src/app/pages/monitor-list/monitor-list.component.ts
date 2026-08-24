@@ -177,6 +177,8 @@ export class MonitorListComponent {
         return resources?.status_pages;
       case 'slack_integrations':
         return resources?.slack_integrations;
+      case 'email_integrations':
+        return resources?.email_integrations;
     }
   }
 

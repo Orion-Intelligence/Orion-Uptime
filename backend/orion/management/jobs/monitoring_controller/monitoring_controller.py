@@ -20,6 +20,7 @@ from orion.services.realtime_manager.realtime import realtime_broker
 
 if TYPE_CHECKING:
     from orion.api.interactive.api_monitor_manager.api_monitor_manager import ApiMonitorManager
+    from orion.api.interactive.email_integration_manager.email_integration_manager import EmailIntegrationManager
     from orion.api.interactive.heartbeat_monitor_manager.heartbeat_monitor_manager import HeartbeatMonitorManager
     from orion.api.interactive.http_monitor_manager.http_monitor_manager import HttpMonitorManager
     from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import PingMonitorManager
@@ -59,6 +60,7 @@ class MonitorManager:
         self.monitor_state_service = monitor_state_service
         self.checker_factory = checker_factory
         self.slack_integration_service: SlackIntegrationManager | None = None
+        self.email_integration_service: EmailIntegrationManager | None = None
         self._monitor_services: dict[MonitorType, MonitorRepository] = {MonitorType.HTTP: http_monitor_service, MonitorType.API: api_monitor_manager, MonitorType.PING: ping_monitor_service, MonitorType.HEARTBEAT: heartbeat_monitor_service}
 
     async def list_active_monitors(self):
@@ -85,8 +87,7 @@ class MonitorManager:
             await service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=result.status_code, response_time_ms=result.response_time_ms, checked_at=checked_at)
 
             incident = await self._handle_incident_transition(monitor, result, state_result)
-            if self.slack_integration_service is not None:
-                await self.slack_integration_service.notify_transition(monitor, result, state_result, incident)
+            await self._notify_integrations(monitor, result, state_result, incident)
             realtime_broker.notify("monitor", monitor.id)
         except Exception:
             logger.exception("Check for %s monitor %s could not be completed.", monitor.monitor_type, monitor.id)
@@ -198,6 +199,10 @@ class MonitorManager:
         result = await slack_integrations.update_many({"monitor_ids": monitor_id}, {"$pull": {"monitor_ids": monitor_id}, "$set": {"updated_at": datetime.now(UTC)}})
         if result.modified_count:
             realtime_broker.notify("slack_integration", None)
+        email_integrations = self.monitor_result_service.collection.database[Collections.EMAIL_INTEGRATIONS]
+        result = await email_integrations.update_many({"monitor_ids": monitor_id}, {"$pull": {"monitor_ids": monitor_id}, "$set": {"updated_at": datetime.now(UTC)}})
+        if result.modified_count:
+            realtime_broker.notify("email_integration", None)
 
     async def process_heartbeat(self, monitor: HeartbeatMonitorModel) -> None:
         checked_at = datetime.now(UTC)
@@ -208,9 +213,17 @@ class MonitorManager:
         await self.heartbeat_monitor_service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=None, response_time_ms=None, checked_at=checked_at)
 
         incident = await self._handle_incident_transition(monitor, None, state_result)
-        if self.slack_integration_service is not None:
-            await self.slack_integration_service.notify_transition(monitor, None, state_result, incident)
+        await self._notify_integrations(monitor, None, state_result, incident)
         realtime_broker.notify("monitor", monitor.id)
+
+    async def _notify_integrations(self, monitor: MonitorModel, result, state_result, incident: IncidentModel | None) -> None:
+        notifications = []
+        if self.slack_integration_service is not None:
+            notifications.append(self.slack_integration_service.notify_transition(monitor, result, state_result, incident))
+        if self.email_integration_service is not None:
+            notifications.append(self.email_integration_service.notify_transition(monitor, result, state_result, incident))
+        if notifications:
+            await asyncio.gather(*notifications)
 
     def _get_monitor_service(self, monitor_type: MonitorType) -> MonitorRepository:
         try:

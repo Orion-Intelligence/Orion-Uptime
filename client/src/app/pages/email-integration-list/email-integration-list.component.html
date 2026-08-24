@@ -1,0 +1,53 @@
+<div animate.enter="page-enter" id="email-integration-list">
+  <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-7.5 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
+    <div>
+      <p class="eyebrow">Notifications</p>
+      <h1 class="page-title">Email integrations</h1>
+      <p class="page-description">Choose a recipient to manage its monitor alert assignments.</p>
+    </div>
+    <a class="header-action header-action--primary tw:max-[700px]:self-end" routerLink="/integrations/email/new">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+      New email integration
+    </a>
+  </header>
+
+  @if (loading()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
+  }
+  @if (error()) {
+    <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
+  }
+  @if (message()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.leaving]="noticeLeaving()" role="status" aria-live="polite"><strong class="tw:text-xs">{{ message() }}</strong></div>
+  }
+
+  <section class="tw:grid tw:max-w-220 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235]" aria-label="Email integrations">
+    @for (integration of integrations(); track integration.id) {
+      <article animate.enter="list-item-enter" class="tw:grid tw:grid-cols-[minmax(0,1fr)_auto] tw:items-stretch tw:border-b tw:border-[#d7e2ef] tw:dark:border-white/9 tw:last:border-b-0">
+        <a class="tw:grid tw:min-w-0 tw:grid-cols-[auto_minmax(0,1fr)_auto] tw:items-center tw:gap-4 tw:px-5.5 tw:py-4.5 tw:text-[#142033] tw:no-underline tw:transition-colors tw:hover:bg-[#f5f8fc] tw:dark:text-white tw:dark:hover:bg-white/4" [routerLink]="['/integrations/email', integration.id, 'edit']">
+          <span class="tw:grid tw:size-10 tw:place-items-center tw:rounded-xl tw:bg-[#1176d4]/10 tw:text-[#1176d4] tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]" aria-hidden="true">
+            <svg class="tw:size-5 tw:fill-none tw:stroke-current tw:stroke-[1.7] tw:[stroke-linecap:round] tw:[stroke-linejoin:round]" viewBox="0 0 24 24"><path d="M3 5h18v14H3V5Zm0 1 9 7 9-7" /></svg>
+          </span>
+          <span class="tw:grid tw:min-w-0 tw:gap-1">
+            <strong class="tw:overflow-hidden tw:text-[14px] tw:font-semibold tw:text-ellipsis tw:whitespace-nowrap">{{ integration.name }}</strong>
+            <small class="tw:overflow-hidden tw:text-[11px] tw:text-[#5f738f] tw:text-ellipsis tw:whitespace-nowrap tw:dark:text-[#9fb3c8]">{{ integration.email }}</small>
+            <small class="tw:mt-1 tw:line-clamp-1 tw:text-[11px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">
+              {{ integration.monitor_count }} monitor{{ integration.monitor_count === 1 ? '' : 's' }} · {{ monitorNames(integration).join(' · ') || 'No monitors selected' }}
+            </small>
+          </span>
+          <span class="tw:grid tw:justify-items-end tw:gap-2">
+            <small class="tw:font-mono tw:text-[10px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">{{ integration.updated_at | date: 'MMM d, y' }}</small>
+            <svg class="tw:size-5 tw:fill-none tw:stroke-[#71869c] tw:stroke-[1.8] tw:[stroke-linecap:round] tw:[stroke-linejoin:round] tw:dark:stroke-[#9fb3c8]" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+          </span>
+        </a>
+        <button class="tw:m-3.5 tw:min-h-9 tw:cursor-pointer tw:self-center tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deleteIntegration(integration)" [disabled]="deletingId() === integration.id">
+          {{ deletingId() === integration.id ? 'Deleting…' : 'Delete' }}
+        </button>
+      </article>
+    } @empty {
+      @if (!loading() && !error()) {
+        <div animate.enter="fade-in" animate.leave="fade-out" class="empty-state">No email integrations have been created yet.</div>
+      }
+    }
+  </section>
+</div>

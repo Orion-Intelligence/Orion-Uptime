@@ -95,6 +95,15 @@ export class AppShellComponent {
     if (path === '/integrations/slack') {
       return 'Slack integrations';
     }
+    if (path === '/integrations/email/new') {
+      return 'New Email integration';
+    }
+    if (path.startsWith('/integrations/email/') && path.endsWith('/edit')) {
+      return 'Edit Email integration';
+    }
+    if (path === '/integrations/email') {
+      return 'Email integrations';
+    }
     if (path === '/integrations') {
       return 'Integrations';
     }

@@ -13,6 +13,8 @@ const loadStatusPageEditorComponent = () => import('./pages/status-page-editor/s
 const loadIntegrationListComponent = () => import('./pages/integration-list/integration-list.component').then((m) => m.IntegrationListComponent);
 const loadIntegrationEditorComponent = () => import('./pages/integration-editor/integration-editor.component').then((m) => m.IntegrationEditorComponent);
 const loadIntegrationHubComponent = () => import('./pages/integration-hub/integration-hub.component').then((m) => m.IntegrationHubComponent);
+const loadEmailIntegrationListComponent = () => import('./pages/email-integration-list/email-integration-list.component').then((m) => m.EmailIntegrationListComponent);
+const loadEmailIntegrationEditorComponent = () => import('./pages/email-integration-editor/email-integration-editor.component').then((m) => m.EmailIntegrationEditorComponent);
 const loadPublicStatusPageComponent = () => import('./pages/public-status-page/public-status-page.component').then((m) => m.PublicStatusPageComponent);
 const loadPublicMonitorDetailComponent = () => import('./pages/public-monitor-detail/public-monitor-detail.component').then((m) => m.PublicMonitorDetailComponent);
 
@@ -180,6 +182,24 @@ export const routes: Routes = [
         loadComponent: loadIntegrationListComponent,
         canActivate: [adminGuard],
         title: 'Slack integrations · Orion Uptime',
+      },
+      {
+        path: 'integrations/email/new',
+        loadComponent: loadEmailIntegrationEditorComponent,
+        canActivate: [adminGuard],
+        title: 'New Email integration · Orion Uptime',
+      },
+      {
+        path: 'integrations/email/:id/edit',
+        loadComponent: loadEmailIntegrationEditorComponent,
+        canActivate: [adminGuard],
+        title: 'Edit Email integration · Orion Uptime',
+      },
+      {
+        path: 'integrations/email',
+        loadComponent: loadEmailIntegrationListComponent,
+        canActivate: [adminGuard],
+        title: 'Email integrations · Orion Uptime',
       },
       {
         path: 'integrations',
