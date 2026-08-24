@@ -9,7 +9,7 @@ import ssl
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from email.message import EmailMessage
-from email.utils import formataddr
+from email.utils import format_datetime, formataddr, make_msgid
 from typing import TYPE_CHECKING
 
 from bson import ObjectId
@@ -203,6 +203,8 @@ class EmailIntegrationManager:
     def _send_smtp(self, message: EmailMessage) -> None:
         settings = self._smtp_settings()
         message["From"] = formataddr((settings.from_name, settings.from_email))
+        message["Date"] = format_datetime(datetime.now(UTC))
+        message["Message-ID"] = make_msgid(domain=settings.from_email.rsplit("@", 1)[1])
         client_type = smtplib.SMTP_SSL if settings.security == "ssl" else smtplib.SMTP
         with client_type(settings.host, settings.port, timeout=10) as client:
             client.ehlo()
@@ -283,7 +285,10 @@ class EmailIntegrationManager:
     def _timestamp(value: datetime | None, *, ongoing: bool = False) -> str:
         if value is None:
             return "Ongoing" if ongoing else "Unavailable"
-        return value.isoformat()
+        aware_value = value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+        utc_value = aware_value.astimezone(UTC)
+        hour = utc_value.strftime("%I").lstrip("0") or "0"
+        return f"{utc_value:%b %d, %Y}, {hour}:{utc_value:%M:%S %p UTC}"
 
     @staticmethod
     def _response(integration: EmailIntegrationModel) -> EmailIntegrationResponse:
