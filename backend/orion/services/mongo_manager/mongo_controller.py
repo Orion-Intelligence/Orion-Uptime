@@ -39,6 +39,7 @@ class DatabaseManager:
         await self._create_incident_indexes()
         await self._create_heartbeat_indexes()
         await self._create_status_page_indexes()
+        await self._create_slack_integration_indexes()
 
     async def _create_monitor_result_indexes(self) -> None:
         collection = self.engine.database[Collections.MONITOR_RESULTS]
@@ -70,6 +71,12 @@ class DatabaseManager:
     async def _create_status_page_indexes(self) -> None:
         collection = self.engine.database[Collections.STATUS_PAGES]
         await collection.create_index("slug", unique=True)
+        await collection.create_index("created_at")
+
+    async def _create_slack_integration_indexes(self) -> None:
+        collection = self.engine.database[Collections.SLACK_INTEGRATIONS]
+        await collection.create_index("name_key", unique=True)
+        await collection.create_index("monitor_ids")
         await collection.create_index("created_at")
 
     def get_engine(self) -> AIOEngine:

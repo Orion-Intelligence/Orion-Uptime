@@ -175,6 +175,8 @@ export class MonitorListComponent {
         return resources?.users;
       case 'status_pages':
         return resources?.status_pages;
+      case 'slack_integrations':
+        return resources?.slack_integrations;
     }
   }
 

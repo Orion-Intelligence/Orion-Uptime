@@ -1,0 +1,62 @@
+<div animate.enter="page-enter" id="integration-list">
+  <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-7.5 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
+    <div>
+      <p class="eyebrow">Notifications</p>
+      <h1 class="page-title">Integrations</h1>
+      <p class="page-description">Send selected monitor outage and recovery alerts to Slack.</p>
+    </div>
+    <a class="header-action header-action--primary tw:max-[700px]:self-end" routerLink="/integrations/new">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+      New Slack integration
+    </a>
+  </header>
+
+  @if (loading()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
+  }
+  @if (error()) {
+    <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
+  }
+  @if (message()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:text-xs" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">{{ message() }}</div>
+  }
+
+  <section class="page-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Slack integrations">
+    @for (integration of integrations(); track integration.id) {
+      <article animate.enter="list-item-enter" class="panel integration-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
+        <header class="tw:flex tw:min-w-0 tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
+          <div class="tw:min-w-0">
+            <h2 class="tw:m-0 tw:text-[16px] tw:leading-snug tw:font-semibold tw:tracking-[-0.015em] tw:wrap-anywhere">{{ integration.name }}</h2>
+            <p class="tw:mt-1.5 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Slack incoming webhook</p>
+          </div>
+          <span class="tw:inline-flex tw:flex-none tw:items-center tw:gap-1.5 tw:rounded-full tw:bg-[#ecfdf3] tw:px-2.5 tw:py-1 tw:text-[10px] tw:font-semibold tw:text-[#067647] tw:dark:bg-[#34d399]/10 tw:dark:text-[#6ce9a6]">Configured</span>
+        </header>
+
+        <section class="monitor-list tw:mx-5.5 tw:mb-4.5 tw:min-w-0 tw:border-t tw:border-[#d7e2ef] tw:pt-4.5 tw:dark:border-white/9">
+          <span class="tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:uppercase tw:dark:text-[#9fb3c8]">Assigned monitors · {{ integration.monitor_count }}</span>
+          @if (monitorNames(integration).length) {
+            <p class="tw:mt-2.5 tw:mb-0 tw:line-clamp-3 tw:text-[12px] tw:leading-[1.65] tw:wrap-anywhere">{{ monitorNames(integration).join(' · ') }}</p>
+          } @else {
+            <p class="tw:mt-2.5 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">No monitors selected</p>
+          }
+        </section>
+
+        <div class="meta tw:flex tw:min-w-0 tw:items-center tw:justify-between tw:gap-4 tw:px-5.5 tw:pb-4.5 tw:font-mono tw:text-[11px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">
+          <span>Created {{ integration.created_at | date: 'MMM d, y' }}</span>
+          <span>{{ integration.monitor_count }} alert source{{ integration.monitor_count === 1 ? '' : 's' }}</span>
+        </div>
+
+        <footer class="tw:mt-auto tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
+          <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:text-[#87c4f5]" [routerLink]="['/integrations', integration.id, 'edit']">Edit</a>
+          <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deleteIntegration(integration)" [disabled]="deletingId() === integration.id">
+            {{ deletingId() === integration.id ? 'Deleting…' : 'Delete' }}
+          </button>
+        </footer>
+      </article>
+    } @empty {
+      @if (!loading() && !error()) {
+        <div animate.enter="fade-in" animate.leave="fade-out" class="empty-state panel tw:col-span-full">No Slack integrations have been created yet.</div>
+      }
+    }
+  </section>
+</div>

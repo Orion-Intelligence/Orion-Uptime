@@ -22,6 +22,7 @@ if TYPE_CHECKING:
     from orion.api.interactive.heartbeat_monitor_manager.heartbeat_monitor_manager import HeartbeatMonitorManager
     from orion.api.interactive.http_monitor_manager.http_monitor_manager import HttpMonitorManager
     from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import PingMonitorManager
+    from orion.api.interactive.slack_integration_manager.slack_integration_manager import SlackIntegrationManager
 
 HTTP_STATUS_DESCRIPTION_FALLBACKS = {
     102: "The server received the request and is still processing it",
@@ -56,6 +57,7 @@ class MonitorManager:
         self.monitor_result_service = monitor_result_service
         self.monitor_state_service = monitor_state_service
         self.checker_factory = checker_factory
+        self.slack_integration_service: SlackIntegrationManager | None = None
         self._monitor_services: dict[MonitorType, MonitorRepository] = {MonitorType.HTTP: http_monitor_service, MonitorType.API: api_monitor_manager, MonitorType.PING: ping_monitor_service, MonitorType.HEARTBEAT: heartbeat_monitor_service}
 
     async def list_active_monitors(self):
@@ -81,7 +83,9 @@ class MonitorManager:
 
             await service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=result.status_code, response_time_ms=result.response_time_ms, checked_at=checked_at)
 
-            await self._handle_incident_transition(monitor, result, state_result)
+            reason = await self._handle_incident_transition(monitor, result, state_result)
+            if self.slack_integration_service is not None:
+                await self.slack_integration_service.notify_transition(monitor, result, state_result, reason)
             realtime_broker.notify("monitor", monitor.id)
         except Exception:
             logger.exception("Check for %s monitor %s could not be completed.", monitor.monitor_type, monitor.id)
@@ -103,15 +107,19 @@ class MonitorManager:
             target = getattr(monitor, "url", None) or getattr(monitor, "host", None) or monitor.name
             return HealthCheckResponse(url=target, status=MonitorStatus.DOWN, status_code=None, response_time_ms=None, success=False, is_slow=False, error=f"The check did not complete within {deadline:.0f} seconds and was abandoned.", timed_out=True)
 
-    async def _handle_incident_transition(self, monitor: MonitorModel, result, state_result) -> None:
+    async def _handle_incident_transition(self, monitor: MonitorModel, result, state_result) -> str | None:
+        reason = None
         if state_result.transition == MonitorTransition.DOWN:
             active = await self.incident_service.get_active_incident(monitor.persisted_id, monitor.monitor_type)
             if active is None:
                 reason = self._build_incident_reason(monitor, result)
                 await self.incident_service.open_incident(monitor.persisted_id, monitor.monitor_type, reason, getattr(result, "status_code", None))
+            else:
+                reason = active.reason
 
         elif state_result.transition == MonitorTransition.UP:
             await self.incident_service.resolve_incident(monitor.persisted_id, monitor.monitor_type)
+        return reason
 
     @classmethod
     def _build_incident_reason(cls, monitor: MonitorModel, result) -> str:
@@ -187,6 +195,10 @@ class MonitorManager:
         result = await status_pages.update_many({"monitor_ids": monitor_id}, {"$pull": {"monitor_ids": monitor_id}, "$set": {"updated_at": datetime.now(UTC)}})
         if result.modified_count:
             realtime_broker.notify("status_page", None)
+        slack_integrations = self.monitor_result_service.collection.database[Collections.SLACK_INTEGRATIONS]
+        result = await slack_integrations.update_many({"monitor_ids": monitor_id}, {"$pull": {"monitor_ids": monitor_id}, "$set": {"updated_at": datetime.now(UTC)}})
+        if result.modified_count:
+            realtime_broker.notify("slack_integration", None)
 
     async def process_heartbeat(self, monitor: HeartbeatMonitorModel) -> None:
         checked_at = datetime.now(UTC)
@@ -196,7 +208,9 @@ class MonitorManager:
 
         await self.heartbeat_monitor_service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=None, response_time_ms=None, checked_at=checked_at)
 
-        await self._handle_incident_transition(monitor, None, state_result)
+        reason = await self._handle_incident_transition(monitor, None, state_result)
+        if self.slack_integration_service is not None:
+            await self.slack_integration_service.notify_transition(monitor, None, state_result, reason)
         realtime_broker.notify("monitor", monitor.id)
 
     def _get_monitor_service(self, monitor_type: MonitorType) -> MonitorRepository:

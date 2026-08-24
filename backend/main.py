@@ -19,6 +19,7 @@ from routes.insight_routes import router as dashboard_router
 from routes.orion_login_routes import router as auth_profiles_router
 from routes.ping_monitor_routes import router as ping_router
 from routes.realtime_routes import router as realtime_router
+from routes.slack_integration_routes import router as slack_integration_router
 from routes.status_page_routes import router as status_page_router
 from routes.user_account_routes import router as users_router
 
@@ -33,6 +34,7 @@ api_router.include_router(heartbeat_router)
 api_router.include_router(auth_profiles_router)
 api_router.include_router(realtime_router)
 api_router.include_router(status_page_router)
+api_router.include_router(slack_integration_router)
 
 
 @api_router.get("/health", include_in_schema=False)

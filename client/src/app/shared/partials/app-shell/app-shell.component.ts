@@ -38,6 +38,7 @@ export class AppShellComponent {
 
   breadcrumbSection(): string {
     return this.router.url.startsWith('/status-pages') ||
+      this.router.url.startsWith('/integrations') ||
       this.router.url.startsWith('/auth-profiles') ||
       this.router.url.startsWith('/users')
       ? 'Management'
@@ -84,6 +85,15 @@ export class AppShellComponent {
     }
     if (path.startsWith('/status-pages')) {
       return 'Status pages';
+    }
+    if (path === '/integrations/new') {
+      return 'New Slack integration';
+    }
+    if (path.includes('/integrations/') && path.endsWith('/edit')) {
+      return 'Edit Slack integration';
+    }
+    if (path.startsWith('/integrations')) {
+      return 'Integrations';
     }
     if (path === '/auth-profiles/new') {
       return 'New auth profile';

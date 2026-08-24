@@ -10,6 +10,8 @@ const loadMonitorListComponent = () => import('./pages/monitor-list/monitor-list
 const loadUserListComponent = () => import('./pages/user-list/user-list.component').then((m) => m.UserListComponent);
 const loadStatusPageListComponent = () => import('./pages/status-page-list/status-page-list.component').then((m) => m.StatusPageListComponent);
 const loadStatusPageEditorComponent = () => import('./pages/status-page-editor/status-page-editor.component').then((m) => m.StatusPageEditorComponent);
+const loadIntegrationListComponent = () => import('./pages/integration-list/integration-list.component').then((m) => m.IntegrationListComponent);
+const loadIntegrationEditorComponent = () => import('./pages/integration-editor/integration-editor.component').then((m) => m.IntegrationEditorComponent);
 const loadPublicStatusPageComponent = () => import('./pages/public-status-page/public-status-page.component').then((m) => m.PublicStatusPageComponent);
 const loadPublicMonitorDetailComponent = () => import('./pages/public-monitor-detail/public-monitor-detail.component').then((m) => m.PublicMonitorDetailComponent);
 
@@ -159,6 +161,24 @@ export const routes: Routes = [
         loadComponent: loadStatusPageListComponent,
         canActivate: [adminGuard],
         title: 'Status pages · Orion Uptime',
+      },
+      {
+        path: 'integrations/new',
+        loadComponent: loadIntegrationEditorComponent,
+        canActivate: [adminGuard],
+        title: 'New Slack integration · Orion Uptime',
+      },
+      {
+        path: 'integrations/:id/edit',
+        loadComponent: loadIntegrationEditorComponent,
+        canActivate: [adminGuard],
+        title: 'Edit Slack integration · Orion Uptime',
+      },
+      {
+        path: 'integrations',
+        loadComponent: loadIntegrationListComponent,
+        canActivate: [adminGuard],
+        title: 'Integrations · Orion Uptime',
       },
       {
         path: 'auth-profiles',

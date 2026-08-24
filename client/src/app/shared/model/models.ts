@@ -113,6 +113,19 @@ export interface StatusPage {
   updated_at: string;
 }
 
+export interface SlackIntegration {
+  id: string;
+  name: string;
+  monitor_ids: string[];
+  monitor_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SlackIntegrationDetail extends SlackIntegration {
+  webhook_url: string;
+}
+
 export interface PublicStatusPage {
   name: string;
   slug: string;
@@ -222,6 +235,7 @@ export interface RealtimeResources {
   auth_profiles: ResourceRecord[];
   users: UserResponse[];
   status_pages: StatusPage[];
+  slack_integrations: SlackIntegration[];
 }
 
 export interface RealtimeSnapshot {
