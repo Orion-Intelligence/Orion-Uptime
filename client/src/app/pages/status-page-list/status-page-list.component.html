@@ -20,8 +20,8 @@
     <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
   }
   @if (message()) {
-    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:text-xs" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
-      {{ message() }}
+    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+      <strong class="tw:text-xs">{{ message() }}</strong>
     </div>
   }
 

@@ -13,6 +13,7 @@ from orion.management.jobs.monitoring_controller.monitor_repository import Monit
 from orion.management.jobs.monitoring_controller.monitor_results_manager.monitor_results_manager import MonitorResultManager
 from orion.management.jobs.monitoring_controller.monitor_state_manager.monitor_state_manager import MonitorStateManager
 from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import HeartbeatMonitorModel
+from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import BaseMonitorModel, HealthCheckResponse, MonitorStatus, MonitorType
 from orion.services.realtime_manager.realtime import realtime_broker
@@ -83,9 +84,9 @@ class MonitorManager:
 
             await service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=result.status_code, response_time_ms=result.response_time_ms, checked_at=checked_at)
 
-            reason = await self._handle_incident_transition(monitor, result, state_result)
+            incident = await self._handle_incident_transition(monitor, result, state_result)
             if self.slack_integration_service is not None:
-                await self.slack_integration_service.notify_transition(monitor, result, state_result, reason)
+                await self.slack_integration_service.notify_transition(monitor, result, state_result, incident)
             realtime_broker.notify("monitor", monitor.id)
         except Exception:
             logger.exception("Check for %s monitor %s could not be completed.", monitor.monitor_type, monitor.id)
@@ -107,19 +108,17 @@ class MonitorManager:
             target = getattr(monitor, "url", None) or getattr(monitor, "host", None) or monitor.name
             return HealthCheckResponse(url=target, status=MonitorStatus.DOWN, status_code=None, response_time_ms=None, success=False, is_slow=False, error=f"The check did not complete within {deadline:.0f} seconds and was abandoned.", timed_out=True)
 
-    async def _handle_incident_transition(self, monitor: MonitorModel, result, state_result) -> str | None:
-        reason = None
+    async def _handle_incident_transition(self, monitor: MonitorModel, result, state_result) -> IncidentModel | None:
+        incident = None
         if state_result.transition == MonitorTransition.DOWN:
-            active = await self.incident_service.get_active_incident(monitor.persisted_id, monitor.monitor_type)
-            if active is None:
+            incident = await self.incident_service.get_active_incident(monitor.persisted_id, monitor.monitor_type)
+            if incident is None:
                 reason = self._build_incident_reason(monitor, result)
-                await self.incident_service.open_incident(monitor.persisted_id, monitor.monitor_type, reason, getattr(result, "status_code", None))
-            else:
-                reason = active.reason
+                incident = await self.incident_service.open_incident(monitor.persisted_id, monitor.monitor_type, reason, getattr(result, "status_code", None))
 
         elif state_result.transition == MonitorTransition.UP:
-            await self.incident_service.resolve_incident(monitor.persisted_id, monitor.monitor_type)
-        return reason
+            incident = await self.incident_service.resolve_incident(monitor.persisted_id, monitor.monitor_type)
+        return incident
 
     @classmethod
     def _build_incident_reason(cls, monitor: MonitorModel, result) -> str:
@@ -208,9 +207,9 @@ class MonitorManager:
 
         await self.heartbeat_monitor_service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=None, response_time_ms=None, checked_at=checked_at)
 
-        reason = await self._handle_incident_transition(monitor, None, state_result)
+        incident = await self._handle_incident_transition(monitor, None, state_result)
         if self.slack_integration_service is not None:
-            await self.slack_integration_service.notify_transition(monitor, None, state_result, reason)
+            await self.slack_integration_service.notify_transition(monitor, None, state_result, incident)
         realtime_broker.notify("monitor", monitor.id)
 
     def _get_monitor_service(self, monitor_type: MonitorType) -> MonitorRepository:

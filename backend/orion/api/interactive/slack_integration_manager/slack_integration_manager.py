@@ -17,13 +17,14 @@ from orion.constants.constant import Collections
 from orion.services.encryption_manager.secrets import secret_box
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 from orion.services.mongo_manager.shared_model.db_slack_integration_model import CreateSlackIntegrationRequest, SlackIntegrationModel, SlackIntegrationResponse, SlackIntegrationSummaryResponse, UpdateSlackIntegrationRequest
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
 if TYPE_CHECKING:
     from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager, MonitorModel
+    from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
     from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorStateResult
 
 logger = logging.getLogger("orion.uptime.slack")
@@ -134,7 +135,7 @@ class SlackIntegrationManager:
             raise NotFoundError("Slack integration not found.")
         realtime_broker.notify("slack_integration", integration_id)
 
-    async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, reason: str | None = None) -> None:
+    async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, incident: IncidentModel | None = None) -> None:
         is_down = state_result.transition == MonitorTransition.DOWN
         is_recovery = state_result.transition == MonitorTransition.UP and state_result.previous_status == MonitorStatus.DOWN
         if not is_down and not is_recovery:
@@ -149,7 +150,7 @@ class SlackIntegrationManager:
         if not integrations:
             return
 
-        payload = self._notification_payload(monitor, is_down=is_down, result=result, reason=reason)
+        payload = self._notification_payload(monitor, is_down=is_down, result=result, incident=incident)
         await asyncio.gather(*(self._deliver(integration, payload) for integration in integrations))
 
     async def close(self) -> None:
@@ -211,27 +212,38 @@ class SlackIntegrationManager:
         return clean_url
 
     @staticmethod
-    def _notification_payload(monitor: MonitorModel, *, is_down: bool, result, reason: str | None) -> dict:
+    def _notification_payload(monitor: MonitorModel, *, is_down: bool, result, incident: IncidentModel | None) -> dict:
         state = "DOWN" if is_down else "RECOVERED"
         icon = ":red_circle:" if is_down else ":large_green_circle:"
-        details = reason if is_down else "The monitor is responding normally again."
-        status_code = getattr(result, "status_code", None)
+        root_cause = incident.reason if incident is not None else "The monitor check failed without an incident record."
+        status_code = incident.status_code if incident is not None else getattr(result, "status_code", None)
         response_time_ms = getattr(result, "response_time_ms", None)
-        fields = [f"*Type:* {monitor.monitor_type.value}"]
-        if status_code is not None:
-            fields.append(f"*Status code:* {status_code}")
+        fields = [
+            f"*Type:* {monitor.monitor_type.value}",
+            f"*Incident started:* {SlackIntegrationManager._slack_timestamp(incident.started_at if incident is not None else None)}",
+            f"*Resolved:* {SlackIntegrationManager._slack_timestamp(incident.resolved_at if incident is not None else None, ongoing=is_down)}",
+        ]
+        if monitor.monitor_type in (MonitorType.HTTP, MonitorType.API):
+            fields.insert(1, f"*Status code:* {status_code if status_code is not None else 'No response'}")
         if response_time_ms is not None:
             fields.append(f"*Response time:* {response_time_ms} ms")
         escaped_name = SlackIntegrationManager._escape_slack(monitor.name)
-        escaped_details = SlackIntegrationManager._escape_slack((details or "The monitor check failed.")[:2500])
+        escaped_root_cause = SlackIntegrationManager._escape_slack(root_cause[:2400])
         title = f"{icon} {escaped_name} is {state}"
         return {
             "text": f"Orion Uptime alert: {escaped_name} is {state}.",
             "blocks": [
-                {"type": "section", "text": {"type": "mrkdwn", "text": f"*{title}*\n{escaped_details}"}},
+                {"type": "section", "text": {"type": "mrkdwn", "text": f"*{title}*\n*Root cause:* {escaped_root_cause}"}},
                 {"type": "section", "fields": [{"type": "mrkdwn", "text": value} for value in fields]},
             ],
         }
+
+    @staticmethod
+    def _slack_timestamp(value: datetime | None, *, ongoing: bool = False) -> str:
+        if value is None:
+            return "Ongoing" if ongoing else "Unavailable"
+        fallback = value.isoformat()
+        return f"<!date^{int(value.timestamp())}^{{date_short_pretty}} at {{time}}|{fallback}>"
 
     @staticmethod
     def _escape_slack(value: str) -> str:

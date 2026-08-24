@@ -16,28 +16,34 @@ class IncidentManager:
     def __init__(self, engine: AIOEngine):
         self.collection = engine.database[Collections.INCIDENTS]
 
-    async def open_incident(self, monitor_id: str, monitor_type: MonitorType, reason: str, status_code: int | None = None) -> None:
+    async def open_incident(self, monitor_id: str, monitor_type: MonitorType, reason: str, status_code: int | None = None) -> IncidentModel:
         active = await self.get_active_incident(monitor_id, monitor_type)
         if active is not None:
-            return
+            return active
 
         incident = IncidentModel(monitor_id=monitor_id, monitor_type=monitor_type, started_at=datetime.now(UTC), resolved_at=None, is_resolved=False, reason=reason, status_code=status_code)
         document = incident.model_dump()
         document.pop("id", None)
         result = await self.collection.insert_one(document)
         incident.id = str(result.inserted_id)
+        return incident
 
-    async def resolve_incident(self, monitor_id: str, monitor_type: MonitorType) -> bool:
+    async def resolve_incident(self, monitor_id: str, monitor_type: MonitorType) -> IncidentModel | None:
         incident = await self.get_active_incident(monitor_id, monitor_type)
         if incident is None:
-            return False
+            return None
 
         try:
             object_id = ObjectId(incident.id)
         except InvalidId:
-            return False
-        result = await self.collection.update_one({"_id": object_id, "monitor_type": monitor_type, "resolved_at": None}, {"$set": {"is_resolved": True, "resolved_at": datetime.now(UTC)}})
-        return result.modified_count > 0
+            return None
+        resolved_at = datetime.now(UTC)
+        result = await self.collection.update_one({"_id": object_id, "monitor_type": monitor_type, "resolved_at": None}, {"$set": {"is_resolved": True, "resolved_at": resolved_at}})
+        if result.modified_count == 0:
+            return None
+        incident.is_resolved = True
+        incident.resolved_at = resolved_at
+        return incident
 
     async def get_active_incident(self, monitor_id: str, monitor_type: MonitorType) -> IncidentModel | None:
         document = await self.collection.find_one({"monitor_id": monitor_id, "monitor_type": monitor_type, "resolved_at": None})
