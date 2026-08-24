@@ -1,0 +1,31 @@
+<div animate.enter="page-enter" id="integration-hub">
+  <header class="tw:mb-9.5">
+    <p class="eyebrow">Notifications</p>
+    <h1 class="page-title">Integrations</h1>
+    <p class="page-description">Choose the notification channel you want to manage.</p>
+  </header>
+
+  <section class="panel tw:grid tw:max-w-220 tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:p-0 tw:dark:border-white/9" aria-label="Integration types">
+    <a class="tw:grid tw:min-h-22 tw:grid-cols-[auto_minmax(0,1fr)_auto] tw:items-center tw:gap-4 tw:border-b tw:border-[#d7e2ef] tw:px-5.5 tw:py-4 tw:text-[#142033] tw:no-underline tw:transition-colors tw:hover:bg-[#f5f8fc] tw:dark:border-white/9 tw:dark:text-white tw:dark:hover:bg-white/4" routerLink="/integrations/slack">
+      <span class="tw:grid tw:size-11 tw:place-items-center tw:rounded-xl tw:bg-[#4a154b]/10 tw:text-[#4a154b] tw:dark:bg-[#e8a6ea]/10 tw:dark:text-[#e8a6ea]" aria-hidden="true">
+        <svg class="tw:size-6 tw:fill-none tw:stroke-current tw:stroke-[1.7] tw:[stroke-linecap:round] tw:[stroke-linejoin:round]" viewBox="0 0 24 24"><path d="M9 3a2 2 0 0 1 2 2v4H7a2 2 0 1 1 2-2V3Zm6 6a2 2 0 0 1 2-2h4v4h-4a2 2 0 0 1-2-2Zm0 6h4a2 2 0 1 1-2 2v4h-4v-4a2 2 0 0 1 2-2ZM9 15a2 2 0 0 1-2 2H3v-4h4a2 2 0 0 1 2 2Z" /></svg>
+      </span>
+      <span class="tw:grid tw:min-w-0 tw:gap-1">
+        <strong class="tw:text-[14px] tw:font-semibold">Manage Slack integrations</strong>
+        <small class="tw:text-[11px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Configure Slack webhooks and choose which monitors send alerts.</small>
+      </span>
+      <svg class="tw:size-5 tw:fill-none tw:stroke-[#71869c] tw:stroke-[1.8] tw:[stroke-linecap:round] tw:[stroke-linejoin:round] tw:dark:stroke-[#9fb3c8]" viewBox="0 0 24 24" aria-hidden="true"><path d="m9 18 6-6-6-6" /></svg>
+    </a>
+
+    <div class="tw:grid tw:min-h-22 tw:grid-cols-[auto_minmax(0,1fr)_auto] tw:items-center tw:gap-4 tw:px-5.5 tw:py-4 tw:text-[#142033] tw:dark:text-white" aria-disabled="true">
+      <span class="tw:grid tw:size-11 tw:place-items-center tw:rounded-xl tw:bg-[#1176d4]/10 tw:text-[#1176d4] tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]" aria-hidden="true">
+        <svg class="tw:size-6 tw:fill-none tw:stroke-current tw:stroke-[1.7] tw:[stroke-linecap:round] tw:[stroke-linejoin:round]" viewBox="0 0 24 24"><path d="M3 5h18v14H3V5Zm0 1 9 7 9-7" /></svg>
+      </span>
+      <span class="tw:grid tw:min-w-0 tw:gap-1">
+        <strong class="tw:text-[14px] tw:font-semibold">Manage Email integrations</strong>
+        <small class="tw:text-[11px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Email notification configuration will be available later.</small>
+      </span>
+      <span class="tw:rounded-full tw:bg-[#eef2f6] tw:px-2.5 tw:py-1 tw:text-[10px] tw:font-semibold tw:text-[#5f738f] tw:dark:bg-white/7 tw:dark:text-[#9fb3c8]">Coming soon</span>
+    </div>
+  </section>
+</div>

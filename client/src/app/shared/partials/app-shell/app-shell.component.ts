@@ -86,13 +86,16 @@ export class AppShellComponent {
     if (path.startsWith('/status-pages')) {
       return 'Status pages';
     }
-    if (path === '/integrations/new') {
+    if (path === '/integrations/slack/new') {
       return 'New Slack integration';
     }
-    if (path.includes('/integrations/') && path.endsWith('/edit')) {
+    if (path.startsWith('/integrations/slack/') && path.endsWith('/edit')) {
       return 'Edit Slack integration';
     }
-    if (path.startsWith('/integrations')) {
+    if (path === '/integrations/slack') {
+      return 'Slack integrations';
+    }
+    if (path === '/integrations') {
       return 'Integrations';
     }
     if (path === '/auth-profiles/new') {

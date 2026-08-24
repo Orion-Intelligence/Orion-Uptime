@@ -5,9 +5,9 @@
       <h1 class="page-title">{{ editing ? 'Edit Slack integration' : 'New Slack integration' }}</h1>
       <p class="page-description">Send outage and recovery alerts for selected monitors to a Slack channel.</p>
     </div>
-    <a class="header-action header-action--secondary tw:max-[700px]:self-end" routerLink="/integrations">
+    <a class="header-action header-action--secondary tw:max-[700px]:self-end" routerLink="/integrations/slack">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
-      Back to integrations
+      Back to Slack integrations
     </a>
   </header>
 
@@ -63,7 +63,7 @@
       </section>
 
       <div class="form-actions tw:flex tw:items-center tw:justify-end tw:gap-4.5 tw:border-[#d7e2ef] tw:pt-2 tw:dark:border-[rgb(255_255_255_/_9%)]">
-        <a class="tw:text-[11px] tw:text-[#686868] tw:dark:text-[#9fb3c8]" routerLink="/integrations">Cancel</a>
+        <a class="tw:text-[11px] tw:text-[#686868] tw:dark:text-[#9fb3c8]" routerLink="/integrations/slack">Cancel</a>
         <button class="button" type="submit" [disabled]="submitting()">
           {{ submitting() ? 'Saving…' : editing ? 'Save changes' : 'Create integration' }}
         </button>

@@ -96,7 +96,7 @@ export class IntegrationEditorComponent {
       : this.api.post<SlackIntegrationDetail, typeof body>('/integrations/slack', body);
     request.subscribe({
       next: (response) => {
-        void this.router.navigate(['/integrations'], {
+        void this.router.navigate(['/integrations/slack'], {
           state: {
             message: `Slack integration “${response.data.name}” ${this.editing ? 'updated' : 'created'}.`,
           },
