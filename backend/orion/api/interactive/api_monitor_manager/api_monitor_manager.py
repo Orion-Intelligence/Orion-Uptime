@@ -62,8 +62,13 @@ class ApiMonitorManager(MonitorRepository):
         if scheduler_state.scheduler is not None:
             await scheduler_state.scheduler.start_worker(monitor)
         realtime_broker.notify("monitor", monitor.id)
+        return ApiMonitorManager._response(monitor)
+
+
+    @staticmethod
+    def _response(monitor: APIMonitorModel) -> ApiMonitorResponse:
         return ApiMonitorResponse(
-            id=monitor.id,
+            id=monitor.persisted_id,
             name=monitor.name,
             url=monitor.url,
             method=monitor.method,
@@ -109,58 +114,12 @@ class ApiMonitorManager(MonitorRepository):
         monitor = await self.get_monitor_model(monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        return ApiMonitorResponse(
-            id=monitor.persisted_id,
-            name=monitor.name,
-            url=monitor.url,
-            method=monitor.method,
-            headers=monitor.headers,
-            request_body=monitor.request_body,
-            expected_status_code=monitor.expected_status_code,
-            expected_json=monitor.expected_json,
-            check_interval=monitor.check_interval,
-            timeout=monitor.timeout,
-            is_active=monitor.is_active,
-            created_by=monitor.created_by,
-            created_at=monitor.created_at,
-            updated_at=monitor.updated_at,
-            last_checked_at=monitor.last_checked_at,
-            last_status_code=monitor.last_status_code,
-            last_response_time_ms=monitor.last_response_time_ms,
-            status=monitor.status,
-            expected_response_time_ms=monitor.expected_response_time_ms,
-            expected_headers=monitor.expected_headers,
-            expected_content_type=monitor.expected_content_type,
-            auth_profile_id=monitor.auth_profile_id,
-        )
+        return ApiMonitorManager._response(monitor)
 
     async def list_monitors(self) -> list[ApiMonitorResponse]:
         monitors = await self.list_monitor_models()
         return [
-            ApiMonitorResponse(
-                id=monitor.persisted_id,
-                name=monitor.name,
-                url=monitor.url,
-                method=monitor.method,
-                headers=monitor.headers,
-                request_body=monitor.request_body,
-                expected_status_code=monitor.expected_status_code,
-                expected_json=monitor.expected_json,
-                check_interval=monitor.check_interval,
-                timeout=monitor.timeout,
-                is_active=monitor.is_active,
-                created_by=monitor.created_by,
-                created_at=monitor.created_at,
-                updated_at=monitor.updated_at,
-                last_checked_at=monitor.last_checked_at,
-                last_status_code=monitor.last_status_code,
-                last_response_time_ms=monitor.last_response_time_ms,
-                status=monitor.status,
-                expected_response_time_ms=monitor.expected_response_time_ms,
-                expected_headers=monitor.expected_headers,
-                expected_content_type=monitor.expected_content_type,
-                auth_profile_id=monitor.auth_profile_id,
-            )
+            ApiMonitorManager._response(monitor)
             for monitor in monitors
         ]
 
@@ -192,51 +151,16 @@ class ApiMonitorManager(MonitorRepository):
             if updated_monitor.is_active:
                 await scheduler_state.scheduler.start_worker(updated_monitor)
         realtime_broker.notify("monitor", updated_monitor.id)
-        return ApiMonitorResponse(
-            id=updated_monitor.persisted_id,
-            name=updated_monitor.name,
-            url=updated_monitor.url,
-            method=updated_monitor.method,
-            headers=updated_monitor.headers,
-            request_body=updated_monitor.request_body,
-            expected_status_code=updated_monitor.expected_status_code,
-            expected_json=updated_monitor.expected_json,
-            check_interval=updated_monitor.check_interval,
-            timeout=updated_monitor.timeout,
-            is_active=updated_monitor.is_active,
-            created_by=updated_monitor.created_by,
-            created_at=updated_monitor.created_at,
-            updated_at=updated_monitor.updated_at,
-            last_checked_at=updated_monitor.last_checked_at,
-            last_status_code=updated_monitor.last_status_code,
-            last_response_time_ms=updated_monitor.last_response_time_ms,
-            status=updated_monitor.status,
-            expected_response_time_ms=updated_monitor.expected_response_time_ms,
-            expected_headers=updated_monitor.expected_headers,
-            expected_content_type=updated_monitor.expected_content_type,
-            auth_profile_id=updated_monitor.auth_profile_id,
-        )
+        return ApiMonitorManager._response(updated_monitor)
 
     async def delete_monitor(self, monitor_id: str) -> None:
         monitor = await self.get_monitor_model(monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.stop_worker(monitor_id)
-        result = await self.collection.delete_one({"_id": ObjectId(monitor_id)})
-        if result.deleted_count == 0:
-            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.monitor_service.delete_monitor_history(monitor_id)
-        realtime_broker.notify("monitor", monitor_id)
+        await self._remove_monitor(monitor_id, ObjectId(monitor_id))
 
     async def update_monitoring_result(self, monitor_id: str, status: MonitorStatus, status_code: int | None, response_time_ms: int | None, checked_at: datetime) -> bool:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return False
-        result = await self.collection.update_one({"_id": object_id}, {"$set": {"status": status, "last_status_code": status_code, "last_response_time_ms": response_time_ms, "last_checked_at": checked_at, "updated_at": checked_at}})
-        return result.modified_count > 0
+        return await self._apply_monitoring_result(monitor_id, {"status": status, "last_status_code": status_code, "last_response_time_ms": response_time_ms, "last_checked_at": checked_at, "updated_at": checked_at})
 
     async def _validate_auth_profile(self, profile_id: str | None) -> None:
         if profile_id is None:

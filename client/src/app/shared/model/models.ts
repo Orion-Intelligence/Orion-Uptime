@@ -275,3 +275,9 @@ export interface IntegrationBody {
   name: string;
   monitor_ids: string[];
 }
+
+export interface ChartPoint<T> {
+  data: T;
+  x: number;
+  y: number;
+}

@@ -11,6 +11,7 @@ from bson.errors import InvalidId
 from odmantic import AIOEngine
 
 from orion.api.interactive.insight_manager.insight_manager import DashboardManager
+from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
 from orion.constants.constant import Collections
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.mongo_manager.documents import with_string_id
@@ -21,7 +22,7 @@ from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
 
-class StatusPageManager:
+class StatusPageManager(IntegrationCollectionMixin):
     _uptime_cache: ClassVar[dict[tuple[str, ...], tuple[float, dict]]] = {}
     _detail_history_cache: ClassVar[dict[str, tuple[float, dict, list]]] = {}
     _uptime_cache_seconds = 55
@@ -252,13 +253,6 @@ class StatusPageManager:
             return None
         return round(result["successful"] / result["total"] * 100, 2)
 
-    async def _validated_monitor_ids(self, monitor_ids: list[str]) -> list[str]:
-        unique_ids = list(dict.fromkeys(monitor_ids))
-        available_ids = {monitor.id for monitor in await self.monitor_service.list_monitors() if monitor.id is not None}
-        missing = [monitor_id for monitor_id in unique_ids if monitor_id not in available_ids]
-        if missing:
-            raise ValidationError(f"Unknown monitor IDs: {', '.join(missing)}")
-        return unique_ids
 
     async def _unique_slug(self, name: str) -> str:
         base = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-") or "status-page"

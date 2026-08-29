@@ -11,8 +11,6 @@ from email.message import EmailMessage
 from email.utils import format_datetime, formataddr, make_msgid
 from typing import TYPE_CHECKING
 
-from bson import ObjectId
-from bson.errors import InvalidId
 from dotenv import load_dotenv
 from odmantic import AIOEngine
 from pymongo.errors import DuplicateKeyError
@@ -50,6 +48,9 @@ class SMTPSettings:
 
 
 class EmailIntegrationManager(IntegrationCollectionMixin):
+    not_found_message = "Email integration not found."
+    realtime_channel = "email_integration"
+
     def __init__(self, engine: AIOEngine, monitor_service: MonitorManager, sender: Callable[[EmailMessage], None] | None = None) -> None:
         self.collection = engine.database[Collections.EMAIL_INTEGRATIONS]
         self.monitor_service = monitor_service
@@ -116,19 +117,7 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
         if "monitor_ids" in update_data:
             update_data["monitor_ids"] = await self._validated_monitor_ids(update_data["monitor_ids"])
 
-        if requested_name is not None:
-            suffix = 0
-            while True:
-                name = await self._unique_name(requested_name, exclude_id=object_id, suffix=suffix)
-                named_update = {**update_data, "name": name, "name_key": self._name_key(name), "updated_at": datetime.now(UTC)}
-                try:
-                    await self.collection.update_one({"_id": object_id}, {"$set": named_update})
-                    break
-                except DuplicateKeyError:
-                    suffix += 1
-        elif update_data:
-            update_data["updated_at"] = datetime.now(UTC)
-            await self.collection.update_one({"_id": object_id}, {"$set": update_data})
+        await self._apply_update(object_id, update_data, requested_name)
 
         updated = await self.get_integration_model(integration_id)
         if updated is None:
@@ -136,14 +125,6 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
         realtime_broker.notify("email_integration", updated.id)
         return self._response(updated)
 
-    async def delete_integration(self, integration_id: str) -> None:
-        object_id = self._object_id(integration_id)
-        if object_id is None:
-            raise NotFoundError("Email integration not found.")
-        result = await self.collection.delete_one({"_id": object_id})
-        if result.deleted_count == 0:
-            raise NotFoundError("Email integration not found.")
-        realtime_broker.notify("email_integration", integration_id)
 
     async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, incident: IncidentModel | None = None) -> None:
         is_down = state_result.transition == MonitorTransition.DOWN
@@ -281,9 +262,3 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
     def _response(integration: EmailIntegrationModel) -> EmailIntegrationResponse:
         return EmailIntegrationResponse(id=integration.persisted_id, name=integration.name, email=integration.email, monitor_ids=integration.monitor_ids, monitor_count=len(integration.monitor_ids), created_at=integration.created_at, updated_at=integration.updated_at)
 
-    @staticmethod
-    def _object_id(value: str) -> ObjectId | None:
-        try:
-            return ObjectId(value)
-        except (InvalidId, TypeError):
-            return None

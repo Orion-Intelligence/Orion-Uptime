@@ -40,6 +40,21 @@ class HeartbeatMonitorManager(MonitorRepository):
         realtime_broker.notify("monitor", monitor.id)
         return HeartbeatTokenResponse(heartbeat_token=monitor.heartbeat_token)
 
+
+    @staticmethod
+    def _response(monitor: HeartbeatMonitorModel) -> HeartbeatMonitorResponse:
+        return HeartbeatMonitorResponse(
+            id=monitor.persisted_id,
+            name=monitor.name,
+            expected_heartbeat_interval=monitor.expected_heartbeat_interval,
+            grace_period=monitor.grace_period,
+            status=monitor.status.value,
+            is_active=monitor.is_active,
+            last_heartbeat_at=monitor.last_heartbeat_at.isoformat() if monitor.last_heartbeat_at else None,
+            created_at=monitor.created_at.isoformat(),
+            updated_at=monitor.updated_at.isoformat(),
+        )
+
     async def get_monitor_model(self, monitor_id: str) -> HeartbeatMonitorModel | None:
         try:
             object_id = ObjectId(monitor_id)
@@ -61,15 +76,11 @@ class HeartbeatMonitorManager(MonitorRepository):
         monitor = await self.get_monitor_model(monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        return HeartbeatMonitorResponse(
-            id=monitor.persisted_id, name=monitor.name, expected_heartbeat_interval=monitor.expected_heartbeat_interval, grace_period=monitor.grace_period, status=monitor.status.value, is_active=monitor.is_active, last_heartbeat_at=monitor.last_heartbeat_at.isoformat() if monitor.last_heartbeat_at else None, created_at=monitor.created_at.isoformat(), updated_at=monitor.updated_at.isoformat()
-        )
+        return HeartbeatMonitorManager._response(monitor)
 
     async def list_monitors(self) -> list[HeartbeatMonitorResponse]:
         return [
-            HeartbeatMonitorResponse(
-                id=monitor.persisted_id, name=monitor.name, expected_heartbeat_interval=monitor.expected_heartbeat_interval, grace_period=monitor.grace_period, status=monitor.status.value, is_active=monitor.is_active, last_heartbeat_at=monitor.last_heartbeat_at.isoformat() if monitor.last_heartbeat_at else None, created_at=monitor.created_at.isoformat(), updated_at=monitor.updated_at.isoformat()
-            )
+            HeartbeatMonitorManager._response(monitor)
             for monitor in await self.list_monitor_models()
         ]
 
@@ -97,23 +108,14 @@ class HeartbeatMonitorManager(MonitorRepository):
             if updated.is_active and updated.last_heartbeat_at is not None:
                 await scheduler_state.scheduler.start_worker(updated)
         realtime_broker.notify("monitor", updated.id)
-        return HeartbeatMonitorResponse(
-            id=updated.persisted_id, name=updated.name, expected_heartbeat_interval=updated.expected_heartbeat_interval, grace_period=updated.grace_period, status=updated.status.value, is_active=updated.is_active, last_heartbeat_at=updated.last_heartbeat_at.isoformat() if updated.last_heartbeat_at else None, created_at=updated.created_at.isoformat(), updated_at=updated.updated_at.isoformat()
-        )
+        return HeartbeatMonitorManager._response(updated)
 
     async def delete_monitor(self, monitor_id: str) -> None:
         try:
             object_id = ObjectId(monitor_id)
         except (InvalidId, TypeError):
             raise NotFoundError(Messages.MONITOR_NOT_FOUND) from None
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.stop_worker(monitor_id)
-        result = await self.collection.delete_one({"_id": object_id})
-        if result.deleted_count == 0:
-            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.monitor_service.delete_monitor_history(monitor_id)
-        realtime_broker.notify("monitor", monitor_id)
+        await self._remove_monitor(monitor_id, object_id)
 
     async def regenerate_token(self, monitor_id: str) -> RegenerateHeartbeatTokenResponse:
         monitor = await self.get_monitor_model(monitor_id)
@@ -152,12 +154,7 @@ class HeartbeatMonitorManager(MonitorRepository):
         return HeartbeatResponse(message=Messages.HEARTBEAT_RECEIVED, expected_next_heartbeat_in=monitor.expected_heartbeat_interval, server_time=now, token_rotation_required=False)
 
     async def update_monitoring_result(self, monitor_id: str, status: MonitorStatus, status_code: int | None, response_time_ms: int | None, checked_at: datetime) -> bool:
-        try:
-            object_id = ObjectId(monitor_id)
-        except (InvalidId, TypeError):
-            return False
-        result = await self.collection.update_one({"_id": object_id}, {"$set": {"status": status, "last_checked_at": checked_at, "updated_at": datetime.now(UTC)}})
-        return result.modified_count > 0
+        return await self._apply_monitoring_result(monitor_id, {"status": status, "last_checked_at": checked_at, "updated_at": datetime.now(UTC)})
 
     def _get_monitor_service(self) -> MonitorManager:
         if self.monitor_service is not None:

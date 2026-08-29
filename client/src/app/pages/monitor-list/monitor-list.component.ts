@@ -1,27 +1,26 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, DestroyRef, effect, inject, signal } from '@angular/core';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
 import { AuthService } from '../../services/authentication/auth.service';
 import { MonitorOverview, RealtimeResources, ResourceRecord } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { NoticePageBase } from '../../shared/base/notice-page.base';
+import { durationText } from '../../shared/utils/duration.util';
+import { HEARTBEAT_NOTICE_MS, NOTICE_VISIBLE_MS } from '../../shared/constants/ui.constants';
 
 @Component({
   selector: 'app-resource-list-page',
   imports: [DatePipe, DecimalPipe, RouterLink],
   templateUrl: './monitor-list.component.html',
 })
-export class MonitorListComponent {
+export class MonitorListComponent extends NoticePageBase {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly realtime = inject(RealtimeService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly resourceType = signal<keyof RealtimeResources | null>(null);
-  private noticeTimer: ReturnType<typeof setTimeout> | undefined;
-  private noticeRemovalTimer: ReturnType<typeof setTimeout> | undefined;
 
   readonly title = signal('Resources');
   readonly description = signal('');
@@ -38,9 +37,7 @@ export class MonitorListComponent {
   readonly editName = signal('');
   readonly renamingId = signal('');
   readonly error = signal('');
-  readonly message = signal('');
   readonly heartbeatToken = signal('');
-  readonly noticeLeaving = signal(false);
   readonly canManage = computed(() => this.auth.user()?.role === 'admin');
   readonly isMonitorList = computed(() => {
     const resourceType = this.resourceType();
@@ -65,15 +62,13 @@ export class MonitorListComponent {
   });
 
   constructor() {
-    const navigationState = this.router.currentNavigation()?.extras.state;
+    super();
+    const navigationState = this.navigationState();
     const initialMessage = String(navigationState?.['message'] ?? '');
     const initialToken = String(navigationState?.['heartbeatToken'] ?? '');
     if (initialMessage || initialToken) {
-      this.showNotice(initialMessage, initialToken);
+      this.showHeartbeatNotice(initialMessage, initialToken);
     }
-    this.destroyRef.onDestroy(() => {
-      this.clearNoticeTimers(); 
-    });
     this.realtime.connect();
     effect(() => {
       const error = this.realtime.error();
@@ -278,29 +273,13 @@ export class MonitorListComponent {
     });
   }
 
-  private showNotice(message: string, heartbeatToken = ''): void {
-    this.clearNoticeTimers();
-    this.noticeLeaving.set(false);
-    this.message.set(message);
+  private showHeartbeatNotice(message: string, heartbeatToken = ''): void {
     this.heartbeatToken.set(heartbeatToken);
-    this.noticeTimer = setTimeout(() => {
-      this.noticeLeaving.set(true);
-      this.noticeRemovalTimer = setTimeout(() => {
-        this.message.set('');
-        this.heartbeatToken.set('');
-        this.noticeLeaving.set(false);
-      }, 300);
-    },
-    heartbeatToken ? 12000 : 4000,);
+    this.showNotice(message, heartbeatToken ? HEARTBEAT_NOTICE_MS : NOTICE_VISIBLE_MS);
   }
 
-  private clearNoticeTimers(): void {
-    if (this.noticeTimer) {
-      clearTimeout(this.noticeTimer);
-    }
-    if (this.noticeRemovalTimer) {
-      clearTimeout(this.noticeRemovalTimer);
-    }
+  protected override onNoticeHidden(): void {
+    this.heartbeatToken.set('');
   }
 
   private resourceLabel(): string {
@@ -321,16 +300,7 @@ export class MonitorListComponent {
   }
 
   formatDuration(totalSeconds: number): string {
-    if (totalSeconds < 60) {
-      return `${totalSeconds}s`;
-    }
-    if (totalSeconds < 3600) {
-      return `${Math.floor(totalSeconds / 60)}m`;
-    }
-    if (totalSeconds < 86400) {
-      return `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m`;
-    }
-    return `${Math.floor(totalSeconds / 86400)}d ${Math.floor((totalSeconds % 86400) / 3600)}h`;
+    return durationText(totalSeconds);
   }
 
   uptimeSeconds(overview: MonitorOverview): number {

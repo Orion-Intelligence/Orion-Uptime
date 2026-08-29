@@ -2,16 +2,11 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { durationText } from '../../shared/utils/duration.util';
 import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
-import { MonitorDetail, MonitorIncident, MonitorOverview, RealtimeSnapshot, ResponseHistory, ResponseHistoryPoint, StatusHistory, StatusHistoryPoint, } from '../../shared/model/models';
+import { ChartPoint, MonitorDetail, MonitorIncident, MonitorOverview, RealtimeSnapshot, ResponseHistory, ResponseHistoryPoint, StatusHistory, StatusHistoryPoint, } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
-
-interface ChartPoint<T> {
-  data: T;
-  x: number;
-  y: number;
-}
 
 @Component({
   selector: 'app-monitor-detail-page',
@@ -136,16 +131,7 @@ export class MonitorDetailComponent {
   }
 
   formatDuration(totalSeconds: number): string {
-    if (totalSeconds < 60) {
-      return `${totalSeconds}s`;
-    }
-    if (totalSeconds < 3600) {
-      return `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`;
-    }
-    if (totalSeconds < 86400) {
-      return `${Math.floor(totalSeconds / 3600)}h ${Math.floor((totalSeconds % 3600) / 60)}m`;
-    }
-    return `${Math.floor(totalSeconds / 86400)}d ${Math.floor((totalSeconds % 86400) / 3600)}h`;
+    return durationText(totalSeconds, true);
   }
 
   uptimeSeconds(overview: MonitorOverview): number {
