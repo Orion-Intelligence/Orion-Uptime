@@ -241,8 +241,10 @@ export class MonitorListComponent {
   }
 
   onEditNameInput(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    this.editName.set(input.value);
+    const target = event.target;
+    if (target instanceof HTMLInputElement) {
+      this.editName.set(target.value);
+    }
   }
 
   onRenameSubmit(event: Event, record: ResourceRecord): void {
