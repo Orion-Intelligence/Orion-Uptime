@@ -10,7 +10,7 @@ const readRootEnv = (): Record<string, string> => {
     if (!fs.existsSync(envPath)) {
         return {};
     }
-    const values: Record<string, string> = {};
+    const values = new Map<string, string>();
     for (const rawLine of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
         const line = rawLine.trim();
         if (!line || line.startsWith("#")) {
@@ -25,9 +25,9 @@ const readRootEnv = (): Record<string, string> => {
         if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
             value = value.slice(1, -1);
         }
-        values[key] = value;
+        values.set(key, value);
     }
-    return values;
+    return Object.fromEntries(values);
 };
 
 const rootEnv = readRootEnv();

@@ -241,7 +241,8 @@ export class MonitorListComponent {
   }
 
   onEditNameInput(event: Event): void {
-    this.editName.set((event.target as HTMLInputElement).value);
+    const input = event.target as HTMLInputElement;
+    this.editName.set(input.value);
   }
 
   onRenameSubmit(event: Event, record: ResourceRecord): void {

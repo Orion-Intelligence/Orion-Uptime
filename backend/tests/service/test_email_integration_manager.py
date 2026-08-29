@@ -19,6 +19,7 @@ from orion.shared_models.exceptions import ValidationError
 class FakeCursor:
     def __init__(self, documents):
         self.documents = documents
+        self.iterator = iter(documents)
 
     def sort(self, *_args):
         return self
