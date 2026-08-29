@@ -6,15 +6,14 @@ from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
+from orion.constants.constant import AllowedValues, EnvVars
 from orion.shared_models.exceptions import ValidationError
 
-ALLOW_PRIVATE_TARGETS_ENV = "MONITOR_ALLOW_PRIVATE_TARGETS"
-ALLOWED_SCHEMES = {"http", "https"}
 
 
 def private_targets_allowed() -> bool:
     load_dotenv()
-    return os.environ.get(ALLOW_PRIVATE_TARGETS_ENV, "false").strip().lower() in {"1", "true", "yes"}
+    return os.environ.get(EnvVars.ALLOW_PRIVATE_TARGETS, "false").strip().lower() in {"1", "true", "yes"}
 
 
 def _is_public_address(address: str) -> bool:
@@ -50,7 +49,7 @@ async def validate_target_host(host: str) -> None:
 
 async def validate_target_url(url: str) -> None:
     parts = urlsplit(url.strip())
-    if parts.scheme.lower() not in ALLOWED_SCHEMES:
+    if parts.scheme.lower() not in AllowedValues.MONITOR_SCHEMES:
         raise ValidationError("Monitor URLs must use http or https.")
     if not parts.hostname:
         raise ValidationError("Monitor URLs must include a host.")

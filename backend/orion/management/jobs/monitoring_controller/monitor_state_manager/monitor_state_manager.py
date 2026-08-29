@@ -6,12 +6,10 @@ from datetime import datetime
 from dotenv import load_dotenv
 from odmantic import AIOEngine
 
-from orion.constants.constant import Collections
+from orion.constants.constant import Collections, Limits
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorStateModel, MonitorStateResult, MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 
-RECOVERY_THRESHOLD = 1
-DEFAULT_FAILURE_THRESHOLD = 3
 
 
 class MonitorStateManager:
@@ -32,8 +30,8 @@ class MonitorStateManager:
         previous_status = state.status
 
         load_dotenv()
-        recovery_threshold = RECOVERY_THRESHOLD
-        failure_threshold = int(os.environ.get("MONITOR_FAILURE_THRESHOLD", str(DEFAULT_FAILURE_THRESHOLD)))
+        recovery_threshold = Limits.RECOVERY_THRESHOLD
+        failure_threshold = int(os.environ.get("MONITOR_FAILURE_THRESHOLD", str(Limits.DEFAULT_FAILURE_THRESHOLD)))
 
         if success:
             state.consecutive_successes += 1

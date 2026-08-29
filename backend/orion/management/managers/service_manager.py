@@ -8,6 +8,7 @@ from typing import NamedTuple
 
 import orion.api.interactive.orion_login_manager.orion_token_manager as auth_token_state
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
+from orion.constants.constant import Intervals
 from orion.api.interactive.api_monitor_manager.api_monitor_manager import ApiMonitorManager
 from orion.api.interactive.auth_manager.auth_manager import password_service
 from orion.api.interactive.email_integration_manager.email_integration_manager import EmailIntegrationManager
@@ -25,14 +26,13 @@ from orion.management.jobs.monitoring_controller.checkers.checker_factory import
 from orion.management.jobs.monitoring_controller.monitor_results_manager.monitor_results_manager import MonitorResultManager
 from orion.management.jobs.monitoring_controller.monitor_state_manager.monitor_state_manager import MonitorStateManager
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
-from orion.management.jobs.monitoring_controller.scheduler import SCHEDULER_STALL_SECONDS, MonitorScheduler
+from orion.management.jobs.monitoring_controller.scheduler import MonitorScheduler
 from orion.services.mongo_manager.mongo_controller import db_manager
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError
 
 logger = logging.getLogger("orion.uptime")
 
-WATCHDOG_INTERVAL_SECONDS = 30
 
 
 class Services(NamedTuple):
@@ -55,11 +55,11 @@ def terminate_process(reason: str) -> None:
     os.kill(os.getpid(), signal.SIGTERM)
 
 
-async def scheduler_watchdog(scheduler: MonitorScheduler, interval: float = WATCHDOG_INTERVAL_SECONDS) -> None:
+async def scheduler_watchdog(scheduler: MonitorScheduler, interval: float = Intervals.WATCHDOG_INTERVAL_SECONDS) -> None:
     while True:
         await asyncio.sleep(interval)
-        if scheduler.running and scheduler.last_reconcile_at is not None and not scheduler.is_healthy(SCHEDULER_STALL_SECONDS * 2):
-            terminate_process(f"The monitor scheduler has not reconciled for more than {SCHEDULER_STALL_SECONDS * 2} seconds.")
+        if scheduler.running and scheduler.last_reconcile_at is not None and not scheduler.is_healthy(Intervals.SCHEDULER_STALL_SECONDS * 2):
+            terminate_process(f"The monitor scheduler has not reconciled for more than {Intervals.SCHEDULER_STALL_SECONDS * 2} seconds.")
             return
 
 

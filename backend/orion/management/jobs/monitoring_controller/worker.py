@@ -3,12 +3,12 @@ import contextlib
 import logging
 from datetime import UTC, datetime, timedelta
 
+from orion.constants.constant import Intervals
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import HeartbeatMonitorModel
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import BaseMonitorModel
 
 MonitorModel = BaseMonitorModel | HeartbeatMonitorModel
-ERROR_BACKOFF_SECONDS = 15
 
 logger = logging.getLogger("orion.uptime.worker")
 
@@ -97,7 +97,7 @@ class MonitorWorker:
             except Exception:
                 logger.exception("Heartbeat monitor %s check cycle failed.", self.monitor.id)
                 try:
-                    await asyncio.sleep(ERROR_BACKOFF_SECONDS)
+                    await asyncio.sleep(Intervals.ERROR_BACKOFF_SECONDS)
                 except asyncio.CancelledError:
                     break
         self._running = False

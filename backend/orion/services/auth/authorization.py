@@ -8,14 +8,11 @@ from odmantic import AIOEngine
 
 from configs.app_dependency import app_dependency
 from orion.api.interactive.auth_manager.auth_manager import AuthManager, password_service, refresh_token_service, revoked_access_tokens
-from orion.constants.constant import Messages
+from orion.constants.constant import Cookies, Messages
 from orion.services.mongo_manager.mongo_controller import get_engine
 from orion.services.mongo_manager.shared_model.db_user_account_model import AuthTokens, CurrentUserResponse, TokenResponse, UserRole
 from orion.shared_models.exceptions import AuthenticationError, AuthorizationError
 
-ACCESS_TOKEN_COOKIE = "access_token"  # nosec B105
-REFRESH_TOKEN_COOKIE = "refresh_token"  # nosec B105
-AUTH_COOKIE_PATH = "/api"
 
 
 def get_auth_service(engine: AIOEngine = Depends(get_engine)) -> AuthManager:
@@ -34,18 +31,18 @@ def _cookie_secure() -> bool:
 def set_auth_cookies(response: Response, tokens: AuthTokens | TokenResponse) -> None:
     load_dotenv()
     secure = _cookie_secure()
-    response.set_cookie(key=ACCESS_TOKEN_COOKIE, value=tokens.access_token, max_age=int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"]) * 60, path=AUTH_COOKIE_PATH, secure=secure, httponly=True, samesite="lax")
-    response.set_cookie(key=REFRESH_TOKEN_COOKIE, value=tokens.refresh_token, max_age=int(os.environ["REFRESH_TOKEN_EXPIRE_DAYS"]) * 24 * 60 * 60, path=AUTH_COOKIE_PATH, secure=secure, httponly=True, samesite="lax")
+    response.set_cookie(key=Cookies.ACCESS_TOKEN, value=tokens.access_token, max_age=int(os.environ["ACCESS_TOKEN_EXPIRE_MINUTES"]) * 60, path=Cookies.AUTH_PATH, secure=secure, httponly=True, samesite="lax")
+    response.set_cookie(key=Cookies.REFRESH_TOKEN, value=tokens.refresh_token, max_age=int(os.environ["REFRESH_TOKEN_EXPIRE_DAYS"]) * 24 * 60 * 60, path=Cookies.AUTH_PATH, secure=secure, httponly=True, samesite="lax")
 
 
 def clear_auth_cookies(response: Response) -> None:
-    response.delete_cookie(ACCESS_TOKEN_COOKIE, path=AUTH_COOKIE_PATH, secure=_cookie_secure(), httponly=True, samesite="lax")
-    response.delete_cookie(REFRESH_TOKEN_COOKIE, path=AUTH_COOKIE_PATH, secure=_cookie_secure(), httponly=True, samesite="lax")
+    response.delete_cookie(Cookies.ACCESS_TOKEN, path=Cookies.AUTH_PATH, secure=_cookie_secure(), httponly=True, samesite="lax")
+    response.delete_cookie(Cookies.REFRESH_TOKEN, path=Cookies.AUTH_PATH, secure=_cookie_secure(), httponly=True, samesite="lax")
 
 
 async def get_current_user(request: Request, response: Response, service: AuthManager = Depends(get_auth_service)) -> CurrentUserResponse:
     payload = None
-    cookie_access_token = request.cookies.get(ACCESS_TOKEN_COOKIE)
+    cookie_access_token = request.cookies.get(Cookies.ACCESS_TOKEN)
     if cookie_access_token is not None:
         try:
             candidate = service.jwt_service.verify_access_token(cookie_access_token)
@@ -55,7 +52,7 @@ async def get_current_user(request: Request, response: Response, service: AuthMa
             payload = None
 
     if payload is None:
-        refresh_token = request.cookies.get(REFRESH_TOKEN_COOKIE)
+        refresh_token = request.cookies.get(Cookies.REFRESH_TOKEN)
         if refresh_token is None:
             raise AuthenticationError(Messages.INVALID_CREDENTIALS)
         tokens = await service.refresh_tokens(refresh_token)

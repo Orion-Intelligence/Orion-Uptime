@@ -108,11 +108,11 @@ def test_email_alerts_only_send_for_down_and_recovery_transitions():
 
     assert len(sent_messages) == 2
     assert "Public API is DOWN" in sent_messages[0]["Subject"]
-    assert "Root cause: Received HTTP 503." in sent_messages[0].get_content()
-    assert "Status code: 503" in sent_messages[0].get_content()
-    assert "Resolved: Ongoing" in sent_messages[0].get_content()
+    assert "Root cause: Received HTTP 503." in sent_messages[0].get_body(preferencelist=("plain",)).get_content()
+    assert "Status code: 503" in sent_messages[0].get_body(preferencelist=("plain",)).get_content()
+    assert "Resolved: Ongoing" in sent_messages[0].get_body(preferencelist=("plain",)).get_content()
     assert "Public API is RECOVERED" in sent_messages[1]["Subject"]
-    assert incident.resolved_at.isoformat() in sent_messages[1].get_content()
+    assert EmailIntegrationManager._timestamp(incident.resolved_at) in sent_messages[1].get_body(preferencelist=("plain",)).get_content()
 
 
 def test_ping_email_omits_http_status_code():
@@ -123,4 +123,4 @@ def test_ping_email_omits_http_status_code():
 
     message = EmailIntegrationManager._build_message(integration, monitor, is_down=True, result=SimpleNamespace(response_time_ms=None), incident=incident)
 
-    assert "Status code:" not in message.get_content()
+    assert "Status code:" not in message.get_body(preferencelist=("plain",)).get_content()

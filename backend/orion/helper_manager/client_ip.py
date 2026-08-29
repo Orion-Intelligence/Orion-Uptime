@@ -1,16 +1,16 @@
 import ipaddress
+from orion.constants.constant import EnvVars
 import os
 
 from dotenv import load_dotenv
 from fastapi import Request
 
-TRUSTED_PROXIES_ENV = "TRUSTED_PROXIES"
 
 
 def _trusted_networks() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
     load_dotenv()
     networks = []
-    for raw_entry in os.environ.get(TRUSTED_PROXIES_ENV, "").split(","):
+    for raw_entry in os.environ.get(EnvVars.TRUSTED_PROXIES, "").split(","):
         entry = raw_entry.strip()
         if not entry:
             continue

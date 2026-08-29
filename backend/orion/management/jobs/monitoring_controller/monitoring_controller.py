@@ -7,7 +7,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 from orion.api.interactive.incident_manager.incident_manager import IncidentManager
-from orion.constants.constant import Collections
+from orion.constants.constant import Collections, HttpStatus, Intervals
 from orion.management.jobs.monitoring_controller.checkers.checker_factory import CheckerFactory
 from orion.management.jobs.monitoring_controller.monitor_repository import MonitorRepository
 from orion.management.jobs.monitoring_controller.monitor_results_manager.monitor_results_manager import MonitorResultManager
@@ -26,25 +26,8 @@ if TYPE_CHECKING:
     from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import PingMonitorManager
     from orion.api.interactive.slack_integration_manager.slack_integration_manager import SlackIntegrationManager
 
-HTTP_STATUS_DESCRIPTION_FALLBACKS = {
-    102: "The server received the request and is still processing it",
-    103: "The server returned preliminary headers before the final response",
-    207: "The response contains separate statuses for multiple operations",
-    208: "The resource was already reported earlier in the same response",
-    226: "The response represents the result of one or more instance manipulations",
-    422: "The server understood the request but could not process its content",
-    423: "The requested resource is locked",
-    424: "The request failed because an operation it depended on also failed",
-    425: "The server rejected the request because replaying it could be unsafe",
-    426: "The server requires the client to switch to a different protocol",
-    506: "The server has a circular content-negotiation configuration",
-    507: "The server has insufficient storage to complete the request",
-    508: "The server detected an infinite loop while processing the request",
-    510: "The request requires additional extensions before it can be completed",
-}
 
 MonitorModel = BaseMonitorModel | HeartbeatMonitorModel
-CHECK_DEADLINE_GRACE_SECONDS = 10
 
 logger = logging.getLogger("orion.uptime.monitoring")
 
@@ -96,8 +79,8 @@ class MonitorManager:
     def check_deadline_seconds(monitor: MonitorModel) -> float:
         timeout = getattr(monitor, "timeout", None)
         if not isinstance(timeout, int | float) or timeout <= 0:
-            return float(CHECK_DEADLINE_GRACE_SECONDS)
-        return float(timeout) * 3 + CHECK_DEADLINE_GRACE_SECONDS
+            return float(Intervals.CHECK_DEADLINE_GRACE_SECONDS)
+        return float(timeout) * 3 + Intervals.CHECK_DEADLINE_GRACE_SECONDS
 
     @classmethod
     async def run_check_with_deadline(cls, checker, monitor: MonitorModel):
@@ -163,7 +146,7 @@ class MonitorManager:
         except ValueError:
             description = "The target returned a non-standard HTTP status code"
         if not description:
-            description = HTTP_STATUS_DESCRIPTION_FALLBACKS.get(status_code, "The target returned this HTTP status without a standard description")
+            description = HttpStatus.DESCRIPTION_FALLBACKS.get(status_code, "The target returned this HTTP status without a standard description")
         return f"{label} — {description}"
 
     async def get_monitor(self, monitor_id: str, monitor_type: MonitorType | None = None) -> MonitorModel | None:

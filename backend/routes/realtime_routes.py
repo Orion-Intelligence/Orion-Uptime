@@ -13,11 +13,11 @@ from fastapi.responses import StreamingResponse
 from jwt import PyJWTError
 
 from configs.app_dependency import app_dependency
+from orion.constants.constant import Intervals
 from orion.services.auth.authorization import require_viewer
 from orion.services.mongo_manager.shared_model.db_user_account_model import CurrentUserResponse, UserRole
 from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_broker
 
-KEEP_ALIVE_SECONDS = 15
 
 router = APIRouter(prefix="/events", tags=["Real-time Updates"])
 
@@ -65,7 +65,7 @@ async def stream_events(request: Request, response: Response, current_user: Curr
                     yield "event: reauthenticate\ndata: {}\n\n"
                     return
                 try:
-                    update: RealtimeUpdate = await asyncio.wait_for(queue.get(), timeout=min(KEEP_ALIVE_SECONDS, remaining))
+                    update: RealtimeUpdate = await asyncio.wait_for(queue.get(), timeout=min(Intervals.KEEP_ALIVE_SECONDS, remaining))
                 except TimeoutError:
                     if time.monotonic() >= reauthenticate_at:
                         yield "event: reauthenticate\ndata: {}\n\n"
