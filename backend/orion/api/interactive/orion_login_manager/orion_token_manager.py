@@ -9,12 +9,12 @@ from typing import TYPE_CHECKING, TypeGuard
 
 import httpx
 
+from orion.constants.constant import Cookies
 from orion.services.mongo_manager.shared_model.db_orion_login_model import AuthProfileModel
 
 if TYPE_CHECKING:
     from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
 
-ACCESS_TOKEN_COOKIE_NAME = "access_token"  # nosec B105
 TOKEN_CACHE_TTL_SECONDS = 14 * 60
 
 
@@ -69,7 +69,7 @@ class AccessTokenCookieManager:
 
         token = self._extract_access_token_cookie(response)
         if token is None:
-            raise AuthTokenError(f"Login returned HTTP {response.status_code}, but the '{ACCESS_TOKEN_COOKIE_NAME}' cookie was missing. Auth profile was not created.", status_code=response.status_code)
+            raise AuthTokenError(f"Login returned HTTP {response.status_code}, but the '{Cookies.ACCESS_TOKEN}' cookie was missing. Auth profile was not created.", status_code=response.status_code)
 
         return token, response.status_code
 
@@ -96,7 +96,7 @@ class AccessTokenCookieManager:
             for header in candidate.headers.get_list("set-cookie"):
                 cookies = SimpleCookie()
                 cookies.load(header)
-                morsel = cookies.get(ACCESS_TOKEN_COOKIE_NAME)
+                morsel = cookies.get(Cookies.ACCESS_TOKEN)
                 if morsel is not None and morsel.value:
                     return morsel.value
         return None

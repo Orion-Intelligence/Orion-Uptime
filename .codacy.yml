@@ -49,4 +49,4 @@ engines:
       - "client/scripts/**"
       - ".github/**"
       - "run.sh"
-          - "**/eslint.config.js"
+      - "**/eslint.config.js"

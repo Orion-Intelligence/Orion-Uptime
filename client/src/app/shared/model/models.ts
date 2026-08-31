@@ -264,3 +264,20 @@ export interface ApiErrorBody {
   message?: string;
   detail?: string | Array<{ msg?: string }>;
 }
+
+export interface IntegrationSummary {
+  id: string;
+  name: string;
+  monitor_ids: string[];
+}
+
+export interface IntegrationBody {
+  name: string;
+  monitor_ids: string[];
+}
+
+export interface ChartPoint<T> {
+  data: T;
+  x: number;
+  y: number;
+}

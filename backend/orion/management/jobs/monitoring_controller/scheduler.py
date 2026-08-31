@@ -4,18 +4,16 @@ import logging
 import time
 from collections.abc import Callable
 
+from orion.constants.constant import Intervals
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.management.jobs.monitoring_controller.worker import MonitorWorker
 from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import HeartbeatMonitorModel
-
-RECONCILE_INTERVAL_SECONDS = 30
-SCHEDULER_STALL_SECONDS = 180
 
 logger = logging.getLogger("orion.uptime.scheduler")
 
 
 class MonitorScheduler:
-    def __init__(self, monitor_service: MonitorManager, reconcile_interval: float = RECONCILE_INTERVAL_SECONDS, on_fatal: Callable[[BaseException], None] | None = None, clock: Callable[[], float] = time.monotonic):
+    def __init__(self, monitor_service: MonitorManager, reconcile_interval: float = Intervals.RECONCILE_INTERVAL_SECONDS, on_fatal: Callable[[BaseException], None] | None = None, clock: Callable[[], float] = time.monotonic):
         self.monitor_service = monitor_service
         self.reconcile_interval = reconcile_interval
         self.on_fatal = on_fatal
@@ -101,7 +99,7 @@ class MonitorScheduler:
 
         await worker.stop()
 
-    def is_healthy(self, stall_seconds: float = SCHEDULER_STALL_SECONDS) -> bool:
+    def is_healthy(self, stall_seconds: float = Intervals.SCHEDULER_STALL_SECONDS) -> bool:
         if not self._running or self.last_reconcile_at is None:
             return False
         return self.clock() - self.last_reconcile_at <= stall_seconds

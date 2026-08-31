@@ -4,7 +4,7 @@ import os
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
-ENCRYPTION_KEY_ENV = "CREDENTIALS_ENCRYPTION_KEY"
+from orion.constants.constant import EnvVars
 
 
 class SecretBox:
@@ -21,9 +21,9 @@ class SecretBox:
     def _cipher(self) -> Fernet:
         if self._fernet is None:
             load_dotenv()
-            key = os.environ.get(ENCRYPTION_KEY_ENV, "").strip()
+            key = os.environ.get(EnvVars.ENCRYPTION_KEY, "").strip()
             if not key:
-                raise RuntimeError(f'{ENCRYPTION_KEY_ENV} is not configured. Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"')
+                raise RuntimeError(f'{EnvVars.ENCRYPTION_KEY} is not configured. Generate one with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"')
             self._fernet = Fernet(key.encode())
         return self._fernet
 

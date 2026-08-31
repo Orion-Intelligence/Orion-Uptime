@@ -11,6 +11,7 @@ from odmantic import AIOEngine
 
 from orion.api.interactive.insight_manager.insight_manager import DashboardManager
 from orion.api.interactive.status_page_manager.status_page_manager import StatusPageManager
+from orion.constants.constant import Intervals
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.auth.authorization import require_admin
 from orion.services.mongo_manager.mongo_controller import get_engine
@@ -19,9 +20,6 @@ from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_br
 from orion.shared_models.exceptions import NotFoundError
 from orion.shared_models.responses import SuccessResponse, success_response
 from routes.insight_routes import get_dashboard_service, get_monitor_service
-
-KEEP_ALIVE_SECONDS = 15
-PUBLIC_REFRESH_SECONDS = 60
 
 router = APIRouter(prefix="/status-pages", tags=["Status Pages"])
 
@@ -59,11 +57,11 @@ async def stream_public_monitor_detail(slug: str, monitor_id: str, request: Requ
             yield _event("snapshot", initial)
             while not await request.is_disconnected():
                 elapsed = asyncio.get_running_loop().time() - last_snapshot_at
-                timeout = min(KEEP_ALIVE_SECONDS, max(0.1, PUBLIC_REFRESH_SECONDS - elapsed))
+                timeout = min(Intervals.KEEP_ALIVE_SECONDS, max(0.1, Intervals.PUBLIC_REFRESH_SECONDS - elapsed))
                 try:
                     update: RealtimeUpdate = await asyncio.wait_for(queue.get(), timeout=timeout)
                 except TimeoutError:
-                    if asyncio.get_running_loop().time() - last_snapshot_at >= PUBLIC_REFRESH_SECONDS:
+                    if asyncio.get_running_loop().time() - last_snapshot_at >= Intervals.PUBLIC_REFRESH_SECONDS:
                         try:
                             detail = await service.get_public_monitor_detail(slug, monitor_id)
                         except NotFoundError:
@@ -110,11 +108,11 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
             yield _event("snapshot", await service.build_public_response(page, snapshot["overviews"]), snapshot["revision"])
             while not await request.is_disconnected():
                 elapsed = asyncio.get_running_loop().time() - last_snapshot_at
-                timeout = min(KEEP_ALIVE_SECONDS, max(0.1, PUBLIC_REFRESH_SECONDS - elapsed))
+                timeout = min(Intervals.KEEP_ALIVE_SECONDS, max(0.1, Intervals.PUBLIC_REFRESH_SECONDS - elapsed))
                 try:
                     update: RealtimeUpdate = await asyncio.wait_for(queue.get(), timeout=timeout)
                 except TimeoutError:
-                    if asyncio.get_running_loop().time() - last_snapshot_at >= PUBLIC_REFRESH_SECONDS:
+                    if asyncio.get_running_loop().time() - last_snapshot_at >= Intervals.PUBLIC_REFRESH_SECONDS:
                         current_snapshot = await realtime_broker.get_snapshot(is_admin=False)
                         yield _event("snapshot", await service.build_public_response(page, current_snapshot["overviews"]), current_snapshot["revision"])
                         last_snapshot_at = asyncio.get_running_loop().time()

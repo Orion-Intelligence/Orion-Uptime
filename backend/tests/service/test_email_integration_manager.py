@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from orion.api.interactive.email_integration_manager.email_integration_manager import EmailIntegrationManager
 from orion.constants.constant import Collections
+from orion.services.email_template_manager import EmailTemplateManager
 from orion.services.mongo_manager.shared_model.db_email_integration_model import CreateEmailIntegrationRequest, EmailIntegrationModel
 from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
@@ -19,6 +20,7 @@ from orion.shared_models.exceptions import ValidationError
 class FakeCursor:
     def __init__(self, documents):
         self.documents = documents
+        self.iterator = iter(documents)
 
     def sort(self, *_args):
         return self
@@ -63,6 +65,15 @@ class FakeMonitorService:
         return []
 
 
+@pytest.fixture(autouse=True)
+def initialized_email_templates():
+    template_manager = EmailTemplateManager.get_instance()
+    template_manager.clear()
+    template_manager.initialize()
+    yield
+    template_manager.clear()
+
+
 def test_duplicate_email_integration_names_receive_numeric_suffix():
     collection = FakeCollection()
     engine = SimpleNamespace(database={Collections.EMAIL_INTEGRATIONS: collection})
@@ -82,7 +93,11 @@ def test_email_validation_rejects_invalid_recipients(email):
         EmailIntegrationManager._validated_email(email)
 
 
-def test_email_alerts_only_send_for_down_and_recovery_transitions():
+def test_email_alerts_only_send_for_down_and_recovery_transitions(monkeypatch):
+    async def run_immediately(function, *args, **kwargs):
+        return function(*args, **kwargs)
+
+    monkeypatch.setattr(asyncio, "to_thread", run_immediately)
     collection = FakeCollection()
     engine = SimpleNamespace(database={Collections.EMAIL_INTEGRATIONS: collection})
     sent_messages = []
@@ -107,19 +122,22 @@ def test_email_alerts_only_send_for_down_and_recovery_transitions():
 
     assert len(sent_messages) == 2
     assert "Public API is DOWN" in sent_messages[0]["Subject"]
-    assert "Root cause: Received HTTP 503." in sent_messages[0].get_content()
-    assert "Status code: 503" in sent_messages[0].get_content()
-    assert "Resolved: Ongoing" in sent_messages[0].get_content()
+    assert "Root cause: Received HTTP 503." in sent_messages[0].get_body(preferencelist=("plain",)).get_content()
+    assert "Status code: 503" in sent_messages[0].get_body(preferencelist=("plain",)).get_content()
+    assert "Resolved: Ongoing" in sent_messages[0].get_body(preferencelist=("plain",)).get_content()
     assert "Public API is RECOVERED" in sent_messages[1]["Subject"]
-    assert incident.resolved_at.isoformat() in sent_messages[1].get_content()
+    assert EmailIntegrationManager._timestamp(incident.resolved_at) in sent_messages[1].get_body(preferencelist=("plain",)).get_content()
 
 
 def test_ping_email_omits_http_status_code():
+    collection = FakeCollection()
+    engine = SimpleNamespace(database={Collections.EMAIL_INTEGRATIONS: collection})
+    manager = EmailIntegrationManager(engine, FakeMonitorService())
     now = datetime.now(UTC)
     integration = EmailIntegrationModel(id="integration-id", name="Network", name_key="network", email="network@example.com", monitor_ids=["monitor-id"], created_at=now, updated_at=now)
     monitor = SimpleNamespace(name="Gateway", monitor_type=MonitorType.PING)
     incident = IncidentModel(id="incident-id", monitor_id="monitor-id", monitor_type=MonitorType.PING, started_at=now, reason="The host did not reply.")
 
-    message = EmailIntegrationManager._build_message(integration, monitor, is_down=True, result=SimpleNamespace(response_time_ms=None), incident=incident)
+    message = manager._build_message(integration, monitor, is_down=True, result=SimpleNamespace(response_time_ms=None), incident=incident)
 
-    assert "Status code:" not in message.get_content()
+    assert "Status code:" not in message.get_body(preferencelist=("plain",)).get_content()

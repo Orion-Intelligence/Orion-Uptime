@@ -501,7 +501,7 @@ const localRules = {
               .replace(/^\n/, '')
               .replace(/\n\s*$/, '');
 
-            const isOrderCorrect = fields.every((field, idx) => field === orderedFields[idx]);
+            const isOrderCorrect = fields.every((field, idx) => field === orderedFields.at(idx));
             const isAllFieldsAtTop =
               nonFields.length === 0 || fields.every(field => members.indexOf(field) < members.indexOf(nonFields[0]));
             const needsSpacingFix = currentBodyText !== desiredBodyText;
@@ -547,10 +547,10 @@ const localRules = {
             let hasReport = false;
 
             for (let i = 1; i < body.length; i++) {
-              const current = body[i];
+              const current = body.at(i);
               if (!isMethod(current) || !current.range) continue;
 
-              const prev = body[i - 1];
+              const prev = body.at(i - 1);
               if (!prev.range) continue;
 
               const between = sourceCode.text.slice(prev.range[1], current.range[0]);
@@ -810,8 +810,8 @@ const localRules = {
             const closeIndex = tokens.findIndex((token, i) => i > openIndex && token.value === ')');
             if (closeIndex === -1) return;
 
-            open = tokens[openIndex];
-            close = tokens[closeIndex];
+            open = tokens.at(openIndex);
+            close = tokens.at(closeIndex);
           }
 
           if (!open || !close || !open.range || !close.range) return;

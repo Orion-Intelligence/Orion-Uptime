@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
-import re
 import smtplib
 import ssl
 from dataclasses import dataclass
@@ -12,13 +11,12 @@ from email.message import EmailMessage
 from email.utils import format_datetime, formataddr, make_msgid
 from typing import TYPE_CHECKING
 
-from bson import ObjectId
-from bson.errors import InvalidId
 from dotenv import load_dotenv
 from odmantic import AIOEngine
 from pymongo.errors import DuplicateKeyError
 
-from orion.constants.constant import Collections
+from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
+from orion.constants.constant import AllowedValues, Collections, Patterns
 from orion.services.email_template_manager import EMAIL_INTEGRATION_ALERT_TEMPLATE, EmailTemplateManager
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_email_integration_model import CreateEmailIntegrationRequest, EmailIntegrationModel, EmailIntegrationResponse, UpdateEmailIntegrationRequest
@@ -36,9 +34,6 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("orion.uptime.email")
 
-EMAIL_PATTERN = re.compile(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9.-]{0,251}[A-Za-z0-9])?\.[A-Za-z]{2,63}$")
-MAX_NAME_LENGTH = 100
-SMTP_SECURITY_VALUES = {"none", "starttls", "ssl"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,7 +47,10 @@ class SMTPSettings:
     from_name: str
 
 
-class EmailIntegrationManager:
+class EmailIntegrationManager(IntegrationCollectionMixin):
+    not_found_message = "Email integration not found."
+    realtime_channel = "email_integration"
+
     def __init__(
         self,
         engine: AIOEngine,
@@ -126,19 +124,7 @@ class EmailIntegrationManager:
         if "monitor_ids" in update_data:
             update_data["monitor_ids"] = await self._validated_monitor_ids(update_data["monitor_ids"])
 
-        if requested_name is not None:
-            suffix = 0
-            while True:
-                name = await self._unique_name(requested_name, exclude_id=object_id, suffix=suffix)
-                named_update = {**update_data, "name": name, "name_key": self._name_key(name), "updated_at": datetime.now(UTC)}
-                try:
-                    await self.collection.update_one({"_id": object_id}, {"$set": named_update})
-                    break
-                except DuplicateKeyError:
-                    suffix += 1
-        elif update_data:
-            update_data["updated_at"] = datetime.now(UTC)
-            await self.collection.update_one({"_id": object_id}, {"$set": update_data})
+        await self._apply_update(object_id, update_data, requested_name)
 
         updated = await self.get_integration_model(integration_id)
         if updated is None:
@@ -146,14 +132,6 @@ class EmailIntegrationManager:
         realtime_broker.notify("email_integration", updated.id)
         return self._response(updated)
 
-    async def delete_integration(self, integration_id: str) -> None:
-        object_id = self._object_id(integration_id)
-        if object_id is None:
-            raise NotFoundError("Email integration not found.")
-        result = await self.collection.delete_one({"_id": object_id})
-        if result.deleted_count == 0:
-            raise NotFoundError("Email integration not found.")
-        realtime_broker.notify("email_integration", integration_id)
 
     async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, incident: IncidentModel | None = None) -> None:
         is_down = state_result.transition == MonitorTransition.DOWN
@@ -268,7 +246,7 @@ class EmailIntegrationManager:
             from_email = cls._validated_email(raw_from_email)
         except ValidationError as exc:
             raise RuntimeError("SMTP_FROM_EMAIL must be a valid email address.") from exc
-        if security not in SMTP_SECURITY_VALUES:
+        if security not in AllowedValues.SMTP_SECURITY:
             raise RuntimeError("SMTP_SECURITY must be one of: none, starttls, ssl.")
         try:
             port = int(os.environ.get("SMTP_PORT", "587"))
@@ -277,33 +255,6 @@ class EmailIntegrationManager:
         if port < 1 or port > 65535:
             raise RuntimeError("SMTP_PORT must be between 1 and 65535.")
         return SMTPSettings(host=host, port=port, security=security, username=username, password=os.environ.get("SMTP_PASSWORD", ""), from_email=from_email, from_name=os.environ.get("SMTP_FROM_NAME", "Orion Uptime").strip() or "Orion Uptime")
-
-    async def _validated_monitor_ids(self, monitor_ids: list[str]) -> list[str]:
-        unique_ids = list(dict.fromkeys(monitor_ids))
-        available_ids = {monitor.id for monitor in await self.monitor_service.list_monitors() if monitor.id is not None}
-        missing = [monitor_id for monitor_id in unique_ids if monitor_id not in available_ids]
-        if missing:
-            raise ValidationError(f"Unknown monitor IDs: {', '.join(missing)}")
-        return unique_ids
-
-    async def _unique_name(self, base_name: str, exclude_id: ObjectId | None = None, suffix: int = 0) -> str:
-        while True:
-            candidate = self._candidate_name(base_name, suffix)
-            query: dict = {"name_key": self._name_key(candidate)}
-            if exclude_id is not None:
-                query["_id"] = {"$ne": exclude_id}
-            if await self.collection.find_one(query, {"_id": 1}) is None:
-                return candidate
-            suffix += 1
-
-    @staticmethod
-    def _candidate_name(base_name: str, suffix: int) -> str:
-        suffix_text = "" if suffix == 0 else str(suffix)
-        return f"{base_name[: MAX_NAME_LENGTH - len(suffix_text)]}{suffix_text}"
-
-    @staticmethod
-    def _name_key(name: str) -> str:
-        return name.casefold()
 
     @staticmethod
     def _validated_name(name: str | None) -> str:
@@ -315,7 +266,7 @@ class EmailIntegrationManager:
     @staticmethod
     def _validated_email(email: str | None) -> str:
         clean_email = email.strip().lower() if email is not None else ""
-        if len(clean_email) > 320 or EMAIL_PATTERN.fullmatch(clean_email) is None:
+        if len(clean_email) > 320 or Patterns.EMAIL.fullmatch(clean_email) is None:
             raise ValidationError("Enter a valid recipient email address.")
         return clean_email
 
@@ -331,10 +282,3 @@ class EmailIntegrationManager:
     @staticmethod
     def _response(integration: EmailIntegrationModel) -> EmailIntegrationResponse:
         return EmailIntegrationResponse(id=integration.persisted_id, name=integration.name, email=integration.email, monitor_ids=integration.monitor_ids, monitor_count=len(integration.monitor_ids), created_at=integration.created_at, updated_at=integration.updated_at)
-
-    @staticmethod
-    def _object_id(value: str) -> ObjectId | None:
-        try:
-            return ObjectId(value)
-        except (InvalidId, TypeError):
-            return None

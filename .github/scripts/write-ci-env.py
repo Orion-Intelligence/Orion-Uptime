@@ -14,7 +14,7 @@ from __future__ import annotations
 import base64
 import os
 import pathlib
-import secrets
+from secrets import token_bytes, token_urlsafe
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 TEMPLATE = ROOT / "template-env"
@@ -29,13 +29,13 @@ def mask(value: str) -> None:
 def generated_values() -> dict[str, str]:
     return {
         "APP_ENV": "development",
-        "MONGO_ROOT_PASSWORD": secrets.token_urlsafe(24),
-        "MONGO_APP_PASSWORD": secrets.token_urlsafe(24),
-        "JWT_SECRET": secrets.token_urlsafe(48),
+        "MONGO_ROOT_PASSWORD": token_urlsafe(24),
+        "MONGO_APP_PASSWORD": token_urlsafe(24),
+        "JWT_SECRET": token_urlsafe(48),
         "CREDENTIALS_ENCRYPTION_KEY": base64.urlsafe_b64encode(
-            secrets.token_bytes(32)
+            token_bytes(32)
         ).decode(),
-        "DEFAULT_ADMIN_PASSWORD": secrets.token_urlsafe(18),
+        "DEFAULT_ADMIN_PASSWORD": token_urlsafe(18),
     }
 
 

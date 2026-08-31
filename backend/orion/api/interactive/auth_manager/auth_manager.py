@@ -15,17 +15,13 @@ from jwt import PyJWTError
 from odmantic import AIOEngine
 
 from configs.app_dependency import AppDependency
-from orion.constants.constant import Collections, Messages
+from orion.constants.constant import Collections, Intervals, Limits, Messages
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_user_account_model import AuthTokens, CurrentUserResponse, TokenResponse, UserModel
 from orion.shared_models.exceptions import AuthenticationError, NotFoundError, RateLimitError
 
-REFRESH_REPLAY_SECONDS = 10
 LOGIN_FAILURE_WINDOW_SECONDS = 15 * 60
 LOGIN_LOCKOUT_SECONDS = 15 * 60
-LOGIN_MAX_FAILURES_PER_ACCOUNT_AND_IP = 5
-LOGIN_MAX_FAILURES_PER_IP = 30
-LOGIN_MAX_FAILURES_PER_ACCOUNT = 50
 
 
 @dataclass(frozen=True)
@@ -80,7 +76,7 @@ class RefreshTokenManager:
     def remember_rotation(self, old_token: str, tokens: AuthTokens, rotated_token_hash: str) -> None:
         now = time.monotonic()
         self._replays = {key: replay for key, replay in self._replays.items() if replay.expires_at > now}
-        self._replays[self._token_key(old_token)] = RefreshReplay(tokens=tokens, rotated_token_hash=rotated_token_hash, expires_at=now + REFRESH_REPLAY_SECONDS)
+        self._replays[self._token_key(old_token)] = RefreshReplay(tokens=tokens, rotated_token_hash=rotated_token_hash, expires_at=now + Intervals.REFRESH_REPLAY_SECONDS)
 
     @staticmethod
     def _token_key(token: str) -> str:
@@ -103,7 +99,7 @@ class LoginThrottle:
     def record_failure(self, client_ip: str, username: str) -> None:
         now = self.clock()
         self._prune(now)
-        limits = (LOGIN_MAX_FAILURES_PER_ACCOUNT_AND_IP, LOGIN_MAX_FAILURES_PER_IP, LOGIN_MAX_FAILURES_PER_ACCOUNT)
+        limits = (Limits.LOGIN_MAX_FAILURES_PER_ACCOUNT_AND_IP, Limits.LOGIN_MAX_FAILURES_PER_IP, Limits.LOGIN_MAX_FAILURES_PER_ACCOUNT)
         for key, limit in zip(self._keys(client_ip, username), limits, strict=True):
             attempts = self._failures.setdefault(key, [])
             attempts.append(now)

@@ -4,7 +4,8 @@ from urllib.parse import urlsplit
 import httpx
 
 from orion.api.interactive.api_monitor_manager.json_matcher import json_matches
-from orion.api.interactive.orion_login_manager.orion_token_manager import ACCESS_TOKEN_COOKIE_NAME, AccessTokenCookieManager, AuthTokenError
+from orion.api.interactive.orion_login_manager.orion_token_manager import AccessTokenCookieManager, AuthTokenError
+from orion.constants.constant import Cookies
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import HealthCheckResponse, MonitorStatus
 
 
@@ -110,7 +111,7 @@ class ApiChecker:
         token = await self.token_manager.get_token(monitor.auth_profile_id, force_refresh=force_refresh)
 
         headers = {key: value for key, value in headers.items() if key.lower() not in {"authorization", "cookie"}}
-        headers["Cookie"] = f"{ACCESS_TOKEN_COOKIE_NAME}={token}"
+        headers["Cookie"] = f"{Cookies.ACCESS_TOKEN}={token}"
         return headers
 
     async def close(self):

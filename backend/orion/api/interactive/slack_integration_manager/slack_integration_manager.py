@@ -7,13 +7,12 @@ from typing import TYPE_CHECKING
 from urllib.parse import urlsplit
 
 import httpx
-from bson import ObjectId
-from bson.errors import InvalidId
 from cryptography.fernet import InvalidToken
 from odmantic import AIOEngine
 from pymongo.errors import DuplicateKeyError
 
-from orion.constants.constant import Collections
+from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
+from orion.constants.constant import AllowedValues, Collections
 from orion.services.encryption_manager.secrets import secret_box
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
@@ -29,11 +28,12 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger("orion.uptime.slack")
 
-MAX_NAME_LENGTH = 100
-SLACK_WEBHOOK_HOSTS = {"hooks.slack.com", "hooks.slack-gov.com"}
 
 
-class SlackIntegrationManager:
+class SlackIntegrationManager(IntegrationCollectionMixin):
+    not_found_message = "Slack integration not found."
+    realtime_channel = "slack_integration"
+
     def __init__(self, engine: AIOEngine, monitor_service: MonitorManager, client: httpx.AsyncClient | None = None) -> None:
         self.collection = engine.database[Collections.SLACK_INTEGRATIONS]
         self.monitor_service = monitor_service
@@ -106,19 +106,7 @@ class SlackIntegrationManager:
         if "monitor_ids" in update_data:
             update_data["monitor_ids"] = await self._validated_monitor_ids(update_data["monitor_ids"])
 
-        if requested_name is not None:
-            suffix = 0
-            while True:
-                name = await self._unique_name(requested_name, exclude_id=object_id, suffix=suffix)
-                named_update = {**update_data, "name": name, "name_key": self._name_key(name), "updated_at": datetime.now(UTC)}
-                try:
-                    await self.collection.update_one({"_id": object_id}, {"$set": named_update})
-                    break
-                except DuplicateKeyError:
-                    suffix += 1
-        elif update_data:
-            update_data["updated_at"] = datetime.now(UTC)
-            await self.collection.update_one({"_id": object_id}, {"$set": update_data})
+        await self._apply_update(object_id, update_data, requested_name)
 
         updated = await self.get_integration_model(integration_id)
         if updated is None:
@@ -126,14 +114,6 @@ class SlackIntegrationManager:
         realtime_broker.notify("slack_integration", updated.id)
         return self._detail_response(updated)
 
-    async def delete_integration(self, integration_id: str) -> None:
-        object_id = self._object_id(integration_id)
-        if object_id is None:
-            raise NotFoundError("Slack integration not found.")
-        result = await self.collection.delete_one({"_id": object_id})
-        if result.deleted_count == 0:
-            raise NotFoundError("Slack integration not found.")
-        realtime_broker.notify("slack_integration", integration_id)
 
     async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, incident: IncidentModel | None = None) -> None:
         is_down = state_result.transition == MonitorTransition.DOWN
@@ -164,33 +144,6 @@ class SlackIntegrationManager:
         except (httpx.HTTPError, RuntimeError, ValueError):
             logger.exception("Slack notification delivery failed for integration %s.", integration.name)
 
-    async def _validated_monitor_ids(self, monitor_ids: list[str]) -> list[str]:
-        unique_ids = list(dict.fromkeys(monitor_ids))
-        available_ids = {monitor.id for monitor in await self.monitor_service.list_monitors() if monitor.id is not None}
-        missing = [monitor_id for monitor_id in unique_ids if monitor_id not in available_ids]
-        if missing:
-            raise ValidationError(f"Unknown monitor IDs: {', '.join(missing)}")
-        return unique_ids
-
-    async def _unique_name(self, base_name: str, exclude_id: ObjectId | None = None, suffix: int = 0) -> str:
-        while True:
-            candidate = self._candidate_name(base_name, suffix)
-            query: dict = {"name_key": self._name_key(candidate)}
-            if exclude_id is not None:
-                query["_id"] = {"$ne": exclude_id}
-            if await self.collection.find_one(query, {"_id": 1}) is None:
-                return candidate
-            suffix += 1
-
-    @staticmethod
-    def _candidate_name(base_name: str, suffix: int) -> str:
-        suffix_text = "" if suffix == 0 else str(suffix)
-        return f"{base_name[: MAX_NAME_LENGTH - len(suffix_text)]}{suffix_text}"
-
-    @staticmethod
-    def _name_key(name: str) -> str:
-        return name.casefold()
-
     @staticmethod
     def _validated_name(name: str | None) -> str:
         clean_name = name.strip() if name is not None else ""
@@ -204,7 +157,7 @@ class SlackIntegrationManager:
         try:
             parsed = urlsplit(clean_url)
             path_parts = [part for part in parsed.path.split("/") if part]
-            valid = parsed.scheme == "https" and parsed.hostname in SLACK_WEBHOOK_HOSTS and parsed.port is None and parsed.username is None and parsed.password is None and len(path_parts) == 4 and path_parts[0] == "services" and not parsed.query and not parsed.fragment
+            valid = parsed.scheme == "https" and parsed.hostname in AllowedValues.SLACK_WEBHOOK_HOSTS and parsed.port is None and parsed.username is None and parsed.password is None and len(path_parts) == 4 and path_parts[0] == "services" and not parsed.query and not parsed.fragment
         except ValueError:
             valid = False
         if not valid:
@@ -271,10 +224,3 @@ class SlackIntegrationManager:
     @classmethod
     def _detail_response(cls, integration: SlackIntegrationModel) -> SlackIntegrationResponse:
         return SlackIntegrationResponse(**cls._summary_response(integration).model_dump(), webhook_url=integration.webhook_url)
-
-    @staticmethod
-    def _object_id(value: str) -> ObjectId | None:
-        try:
-            return ObjectId(value)
-        except (InvalidId, TypeError):
-            return None

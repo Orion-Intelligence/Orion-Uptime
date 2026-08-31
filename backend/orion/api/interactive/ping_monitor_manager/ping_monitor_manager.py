@@ -95,22 +95,10 @@ class PingMonitorManager(MonitorRepository):
             object_id = ObjectId(monitor_id)
         except InvalidId:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND) from None
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.stop_worker(monitor_id)
-        result = await self.collection.delete_one({"_id": object_id})
-        if result.deleted_count == 0:
-            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.monitor_service.delete_monitor_history(monitor_id)
-        realtime_broker.notify("monitor", monitor_id)
+        await self._remove_monitor(monitor_id, object_id)
 
     async def update_monitoring_result(self, monitor_id: str, status: MonitorStatus, status_code: int | None, response_time_ms: int | None, checked_at: datetime) -> bool:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return False
-        result = await self.collection.update_one({"_id": object_id}, {"$set": {"status": status, "last_response_time_ms": response_time_ms, "last_checked_at": checked_at}})
-        return result.modified_count > 0
+        return await self._apply_monitoring_result(monitor_id, {"status": status, "last_response_time_ms": response_time_ms, "last_checked_at": checked_at})
 
     async def _validated_host(self, host: str) -> str:
         normalized = self._normalize_host(host)

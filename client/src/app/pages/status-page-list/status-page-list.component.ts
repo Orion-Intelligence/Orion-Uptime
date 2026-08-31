@@ -1,40 +1,33 @@
 import { DatePipe } from '@angular/common';
-import { Component, DestroyRef, inject, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
 import { MonitorOverview, StatusPage } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { NoticePageBase } from '../../shared/base/notice-page.base';
 
 @Component({
   selector: 'app-status-page-list',
   imports: [DatePipe, RouterLink],
   templateUrl: './status-page-list.component.html',
 })
-export class StatusPageListComponent {
+export class StatusPageListComponent extends NoticePageBase {
   private readonly api = inject(ApiService);
-  private readonly destroyRef = inject(DestroyRef);
   private readonly realtime = inject(RealtimeService);
-  private readonly router = inject(Router);
-  private noticeTimer: ReturnType<typeof setTimeout> | undefined;
-  private noticeRemovalTimer: ReturnType<typeof setTimeout> | undefined;
 
   readonly pages = signal<StatusPage[]>([]);
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
   readonly loading = signal(true);
   readonly deletingId = signal('');
   readonly error = signal('');
-  readonly message = signal('');
-  readonly noticeLeaving = signal(false);
 
   constructor() {
+    super();
     const initialMessage = String(this.router.currentNavigation()?.extras.state?.['message'] ?? '',);
     if (initialMessage) {
       this.showNotice(initialMessage);
     }
-    this.destroyRef.onDestroy(() => {
-      this.clearNoticeTimers(); 
-    });
     this.realtime.connect();
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
       if (!snapshot.resources) {
@@ -72,25 +65,4 @@ export class StatusPageListComponent {
     });
   }
 
-  private showNotice(message: string): void {
-    this.clearNoticeTimers();
-    this.noticeLeaving.set(false);
-    this.message.set(message);
-    this.noticeTimer = setTimeout(() => {
-      this.noticeLeaving.set(true);
-      this.noticeRemovalTimer = setTimeout(() => {
-        this.message.set('');
-        this.noticeLeaving.set(false);
-      }, 300);
-    }, 4000);
-  }
-
-  private clearNoticeTimers(): void {
-    if (this.noticeTimer) {
-      clearTimeout(this.noticeTimer);
-    }
-    if (this.noticeRemovalTimer) {
-      clearTimeout(this.noticeRemovalTimer);
-    }
-  }
 }

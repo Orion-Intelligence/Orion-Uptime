@@ -1,4 +1,6 @@
 export {};
+
+type CypressAutomation = { automation(name: string, data: Record<string, unknown>): Promise<unknown> };
 declare global {
     namespace Cypress {
         interface Chainable {
@@ -32,7 +34,7 @@ const waitForLoginForm = (reloaded = false, attempts = 0): Cypress.Chainable<voi
             cy.get('[data-testid="login-page"]', { timeout: 60000 }).should('be.visible');
             cy.get('[data-testid="login-user"]', { timeout: 60000 }).should('be.visible');
             cy.get('[data-testid="login-pass"]', { timeout: 60000 }).should('be.visible');
-            return cy.wrap<void>(undefined, { log: false });
+            return cy.wrap<undefined>(undefined, { log: false });
         }
 
         if (attempts < 20) {
@@ -50,20 +52,20 @@ const waitForLoginForm = (reloaded = false, attempts = 0): Cypress.Chainable<voi
 
 Cypress.Commands.add("visitLoginWithCleanAuthState", () => {
     visitLoginWithCleanAuthState();
-    return cy.wrap<void>(undefined, { log: false });
+    return cy.wrap<undefined>(undefined, { log: false });
 });
 
 Cypress.Commands.add("waitForLoginRequest", (alias = "loginRequest") => {
     return cy.wait(loginRequestAlias(alias), { timeout: 60000 })
         .its("response.statusCode")
         .should("be.oneOf", [200, 201])
-        .then(() => cy.wrap<void>(undefined, { log: false }));
+        .then(() => cy.wrap<undefined>(undefined, { log: false }));
 });
 
 Cypress.Commands.add("docsScreenshot", (name: string, options: Partial<Cypress.ScreenshotOptions> = {}) => {
     return cy.env<{ takeScreenshots?: boolean | string }>(["takeScreenshots"]).then(({ takeScreenshots }) => {
         if (takeScreenshots !== true && takeScreenshots !== "true") {
-            return cy.wrap<void>(undefined, { log: false });
+            return cy.wrap<undefined>(undefined, { log: false });
         }
 
         const safeName = String(name || "screenshot").replace(/\\/g, "/").replace(/^\/+/, "") || "screenshot";
@@ -121,11 +123,11 @@ Cypress.Commands.add("docsScreenshot", (name: string, options: Partial<Cypress.S
             }
 
             restoreCaptureState = () => {
-                restoreFns.reverse().forEach(restore => restore());
+                restoreFns.reverse().forEach(restore => { restore(); });
                 restoreCaptureState = undefined;
             };
         }).then(() => cy.wait(50, { log: false })).then(() => (
-            (Cypress as any).automation("remote:debugger:protocol", {
+            (Cypress as unknown as CypressAutomation).automation("remote:debugger:protocol", {
                 command: "Page.captureScreenshot",
                 params: {
                     captureBeyondViewport: false,
@@ -134,8 +136,8 @@ Cypress.Commands.add("docsScreenshot", (name: string, options: Partial<Cypress.S
                     fromSurface: true,
                 },
             })
-        )).then((result: any) => {
-            const data = typeof result === "string" ? result : result?.data;
+        )).then((result: unknown) => {
+            const data = typeof result === "string" ? result : (result as { data?: unknown } | null)?.data;
             expect(data, `docs screenshot ${name}`).to.be.a("string").and.not.be.empty;
             return cy.task("writeDocScreenshot", {
                 data,
@@ -144,7 +146,7 @@ Cypress.Commands.add("docsScreenshot", (name: string, options: Partial<Cypress.S
             }, { log: false });
         }).then(() => {
             restoreCaptureState?.();
-            return cy.wrap<void>(undefined, { log: false });
+            return cy.wrap<undefined>(undefined, { log: false });
         });
     });
 });

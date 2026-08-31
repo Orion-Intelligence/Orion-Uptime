@@ -3,14 +3,13 @@ from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-ANGULAR_BUILD_DIR = (BASE_DIR / "build").resolve()
+from orion.constants.constant import Paths
 
 router = APIRouter()
 
 
 def _frontend_index_response() -> HTMLResponse:
-    index_path = ANGULAR_BUILD_DIR / "index.html"
+    index_path = Paths.ANGULAR_BUILD / "index.html"
     if not index_path.is_file():
         raise HTTPException(status_code=404, detail="Frontend not found")
     return HTMLResponse(index_path.read_text(encoding="utf-8"))
@@ -23,10 +22,10 @@ async def serve_frontend(full_path: str):
         raise HTTPException(status_code=404, detail="Frontend not found")
 
     safe_relative_path = Path(*[part for part in user_path.parts if part not in ("", ".")])
-    requested_path = (ANGULAR_BUILD_DIR / safe_relative_path).resolve()
-    if requested_path == ANGULAR_BUILD_DIR / "index.html":
+    requested_path = (Paths.ANGULAR_BUILD / safe_relative_path).resolve()
+    if requested_path == Paths.ANGULAR_BUILD / "index.html":
         return _frontend_index_response()
-    if requested_path.is_relative_to(ANGULAR_BUILD_DIR) and requested_path.is_file():
+    if requested_path.is_relative_to(Paths.ANGULAR_BUILD) and requested_path.is_file():
         return FileResponse(requested_path)
 
     if full_path.startswith("api"):

@@ -123,9 +123,4 @@ class HttpMonitorManager(MonitorRepository):
         return f"{name} {count}" if count > 0 else name
 
     async def update_monitoring_result(self, monitor_id: str, status: MonitorStatus, status_code: int | None, response_time_ms: int | None, checked_at: datetime) -> bool:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return False
-        result = await self.collection.update_one({"_id": object_id}, {"$set": {"status": status, "last_status_code": status_code, "last_response_time_ms": response_time_ms, "last_checked_at": checked_at, "updated_at": checked_at}})
-        return result.modified_count > 0
+        return await self._apply_monitoring_result(monitor_id, {"status": status, "last_status_code": status_code, "last_response_time_ms": response_time_ms, "last_checked_at": checked_at, "updated_at": checked_at})
