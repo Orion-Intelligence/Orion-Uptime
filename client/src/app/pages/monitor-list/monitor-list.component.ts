@@ -35,7 +35,10 @@ export class MonitorListComponent extends NoticePageBase {
   readonly updatingId = signal('');
   readonly editingId = signal('');
   readonly editName = signal('');
-  readonly renamingId = signal('');
+  readonly editCheckInterval = signal('');
+  readonly editTimeout = signal('');
+  readonly editExpectedResponseTime = signal('');
+  readonly savingId = signal('');
   readonly error = signal('');
   readonly heartbeatToken = signal('');
   readonly canManage = computed(() => this.auth.user()?.role === 'admin');
@@ -225,52 +228,119 @@ export class MonitorListComponent extends NoticePageBase {
       });
   }
 
-  startRename(record: ResourceRecord): void {
+  startEdit(record: ResourceRecord): void {
     this.editingId.set(record.id);
     this.editName.set(record.name);
+    this.editCheckInterval.set(String(record.check_interval ?? ''));
+    this.editTimeout.set(String(record.timeout ?? ''));
+    this.editExpectedResponseTime.set(String(record.expected_response_time_ms ?? ''));
+    this.error.set('');
   }
 
-  cancelRename(): void {
+  cancelEdit(): void {
     this.editingId.set('');
     this.editName.set('');
+    this.editCheckInterval.set('');
+    this.editTimeout.set('');
+    this.editExpectedResponseTime.set('');
   }
 
-  onEditNameInput(event: Event): void {
+  onEditInput(field: 'name' | 'checkInterval' | 'timeout' | 'expectedResponseTime', event: Event): void {
     const target = event.target;
     if (target instanceof HTMLInputElement) {
-      this.editName.set(target.value);
+      switch (field) {
+        case 'name':
+          this.editName.set(target.value);
+          break;
+        case 'checkInterval':
+          this.editCheckInterval.set(target.value);
+          break;
+        case 'timeout':
+          this.editTimeout.set(target.value);
+          break;
+        case 'expectedResponseTime':
+          this.editExpectedResponseTime.set(target.value);
+          break;
+      }
     }
   }
 
-  onRenameSubmit(event: Event, record: ResourceRecord): void {
+  onEditSubmit(event: Event, record: ResourceRecord): void {
     event.preventDefault();
-    this.saveRename(record);
+    this.saveEdit(record);
   }
 
-  saveRename(record: ResourceRecord): void {
+  saveEdit(record: ResourceRecord): void {
     const name = this.editName().trim();
-    if (!name || name === record.name) {
-      this.cancelRename();
+    if (!name) {
+      this.error.set('Name is required.');
       return;
     }
-    this.renamingId.set(record.id);
+
+    const body: {
+      name: string;
+      check_interval?: number;
+      timeout?: number;
+      expected_response_time_ms?: number | null;
+    } = { name };
+
+    if (this.hasTimingSettings(record)) {
+      const checkInterval = Number(this.editCheckInterval());
+      const timeout = Number(this.editTimeout());
+      const expectedResponseTimeText = this.editExpectedResponseTime().trim();
+      const expectedResponseTime = expectedResponseTimeText ? Number(expectedResponseTimeText) : null;
+
+      if (!Number.isInteger(checkInterval) || checkInterval < 10 || checkInterval > 86400) {
+        this.error.set('Check interval must be a whole number between 10 and 86400 seconds.');
+        return;
+      }
+      if (!Number.isInteger(timeout) || timeout < 1 || (this.monitorType(record) === 'ping' && timeout > 300)) {
+        this.error.set(this.monitorType(record) === 'ping'
+          ? 'Timeout must be a whole number between 1 and 300 seconds.'
+          : 'Timeout must be a whole number of at least 1 second.');
+        return;
+      }
+      if (expectedResponseTime !== null && (!Number.isInteger(expectedResponseTime) || expectedResponseTime < 0)) {
+        this.error.set('Expected response time must be a non-negative whole number of milliseconds.');
+        return;
+      }
+
+      body.check_interval = checkInterval;
+      body.timeout = timeout;
+      body.expected_response_time_ms = expectedResponseTime;
+    }
+
+    this.error.set('');
+    this.savingId.set(record.id);
     const endpoint = this.updatePath().replace(':id', record.id);
-    this.api.put<unknown, { name: string }>(endpoint, { name }).subscribe({
+    this.api.put<unknown, typeof body>(endpoint, body).subscribe({
       next: () => {
-        this.records.update((records) => records.map((item) => (item.id === record.id ? { ...item, name } : item)));
+        this.records.update((records) => records.map((item) => (item.id === record.id ? { ...item, ...body } : item)));
         this.overviews.update((overviews) => {
           const current = overviews[record.id];
           return current ? { ...overviews, [record.id]: { ...current, name } } : overviews;
         });
-        this.showNotice(`“${record.name}” renamed to “${name}”.`);
-        this.renamingId.set('');
-        this.cancelRename();
+        this.showNotice(`“${name}” updated.`);
+        this.savingId.set('');
+        this.cancelEdit();
       },
       error: (error: unknown) => {
         this.error.set(ApiService.errorMessage(error));
-        this.renamingId.set('');
+        this.savingId.set('');
       },
     });
+  }
+
+  hasTimingSettings(record: ResourceRecord): boolean {
+    return ['HTTP', 'API', 'ping'].includes(this.monitorType(record));
+  }
+
+  isPingMonitor(record: ResourceRecord): boolean {
+    return this.monitorType(record) === 'ping';
+  }
+
+  private monitorType(record: ResourceRecord): string {
+    return record.monitor_type ?? this.resourceType() ?? '';
   }
 
   private showHeartbeatNotice(message: string, heartbeatToken = ''): void {

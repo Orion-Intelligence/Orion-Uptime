@@ -62,7 +62,7 @@ class PingMonitorManager(MonitorRepository):
     async def list_monitors(self) -> list[PingMonitorResponse]:
         return [PingMonitorResponse(**monitor.model_dump()) for monitor in await self.list_monitor_models()]
 
-    async def update_monitor(self, monitor_id: str, name: str | None = None, host: str | None = None, check_interval: int | None = None, timeout: int | None = None, expected_response_time_ms: int | None = None, is_active: bool | None = None) -> PingMonitorResponse:
+    async def update_monitor(self, monitor_id: str, name: str | None = None, host: str | None = None, check_interval: int | None = None, timeout: int | None = None, expected_response_time_ms: int | None = None, is_active: bool | None = None, expected_response_time_ms_set: bool = False) -> PingMonitorResponse:
         monitor = await self.get_monitor_model(monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
@@ -74,7 +74,7 @@ class PingMonitorManager(MonitorRepository):
             monitor.check_interval = check_interval
         if timeout is not None:
             monitor.timeout = timeout
-        if expected_response_time_ms is not None:
+        if expected_response_time_ms_set or expected_response_time_ms is not None:
             monitor.expected_response_time_ms = expected_response_time_ms
         if is_active is not None:
             monitor.is_active = is_active

@@ -68,7 +68,7 @@ class HttpMonitorManager(MonitorRepository):
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
         return HttpMonitorResponse(**monitor.model_dump())
 
-    async def update_monitor(self, http_monitor_id: str, name: str | None, url: str | None, check_interval: int | None, timeout: int | None, expected_status_code: int | None, expected_response_time_ms: int | None, is_active: bool | None = None) -> HttpMonitorResponse:
+    async def update_monitor(self, http_monitor_id: str, name: str | None, url: str | None, check_interval: int | None, timeout: int | None, expected_status_code: int | None, expected_response_time_ms: int | None, is_active: bool | None = None, expected_response_time_ms_set: bool = False) -> HttpMonitorResponse:
         monitor = await self.get_monitor_model(http_monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
@@ -87,7 +87,7 @@ class HttpMonitorManager(MonitorRepository):
             update_data["timeout"] = timeout
         if expected_status_code is not None and expected_status_code != monitor.expected_status_code:
             update_data["expected_status_code"] = expected_status_code
-        if expected_response_time_ms is not None and expected_response_time_ms != monitor.expected_response_time_ms:
+        if (expected_response_time_ms_set or expected_response_time_ms is not None) and expected_response_time_ms != monitor.expected_response_time_ms:
             update_data["expected_response_time_ms"] = expected_response_time_ms
         if is_active is not None and is_active != monitor.is_active:
             update_data["is_active"] = is_active

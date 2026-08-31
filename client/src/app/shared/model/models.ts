@@ -79,6 +79,9 @@ export interface ResourceRecord {
   login_url?: string;
   method?: string;
   credential_fields?: string[];
+  check_interval?: number;
+  timeout?: number;
+  expected_response_time_ms?: number | null;
   expected_heartbeat_interval?: number;
   last_checked_at?: string | null;
   last_heartbeat_at?: string | null;
