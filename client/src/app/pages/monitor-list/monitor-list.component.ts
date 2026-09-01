@@ -35,6 +35,7 @@ export class MonitorListComponent extends NoticePageBase {
   readonly updatingId = signal('');
   readonly editingId = signal('');
   readonly editName = signal('');
+  readonly editExpectedJson = signal('');
   readonly renamingId = signal('');
   readonly error = signal('');
   readonly heartbeatToken = signal('');
@@ -228,17 +229,27 @@ export class MonitorListComponent extends NoticePageBase {
   startRename(record: ResourceRecord): void {
     this.editingId.set(record.id);
     this.editName.set(record.name);
+    this.editExpectedJson.set(record.expected_json ? JSON.stringify(record.expected_json, null, 2) : '');
+    this.error.set('');
   }
 
   cancelRename(): void {
     this.editingId.set('');
     this.editName.set('');
+    this.editExpectedJson.set('');
   }
 
   onEditNameInput(event: Event): void {
     const target = event.target;
     if (target instanceof HTMLInputElement) {
       this.editName.set(target.value);
+    }
+  }
+
+  onEditExpectedJsonInput(event: Event): void {
+    const target = event.target;
+    if (target instanceof HTMLTextAreaElement) {
+      this.editExpectedJson.set(target.value);
     }
   }
 
@@ -249,20 +260,35 @@ export class MonitorListComponent extends NoticePageBase {
 
   saveRename(record: ResourceRecord): void {
     const name = this.editName().trim();
-    if (!name || name === record.name) {
+    if (!name) {
+      this.error.set('Name is required.');
+      return;
+    }
+    const body: { name: string; expected_json?: Record<string, unknown> | null } = { name };
+    if (this.isApiMonitor(record)) {
+      try {
+        body.expected_json = this.expectedJsonValue();
+      }
+      catch (error) {
+        this.error.set(error instanceof Error ? error.message : 'Expected JSON must be a valid JSON object.');
+        return;
+      }
+    }
+    if (name === record.name && (!this.isApiMonitor(record) || JSON.stringify(body.expected_json) === JSON.stringify(record.expected_json ?? null))) {
       this.cancelRename();
       return;
     }
+    this.error.set('');
     this.renamingId.set(record.id);
     const endpoint = this.updatePath().replace(':id', record.id);
-    this.api.put<unknown, { name: string }>(endpoint, { name }).subscribe({
+    this.api.put<unknown, typeof body>(endpoint, body).subscribe({
       next: () => {
-        this.records.update((records) => records.map((item) => (item.id === record.id ? { ...item, name } : item)));
+        this.records.update((records) => records.map((item) => (item.id === record.id ? { ...item, ...body } : item)));
         this.overviews.update((overviews) => {
           const current = overviews[record.id];
           return current ? { ...overviews, [record.id]: { ...current, name } } : overviews;
         });
-        this.showNotice(`“${record.name}” renamed to “${name}”.`);
+        this.showNotice(this.isApiMonitor(record) ? `API monitor “${name}” updated.` : `“${record.name}” renamed to “${name}”.`);
         this.renamingId.set('');
         this.cancelRename();
       },
@@ -271,6 +297,28 @@ export class MonitorListComponent extends NoticePageBase {
         this.renamingId.set('');
       },
     });
+  }
+
+  isApiMonitor(record: ResourceRecord): boolean {
+    return (record.monitor_type ?? this.resourceType()) === 'API';
+  }
+
+  private expectedJsonValue(): Record<string, unknown> | null {
+    const value = this.editExpectedJson().trim();
+    if (!value) {
+      return null;
+    }
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(value);
+    }
+    catch {
+      throw new Error('Expected JSON must contain valid JSON.');
+    }
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      throw new Error('Expected JSON must be a JSON object.');
+    }
+    return parsed as Record<string, unknown>;
   }
 
   private showHeartbeatNotice(message: string, heartbeatToken = ''): void {

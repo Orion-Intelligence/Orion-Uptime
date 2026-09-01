@@ -96,8 +96,8 @@
           ><textarea id="request-body" formControlName="request_body" placeholder="{}"></textarea>
         </div>
         <div class="field">
-          <label for="expected-json">Expected JSON (optional)</label
-          ><textarea id="expected-json" formControlName="expected_json" placeholder="{}"></textarea>
+          <label for="expected-json">Expected JSON and assertions (optional)</label
+          ><textarea id="expected-json" formControlName="expected_json" placeholder='{"Result":{"$min_items":7,"$item_contains":"example.com","$min_matches":7}}'></textarea>
         </div>
         <div class="field">
           <label for="expected-headers">Expected headers (JSON, optional)</label

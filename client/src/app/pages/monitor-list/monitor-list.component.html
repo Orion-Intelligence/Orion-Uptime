@@ -136,10 +136,21 @@
             <span class="tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">Created {{ record.created_at | date: 'MMM d, y' }}</span>
           }
           @if (canManage() && editingId() === record.id) {
-            <form animate.enter="fade-in" class="tw:flex tw:w-full tw:items-center tw:gap-2" (submit)="onRenameSubmit($event, record)" aria-label="Rename {{ record.name }}">
-              <input class="tw:h-9 tw:min-w-0 tw:flex-1 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="text" name="name" maxlength="100" autocomplete="off" aria-label="Monitor name" [value]="editName()" (input)="onEditNameInput($event)" />
-              <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#1176d4] tw:bg-[#1176d4] tw:px-3 tw:text-[11px] tw:font-semibold tw:text-white tw:transition-colors tw:hover:border-[#0f5fa8] tw:hover:bg-[#0f5fa8] tw:disabled:cursor-wait tw:disabled:opacity-50" type="submit" [disabled]="renamingId() === record.id">{{ renamingId() === record.id ? 'Saving…' : 'Save' }}</button>
-              <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="cancelRename()" [disabled]="renamingId() === record.id">Cancel</button>
+            <form animate.enter="fade-in" class="tw:grid tw:w-full tw:gap-3" (submit)="onRenameSubmit($event, record)" aria-label="Edit {{ record.name }}">
+              <label class="tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
+                Name
+                <input class="tw:h-9 tw:min-w-0 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="text" name="name" maxlength="100" autocomplete="off" [value]="editName()" (input)="onEditNameInput($event)" />
+              </label>
+              @if (isApiMonitor(record)) {
+                <label class="tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
+                  Expected JSON and assertions (optional)
+                  <textarea class="tw:min-h-48 tw:w-full tw:resize-y tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:py-2.5 tw:font-mono tw:text-[11px] tw:leading-relaxed tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" name="expected_json" spellcheck="false" [value]="editExpectedJson()" (input)="onEditExpectedJsonInput($event)"></textarea>
+                </label>
+              }
+              <div class="tw:flex tw:justify-end tw:gap-2">
+                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#1176d4] tw:bg-[#1176d4] tw:px-3 tw:text-[11px] tw:font-semibold tw:text-white tw:transition-colors tw:hover:border-[#0f5fa8] tw:hover:bg-[#0f5fa8] tw:disabled:cursor-wait tw:disabled:opacity-50" type="submit" [disabled]="renamingId() === record.id">{{ renamingId() === record.id ? 'Saving…' : 'Save changes' }}</button>
+                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="cancelRename()" [disabled]="renamingId() === record.id">Cancel</button>
+              </div>
             </form>
           } @else if (canManage()) {
             <div animate.enter="fade-in" class="tw:flex tw:items-center tw:gap-2">

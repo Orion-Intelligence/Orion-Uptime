@@ -78,6 +78,7 @@ export interface ResourceRecord {
   host?: string;
   login_url?: string;
   method?: string;
+  expected_json?: Record<string, unknown> | null;
   credential_fields?: string[];
   expected_heartbeat_interval?: number;
   last_checked_at?: string | null;
