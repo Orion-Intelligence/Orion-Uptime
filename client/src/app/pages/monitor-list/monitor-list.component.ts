@@ -2,12 +2,14 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
+import { finalize, TimeoutError, timeout } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
 import { AuthService } from '../../services/authentication/auth.service';
-import { MonitorOverview, RealtimeResources, ResourceRecord } from '../../shared/model/models';
+import { MonitorConfigDocument, MonitorImportResult, MonitorOverview, RealtimeResources, ResourceRecord } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { NoticePageBase } from '../../shared/base/notice-page.base';
 import { durationText } from '../../shared/utils/duration.util';
+import { parseJsonFile } from '../../shared/utils/json-file.util';
 import { HEARTBEAT_NOTICE_MS, NOTICE_VISIBLE_MS } from '../../shared/constants/ui.constants';
 
 @Component({
@@ -38,6 +40,8 @@ export class MonitorListComponent extends NoticePageBase {
   readonly renamingId = signal('');
   readonly error = signal('');
   readonly heartbeatToken = signal('');
+  readonly importingConfig = signal(false);
+  readonly exportingId = signal('');
   readonly canManage = computed(() => this.auth.user()?.role === 'admin');
   readonly isMonitorList = computed(() => {
     const resourceType = this.resourceType();
@@ -225,6 +229,93 @@ export class MonitorListComponent extends NoticePageBase {
       });
   }
 
+  exportMonitor(record: ResourceRecord): void {
+    const resourceType = this.resourceType();
+    if (!resourceType || !this.isMonitorResource(resourceType)) {
+      return;
+    }
+
+    this.error.set('');
+    this.exportingId.set(record.id);
+    this.api
+      .get<MonitorConfigDocument>(`/monitor-configs/${encodeURIComponent(resourceType)}/${encodeURIComponent(record.id)}`)
+      .pipe(finalize(() => {
+        this.exportingId.set('');
+      }))
+      .subscribe({
+        next: (response) => {
+          const contents = JSON.stringify(response.data, null, 2);
+          const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${this.safeFilename(record.name)}.orion-monitor.json`;
+          link.click();
+          URL.revokeObjectURL(url);
+          this.showNotice(`Configuration for “${record.name}” exported.`);
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
+  }
+
+  async importMonitorConfig(event: Event): Promise<void> {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+    const file = input.files?.item(0);
+    input.value = '';
+    if (!file) {
+      return;
+    }
+
+    this.error.set('');
+    try {
+      const extension = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() : '';
+      if (!extension || !['json', 'txt'].includes(extension)) {
+        throw new Error(`The file has an unsupported extension${extension ? ` “.${extension}”` : ''}. Monitor configuration files must use .json or .txt.`);
+      }
+      if (file.size > 1024 * 1024) {
+        throw new Error('Monitor configuration files must be 1 MB or smaller.');
+      }
+      const parsed = parseJsonFile(await file.text());
+      if (!parsed.value || typeof parsed.value !== 'object' || Array.isArray(parsed.value)) {
+        throw new Error('The selected file must contain one JSON monitor configuration object.');
+      }
+      const resourceType = this.resourceType();
+      if (!resourceType || !this.isMonitorResource(resourceType)) {
+        throw new Error('Monitor configurations can only be imported from a monitor tab.');
+      }
+      const importedMonitorType = (parsed.value as Record<string, unknown>)['monitor_type'];
+      if (importedMonitorType !== resourceType) {
+        const importedLabel = typeof importedMonitorType === 'string' ? this.monitorTypeLabel(importedMonitorType) : 'The selected file';
+        throw new Error(`${importedLabel} cannot be imported from the ${this.monitorTypeLabel(resourceType)} tab. Open the matching monitor tab and import the file there.`);
+      }
+
+      this.importingConfig.set(true);
+      this.api
+        .post<MonitorImportResult, object>(`/monitor-configs/import?expected_monitor_type=${encodeURIComponent(resourceType)}`, parsed.value)
+        .pipe(timeout({ first: 30_000 }), finalize(() => {
+          this.importingConfig.set(false);
+        }))
+        .subscribe({
+          next: (response) => {
+            const result = response.data;
+            const action = result.action === 'created' ? 'created' : 'updated';
+            const repairMessage = parsed.repaired ? ' Common syntax issues were repaired.' : '';
+            this.showHeartbeatNotice(`${this.monitorTypeLabel(result.monitor_type)} “${result.name}” ${action} from configuration.${repairMessage}`, result.heartbeat_token ?? '');
+          },
+          error: (error: unknown) => {
+            this.error.set(error instanceof TimeoutError ? 'The import took too long and was stopped. Check the backend logs and try again.' : ApiService.errorMessage(error));
+          },
+        });
+    }
+    catch (error) {
+      this.error.set(error instanceof Error ? error.message : 'The monitor configuration file could not be read.');
+    }
+  }
+
   startRename(record: ResourceRecord): void {
     this.editingId.set(record.id);
     this.editName.set(record.name);
@@ -297,6 +388,26 @@ export class MonitorListComponent extends NoticePageBase {
       default:
         return 'Resource';
     }
+  }
+
+  private monitorTypeLabel(monitorType: string): string {
+    switch (monitorType) {
+      case 'HTTP':
+        return 'HTTP monitor';
+      case 'API':
+        return 'API monitor';
+      case 'ping':
+        return 'Ping monitor';
+      case 'heartbeat':
+        return 'Heartbeat monitor';
+      default:
+        return 'Monitor';
+    }
+  }
+
+  private safeFilename(name: string): string {
+    const safe = name.trim().replace(/[^a-zA-Z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+    return safe || 'monitor';
   }
 
   formatDuration(totalSeconds: number): string {
