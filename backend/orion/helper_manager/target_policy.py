@@ -6,9 +6,8 @@ from urllib.parse import urlsplit
 
 from dotenv import load_dotenv
 
-from orion.constants.constant import AllowedValues, EnvVars
+from orion.constants.constant import AllowedValues, EnvVars, Intervals
 from orion.shared_models.exceptions import ValidationError
-
 
 
 def private_targets_allowed() -> bool:
@@ -29,7 +28,12 @@ async def _resolved_addresses(host: str) -> list[str]:
         pass
     loop = asyncio.get_running_loop()
     try:
-        results = await loop.run_in_executor(None, lambda: socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP))
+        results = await asyncio.wait_for(
+            loop.run_in_executor(None, lambda: socket.getaddrinfo(host, None, proto=socket.IPPROTO_TCP)),
+            timeout=Intervals.TARGET_RESOLUTION_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as exc:
+        raise ValidationError(f"DNS lookup for target '{host}' timed out. Check the hostname and try again.") from exc
     except socket.gaierror:
         return []
     return sorted({str(result[4][0]) for result in results})

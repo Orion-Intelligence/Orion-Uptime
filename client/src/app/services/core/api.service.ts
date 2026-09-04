@@ -47,6 +47,11 @@ export class ApiService {
 
     const body = error.error as ApiErrorBody | string | null;
     if (typeof body === 'string' && body.trim()) {
+      if (/^\s*(?:<!doctype\s+html\b|<html[\s>])/i.test(body) || /<h1>\s*504 Gateway Time-out\s*<\/h1>/i.test(body)) {
+        return error.status === 504
+          ? 'The server took too long to process the request. Please try again.'
+          : `The server returned an unexpected HTML response (status ${error.status}).`;
+      }
       return body;
     }
     if (body && typeof body === 'object') {
