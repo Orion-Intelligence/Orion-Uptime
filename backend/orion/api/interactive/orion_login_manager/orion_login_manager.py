@@ -11,7 +11,12 @@ import orion.api.interactive.orion_login_manager.orion_token_manager as auth_tok
 from orion.constants.constant import Collections
 from orion.services.encryption_manager.secrets import secret_box
 from orion.services.mongo_manager.documents import with_string_id
-from orion.services.mongo_manager.shared_model.db_orion_login_model import AuthProfileModel, AuthProfileResponse, CreateAuthProfileRequest, UpdateAuthProfileRequest
+from orion.services.mongo_manager.shared_model.db_orion_login_model import (
+    AuthProfileModel,
+    AuthProfileResponse,
+    CreateAuthProfileRequest,
+    UpdateAuthProfileRequest,
+)
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import ConflictError, NotFoundError, ValidationError
 
@@ -55,6 +60,12 @@ class AuthProfileManager:
             return None
 
         document = await self.collection.find_one({"_id": object_id})
+        if document is None:
+            return None
+        return self._deserialize(document)
+
+    async def get_profile_model_by_name(self, name: str) -> AuthProfileModel | None:
+        document = await self.collection.find_one({"name": name})
         if document is None:
             return None
         return self._deserialize(document)

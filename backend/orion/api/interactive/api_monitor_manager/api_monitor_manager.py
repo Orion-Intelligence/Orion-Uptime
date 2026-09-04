@@ -128,7 +128,13 @@ class ApiMonitorManager(MonitorRepository):
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
 
-        update_data = request.model_dump(exclude_unset=True)
+        update_data = {
+            field: value
+            for field, value in request.model_dump(exclude_unset=True).items()
+            if getattr(monitor, field) != value
+        }
+        if not update_data:
+            return ApiMonitorManager._response(monitor)
         other_monitors = {"_id": {"$ne": ObjectId(monitor_id)}}
         if "name" in update_data and await self.collection.find_one({"name": update_data["name"], **other_monitors}) is not None:
             raise ConflictError("API monitor with this name already exists.")

@@ -6,10 +6,19 @@
       <p class="page-description">{{ description() }}</p>
     </div>
     @if (canManage()) {
-      <a class="header-action header-action--primary tw:max-[700px]:self-end" [routerLink]="newUrl()">
-        <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
-        {{ isMonitorList() ? 'New monitor' : 'New profile' }}
-      </a>
+      <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2.5 tw:max-[700px]:self-end">
+        @if (isMonitorList()) {
+          <input #monitorConfigInput class="tw:hidden" type="file" accept="application/json,text/plain,.json,.txt" (change)="importMonitorConfig($event)" />
+          <button class="header-action header-action--secondary tw:cursor-pointer" type="button" (click)="monitorConfigInput.click()" [disabled]="importingConfig()">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m0 0 4-4m-4 4L6 9M4 16h12" /></svg>
+            {{ importingConfig() ? 'Importing…' : 'Import file' }}
+          </button>
+        }
+        <a class="header-action header-action--primary" [routerLink]="newUrl()">
+          <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          {{ isMonitorList() ? 'New monitor' : 'New profile' }}
+        </a>
+      </div>
     }
   </header>
 
@@ -155,6 +164,12 @@
                   <input class="tw:h-9 tw:min-w-0 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="number" name="expected_response_time_ms" min="0" step="1" placeholder="No threshold" [value]="editExpectedResponseTime()" (input)="onEditInput('expectedResponseTime', $event)" />
                 </label>
               }
+              @if (isApiMonitor(record)) {
+                <label class="tw:col-span-full tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
+                  Expected JSON and assertions (optional)
+                  <textarea class="tw:min-h-48 tw:w-full tw:resize-y tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:py-2.5 tw:font-mono tw:text-[11px] tw:leading-relaxed tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" name="expected_json" spellcheck="false" [value]="editExpectedJson()" (input)="onEditExpectedJsonInput($event)"></textarea>
+                </label>
+              }
               <div class="tw:col-span-full tw:flex tw:justify-end tw:gap-2">
                 <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#1176d4] tw:bg-[#1176d4] tw:px-3 tw:text-[11px] tw:font-semibold tw:text-white tw:transition-colors tw:hover:border-[#0f5fa8] tw:hover:bg-[#0f5fa8] tw:disabled:cursor-wait tw:disabled:opacity-50" type="submit" [disabled]="savingId() === record.id">{{ savingId() === record.id ? 'Saving…' : 'Save changes' }}</button>
                 <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="cancelEdit()" [disabled]="savingId() === record.id">Cancel</button>
@@ -162,6 +177,11 @@
             </form>
           } @else if (canManage()) {
             <div animate.enter="fade-in" class="tw:flex tw:items-center tw:gap-2">
+              @if (isMonitorList()) {
+                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
+                  {{ exportingId() === record.id ? 'Exporting…' : 'Export' }}
+                </button>
+              }
               @if (updatePath()) {
                 <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="startEdit(record)" [attr.aria-label]="'Edit ' + record.name">Edit</button>
               }
