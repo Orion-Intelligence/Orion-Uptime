@@ -95,12 +95,6 @@
         </header>
 
         @if (stats) {
-          @if (!stats.is_active) {
-            <div animate.enter="fade-in" animate.leave="fade-out" class="tw:mx-5.5 tw:mb-4 tw:flex tw:items-start tw:gap-2 tw:rounded-lg tw:border tw:border-[#f5b942]/25 tw:bg-[#f5b942]/8 tw:px-3 tw:py-2.5 tw:text-[11px] tw:leading-relaxed tw:text-[#8a5d00] tw:dark:text-[#f7cd6b]">
-              <svg viewBox="0 0 20 20" class="tw:mt-0.5 tw:size-3.5 tw:flex-none tw:fill-current" aria-hidden="true"><path d="M5 4h3v12H5zm7 0h3v12h-3z" /></svg>
-              Monitoring is paused; health reflects the last recorded check.
-            </div>
-          }
           <dl class="monitor-stats tw:grid tw:grid-cols-2 tw:border-y tw:border-[#d7e2ef] tw:dark:border-white/9">
             <div class="tw:grid tw:min-h-21 tw:content-between tw:gap-2 tw:border-r tw:border-b tw:border-[#d7e2ef] tw:p-4 tw:dark:border-white/9">
               <dt class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Uptime</dt>

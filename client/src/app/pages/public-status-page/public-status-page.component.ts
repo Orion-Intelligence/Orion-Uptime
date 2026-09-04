@@ -1,8 +1,21 @@
 import { DatePipe, DecimalPipe, NgOptimizedImage, isPlatformBrowser } from '@angular/common';
-import { Component, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
-import { PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
+import { PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
+
+const MONITOR_GROUPS = [
+  { type: 'HTTP', label: 'HTTP monitors' },
+  { type: 'API', label: 'API monitors' },
+  { type: 'ping', label: 'Ping monitors' },
+  { type: 'heartbeat', label: 'Heartbeat monitors' },
+] as const;
+
+interface MonitorGroup {
+  type: string;
+  label: string;
+  monitors: PublicStatusMonitor[];
+}
 
 @Component({
   selector: 'app-public-status-page',
@@ -14,6 +27,15 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
   private readonly slug = inject(ActivatedRoute).snapshot.paramMap.get('slug') ?? '';
 
   readonly page = signal<PublicStatusPage | null>(null);
+  readonly monitorGroups = computed<MonitorGroup[]>(() => {
+    const monitors = this.page()?.monitors ?? [];
+    return MONITOR_GROUPS
+      .map((group) => ({
+        ...group,
+        monitors: monitors.filter((monitor) => monitor.monitor_type === group.type),
+      }))
+      .filter((group) => group.monitors.length > 0);
+  });
 
   constructor() {
     super();
