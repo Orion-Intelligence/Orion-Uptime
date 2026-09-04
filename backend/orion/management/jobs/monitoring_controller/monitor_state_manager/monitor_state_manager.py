@@ -11,7 +11,6 @@ from orion.services.mongo_manager.shared_model.db_monitor_state_model import Mon
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 
 
-
 class MonitorStateManager:
     def __init__(self, engine: AIOEngine):
         self.collection = engine.database[Collections.MONITOR_STATES]

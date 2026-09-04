@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <meta name="supported-color-schemes" content="light">
+    <title>Orion Uptime monitor alert</title>
+    <style>
+      body { margin: 0; padding: 0; width: 100% !important; background: #f5f8fc; }
+      table { border-spacing: 0; border-collapse: collapse; }
+      img { border: 0; display: block; }
+      @media only screen and (max-width: 620px) {
+        .email-shell { width: 100% !important; border-radius: 0 !important; }
+        .email-padding { padding-left: 20px !important; padding-right: 20px !important; }
+        .detail-label, .detail-value { display: block !important; width: auto !important; }
+        .detail-label { padding-bottom: 3px !important; border-bottom: 0 !important; }
+        .detail-value { padding-top: 3px !important; }
+      }
+    </style>
+  </head>
+  <body class="bg-slate-50 font-sans text-slate-900" style="margin:0;padding:0;background-color:#f5f8fc;color:#142033;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+    <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;">{{ monitor_name }} is {{ state }}</div>
+    <table role="presentation" style="width:100%;background-color:#f5f8fc;">
+      <tr>
+        <td style="padding:34px 12px;text-align:center;">
+          <table role="presentation" class="email-shell mx-auto max-w-xl overflow-hidden rounded-2xl bg-white" style="width:600px;max-width:600px;margin:0 auto;overflow:hidden;border:1px solid #d7e2ef;border-radius:16px;background-color:#ffffff;box-shadow:0 10px 30px rgba(30,64,105,0.08);text-align:left;">
+            <tr>
+              <td class="email-padding bg-slate-900" style="padding:22px 30px;background-color:#172235;">
+                <table role="presentation" style="width:100%;">
+                  <tr>
+                    <td style="vertical-align:middle;">
+                      <table role="presentation">
+                        <tr>
+                          <td style="vertical-align:middle;"><span style="display:inline-block;width:11px;height:11px;border:3px solid #57a5eb;border-radius:999px;"></span></td>
+                          <td style="padding-left:10px;color:#ffffff;font-size:17px;font-weight:700;letter-spacing:-0.02em;vertical-align:middle;">Orion Uptime</td>
+                        </tr>
+                      </table>
+                    </td>
+                    <td style="color:#a0b8d1;font-size:10px;font-weight:600;letter-spacing:0.12em;text-align:right;text-transform:uppercase;vertical-align:middle;">Monitor alert</td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-padding" style="padding:30px;">
+                {% if is_down %}
+                <table role="presentation" class="rounded-xl" style="width:100%;border:1px solid #fecaca;border-radius:12px;background-color:#fff2f0;">
+                {% else %}
+                <table role="presentation" class="rounded-xl" style="width:100%;border:1px solid #bbf7d0;border-radius:12px;background-color:#effbf6;">
+                {% endif %}
+                  <tr>
+                    <td style="padding:20px;">
+                      <table role="presentation" style="width:100%;">
+                        <tr>
+                          <td style="width:44px;vertical-align:top;">
+                            {% if is_down %}
+                            <span style="display:inline-block;width:36px;height:36px;border-radius:999px;background-color:#f97066;color:#ffffff;font-size:20px;font-weight:700;line-height:36px;text-align:center;">!</span>
+                            {% else %}
+                            <span style="display:inline-block;width:36px;height:36px;border-radius:999px;background-color:#34d399;color:#ffffff;font-size:20px;font-weight:700;line-height:36px;text-align:center;">&#10003;</span>
+                            {% endif %}
+                          </td>
+                          <td style="padding-left:4px;vertical-align:top;">
+                            {% if is_down %}
+                            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style="display:inline-block;padding:4px 9px;border-radius:999px;background-color:#fee2e2;color:#b42318;font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">Incident open</span>
+                            <h1 class="text-2xl font-semibold tracking-tight" style="margin:10px 0 6px;color:#142033;font-size:24px;line-height:1.2;font-weight:650;letter-spacing:-0.025em;">Monitor is down</h1>
+                            <p class="text-sm text-slate-600" style="margin:0;color:#5f738f;font-size:13px;line-height:1.6;">Orion detected an availability incident that needs attention.</p>
+                            {% else %}
+                            <span class="inline-flex rounded-full px-2 py-1 text-xs font-semibold" style="display:inline-block;padding:4px 9px;border-radius:999px;background-color:#dcfce7;color:#16825f;font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;">Incident resolved</span>
+                            <h1 class="text-2xl font-semibold tracking-tight" style="margin:10px 0 6px;color:#142033;font-size:24px;line-height:1.2;font-weight:650;letter-spacing:-0.025em;">Monitor recovered</h1>
+                            <p class="text-sm text-slate-600" style="margin:0;color:#5f738f;font-size:13px;line-height:1.6;">Orion confirmed that the monitor is responding again.</p>
+                            {% endif %}
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <p class="text-xs font-semibold uppercase text-blue-600" style="margin:26px 0 9px;color:#1176d4;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Monitor details</p>
+                <table role="presentation" class="overflow-hidden rounded-xl border border-slate-200 bg-white" style="width:100%;overflow:hidden;border:1px solid #d7e2ef;border-radius:12px;background-color:#ffffff;">
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">Monitor</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ monitor_name }}</td>
+                  </tr>
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">State</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ state }}</td>
+                  </tr>
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">Type</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ monitor_type }}</td>
+                  </tr>
+                  {% if show_status_code %}
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">Status code</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ status_code }}</td>
+                  </tr>
+                  {% endif %}
+                  {% if response_time is not none %}
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">Response time</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ response_time }}</td>
+                  </tr>
+                  {% endif %}
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">Incident started</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ incident_started }}</td>
+                  </tr>
+                  <tr>
+                    <td class="detail-label text-slate-500" style="width:42%;padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#5f738f;font-size:12px;font-weight:500;vertical-align:top;">Resolved</td>
+                    <td class="detail-value text-slate-900" style="padding:12px 16px;border-bottom:1px solid #e3ebf3;color:#142033;font-size:13px;font-weight:600;line-height:1.5;vertical-align:top;word-break:break-word;">{{ resolved }}</td>
+                  </tr>
+                </table>
+
+                <p class="text-xs font-semibold uppercase text-blue-600" style="margin:26px 0 9px;color:#1176d4;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;">Root cause</p>
+                <p style="margin:0;font-size:13px;line-height:1.65;word-break:break-word;">{{ root_cause }}</p>
+              </td>
+            </tr>
+            <tr>
+              <td class="email-padding" style="padding:18px 30px;border-top:1px solid #d7e2ef;background-color:#f9fbff;color:#71869c;font-size:11px;line-height:1.6;text-align:center;">
+                This notification was sent by <strong style="color:#344054;font-weight:600;">Orion Uptime</strong>.<br>
+                Alerts are sent only when an assigned monitor changes state.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

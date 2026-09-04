@@ -2,9 +2,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import (
-    MonitorType,
-)
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
 
 
 class MonitorConfigBase(BaseModel):

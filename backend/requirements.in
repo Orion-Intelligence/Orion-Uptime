@@ -10,5 +10,6 @@ pymongo
 argon2-cffi
 python-dotenv
 httpx
+jinja2
 PyJWT
 cryptography

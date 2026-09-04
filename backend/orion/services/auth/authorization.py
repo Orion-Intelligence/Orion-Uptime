@@ -14,7 +14,6 @@ from orion.services.mongo_manager.shared_model.db_user_account_model import Auth
 from orion.shared_models.exceptions import AuthenticationError, AuthorizationError
 
 
-
 def get_auth_service(engine: AIOEngine = Depends(get_engine)) -> AuthManager:
     return AuthManager(engine=engine, password_manager=password_service, jwt_service=app_dependency, refresh_token_manager=refresh_token_service)
 

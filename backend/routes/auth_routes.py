@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, Request, Response
 from jwt import PyJWTError
 
-from orion.constants.constant import Cookies
 from orion.api.interactive.auth_manager.auth_manager import AuthManager, login_throttle, revoked_access_tokens
-from orion.constants.constant import Messages
+from orion.constants.constant import Cookies, Messages
 from orion.helper_manager.client_ip import client_ip
 from orion.services.auth.authorization import clear_auth_cookies, get_auth_service, get_current_user, require_viewer, set_auth_cookies
 from orion.services.mongo_manager.shared_model.db_user_account_model import CurrentUserResponse, LoginRequest

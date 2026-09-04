@@ -4,14 +4,6 @@ from pathlib import Path
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 
-class MailTemplates:
-    ALERT = "alert_mail_template.html"
-    DIRECTORIES = (
-        BACKEND_DIR / "build" / "assets" / "data" / "mail_template_data",
-        BACKEND_DIR.parent / "client" / "src" / "assets" / "data" / "mail_template_data",
-    )
-
-
 class Messages:
     LOGIN_SUCCESS = "Login successful."
     LOGOUT_SUCCESS = "Logout successful."

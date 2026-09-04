@@ -8,7 +8,6 @@ from typing import NamedTuple
 
 import orion.api.interactive.orion_login_manager.orion_token_manager as auth_token_state
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
-from orion.constants.constant import Intervals
 from orion.api.interactive.api_monitor_manager.api_monitor_manager import ApiMonitorManager
 from orion.api.interactive.auth_manager.auth_manager import password_service
 from orion.api.interactive.email_integration_manager.email_integration_manager import EmailIntegrationManager
@@ -22,11 +21,13 @@ from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import Ping
 from orion.api.interactive.slack_integration_manager.slack_integration_manager import SlackIntegrationManager
 from orion.api.interactive.status_page_manager.status_page_manager import StatusPageManager
 from orion.api.interactive.user_account_manager.user_account_manager import UserManager
+from orion.constants.constant import Intervals
 from orion.management.jobs.monitoring_controller.checkers.checker_factory import CheckerFactory
 from orion.management.jobs.monitoring_controller.monitor_results_manager.monitor_results_manager import MonitorResultManager
 from orion.management.jobs.monitoring_controller.monitor_state_manager.monitor_state_manager import MonitorStateManager
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.management.jobs.monitoring_controller.scheduler import MonitorScheduler
+from orion.services.email_template_manager import EmailTemplateManager
 from orion.services.mongo_manager.mongo_controller import db_manager
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError
@@ -78,6 +79,7 @@ class ServiceManager:
         self.watchdog_task: asyncio.Task | None = None
 
     async def init_services(self) -> Services:
+        EmailTemplateManager.get_instance().initialize()
         await db_manager.connect()
         self.services = await self.build_services(db_manager.engine)
         if await self.services.user_service.default_admin_password_in_use(os.environ["DEFAULT_ADMIN_USERNAME"], os.environ["DEFAULT_ADMIN_PASSWORD"]):
@@ -103,6 +105,7 @@ class ServiceManager:
             await self.services.checker_factory.close()
             await self.services.slack_integration_service.close()
         await realtime_broker.shutdown()
+        EmailTemplateManager.get_instance().clear()
         auth_token_state.token_manager = None
         await db_manager.disconnect()
         self.services = None

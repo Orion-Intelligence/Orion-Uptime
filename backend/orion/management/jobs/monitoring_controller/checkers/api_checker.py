@@ -3,9 +3,9 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from orion.constants.constant import Cookies
 from orion.api.interactive.api_monitor_manager.json_matcher import json_matches
 from orion.api.interactive.orion_login_manager.orion_token_manager import AccessTokenCookieManager, AuthTokenError
+from orion.constants.constant import Cookies
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import HealthCheckResponse, MonitorStatus
 
 

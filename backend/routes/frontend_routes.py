@@ -5,7 +5,6 @@ from fastapi.responses import FileResponse, HTMLResponse
 
 from orion.constants.constant import Paths
 
-
 router = APIRouter()
 
 

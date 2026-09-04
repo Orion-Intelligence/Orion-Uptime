@@ -1,10 +1,10 @@
 import ipaddress
-from orion.constants.constant import EnvVars
 import os
 
 from dotenv import load_dotenv
 from fastapi import Request
 
+from orion.constants.constant import EnvVars
 
 
 def _trusted_networks() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:

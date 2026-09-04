@@ -18,7 +18,6 @@ from orion.services.auth.authorization import require_viewer
 from orion.services.mongo_manager.shared_model.db_user_account_model import CurrentUserResponse, UserRole
 from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_broker
 
-
 router = APIRouter(prefix="/events", tags=["Real-time Updates"])
 
 

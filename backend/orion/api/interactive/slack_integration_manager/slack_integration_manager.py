@@ -11,6 +11,7 @@ from cryptography.fernet import InvalidToken
 from odmantic import AIOEngine
 from pymongo.errors import DuplicateKeyError
 
+from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
 from orion.constants.constant import AllowedValues, Collections
 from orion.services.encryption_manager.secrets import secret_box
 from orion.services.mongo_manager.documents import with_string_id
@@ -18,7 +19,6 @@ from orion.services.mongo_manager.shared_model.db_monitor_state_model import Mon
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 from orion.services.mongo_manager.shared_model.db_slack_integration_model import CreateSlackIntegrationRequest, SlackIntegrationModel, SlackIntegrationResponse, SlackIntegrationSummaryResponse, UpdateSlackIntegrationRequest
 from orion.services.realtime_manager.realtime import realtime_broker
-from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
 if TYPE_CHECKING:
@@ -224,4 +224,3 @@ class SlackIntegrationManager(IntegrationCollectionMixin):
     @classmethod
     def _detail_response(cls, integration: SlackIntegrationModel) -> SlackIntegrationResponse:
         return SlackIntegrationResponse(**cls._summary_response(integration).model_dump(), webhook_url=integration.webhook_url)
-

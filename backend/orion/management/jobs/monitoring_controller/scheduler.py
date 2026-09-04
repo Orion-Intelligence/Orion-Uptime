@@ -9,7 +9,6 @@ from orion.management.jobs.monitoring_controller.monitoring_controller import Mo
 from orion.management.jobs.monitoring_controller.worker import MonitorWorker
 from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import HeartbeatMonitorModel
 
-
 logger = logging.getLogger("orion.uptime.scheduler")
 
 

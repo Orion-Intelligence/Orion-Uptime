@@ -1,10 +1,10 @@
 import json
-from orion.constants.constant import EnvVars
 import os
 
 from cryptography.fernet import Fernet
 from dotenv import load_dotenv
 
+from orion.constants.constant import EnvVars
 
 
 class SecretBox:

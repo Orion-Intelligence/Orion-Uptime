@@ -15,14 +15,14 @@ from dotenv import load_dotenv
 from odmantic import AIOEngine
 from pymongo.errors import DuplicateKeyError
 
-from orion.api.interactive.email_integration_manager.email_template import AlertEmailTemplate
+from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
 from orion.constants.constant import AllowedValues, Collections, Patterns
+from orion.services.email_template_manager import EMAIL_INTEGRATION_ALERT_TEMPLATE, EmailTemplateManager
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_email_integration_model import CreateEmailIntegrationRequest, EmailIntegrationModel, EmailIntegrationResponse, UpdateEmailIntegrationRequest
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 from orion.services.realtime_manager.realtime import realtime_broker
-from orion.api.interactive.integration_shared.integration_collection import IntegrationCollectionMixin
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
 if TYPE_CHECKING:
@@ -51,10 +51,18 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
     not_found_message = "Email integration not found."
     realtime_channel = "email_integration"
 
-    def __init__(self, engine: AIOEngine, monitor_service: MonitorManager, sender: Callable[[EmailMessage], None] | None = None) -> None:
+    def __init__(
+        self,
+        engine: AIOEngine,
+        monitor_service: MonitorManager,
+        sender: Callable[[EmailMessage], None] | None = None,
+        template_manager: EmailTemplateManager | None = None,
+    ) -> None:
+
         self.collection = engine.database[Collections.EMAIL_INTEGRATIONS]
         self.monitor_service = monitor_service
         self.sender = sender
+        self.template_manager = template_manager or EmailTemplateManager.get_instance()
 
     async def create_integration(self, request: CreateEmailIntegrationRequest) -> EmailIntegrationResponse:
         base_name = self._validated_name(request.name)
@@ -149,8 +157,7 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
         except (OSError, RuntimeError, smtplib.SMTPException, ValueError):
             logger.exception("Email notification delivery failed for integration %s.", integration.name)
 
-    @staticmethod
-    def _build_message(integration: EmailIntegrationModel, monitor: MonitorModel, *, is_down: bool, result, incident: IncidentModel | None) -> EmailMessage:
+    def _build_message(self, integration: EmailIntegrationModel, monitor: MonitorModel, *, is_down: bool, result, incident: IncidentModel | None) -> EmailMessage:
         state = "DOWN" if is_down else "RECOVERED"
         root_cause = incident.reason if incident is not None else "The monitor check failed without an incident record."
         status_code = incident.status_code if incident is not None else getattr(result, "status_code", None)
@@ -180,7 +187,7 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
         message["Subject"] = f"[Orion Uptime] {monitor.name} is {state}"
         message.set_content("\n".join(lines))
         message.add_alternative(
-            AlertEmailTemplate.render(
+            self._html_body(
                 monitor_name=monitor.name,
                 monitor_type=monitor.monitor_type,
                 is_down=is_down,
@@ -194,6 +201,21 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
         )
         return message
 
+    def _html_body(self, *, monitor_name: str, monitor_type: MonitorType, is_down: bool, root_cause: str, status_code: int | None, response_time_ms: int | float | None, incident_started: str, resolved: str) -> str:
+        state = "DOWN" if is_down else "RECOVERED"
+        return self.template_manager.render(
+            EMAIL_INTEGRATION_ALERT_TEMPLATE,
+            is_down=is_down,
+            monitor_name=monitor_name,
+            state=state,
+            monitor_type=monitor_type.value,
+            show_status_code=monitor_type in (MonitorType.HTTP, MonitorType.API),
+            status_code=str(status_code) if status_code is not None else "No response",
+            response_time=f"{response_time_ms} ms" if response_time_ms is not None else None,
+            incident_started=incident_started,
+            resolved=resolved,
+            root_cause=root_cause,
+        )
 
     def _send_smtp(self, message: EmailMessage) -> None:
         settings = self._smtp_settings()
@@ -261,4 +283,3 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
     @staticmethod
     def _response(integration: EmailIntegrationModel) -> EmailIntegrationResponse:
         return EmailIntegrationResponse(id=integration.persisted_id, name=integration.name, email=integration.email, monitor_ids=integration.monitor_ids, monitor_count=len(integration.monitor_ids), created_at=integration.created_at, updated_at=integration.updated_at)
-

@@ -1,33 +1,16 @@
 from fastapi import APIRouter, Depends, Query
 from odmantic import AIOEngine
 
-from orion.api.interactive.api_monitor_manager.api_monitor_manager import (
-    ApiMonitorManager,
-)
-from orion.api.interactive.heartbeat_monitor_manager.heartbeat_monitor_manager import (
-    HeartbeatMonitorManager,
-)
-from orion.api.interactive.http_monitor_manager.http_monitor_manager import (
-    HttpMonitorManager,
-)
-from orion.api.interactive.monitor_config_manager.monitor_config_manager import (
-    MonitorConfigManager,
-)
-from orion.api.interactive.orion_login_manager.orion_login_manager import (
-    AuthProfileManager,
-)
-from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import (
-    PingMonitorManager,
-)
+from orion.api.interactive.api_monitor_manager.api_monitor_manager import ApiMonitorManager
+from orion.api.interactive.heartbeat_monitor_manager.heartbeat_monitor_manager import HeartbeatMonitorManager
+from orion.api.interactive.http_monitor_manager.http_monitor_manager import HttpMonitorManager
+from orion.api.interactive.monitor_config_manager.monitor_config_manager import MonitorConfigManager
+from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
+from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import PingMonitorManager
 from orion.services.auth.authorization import require_admin
 from orion.services.mongo_manager.mongo_controller import get_engine
-from orion.services.mongo_manager.shared_model.db_monitor_config_model import (
-    MonitorConfigDocument,
-    MonitorImportResult,
-)
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import (
-    MonitorType,
-)
+from orion.services.mongo_manager.shared_model.db_monitor_config_model import MonitorConfigDocument, MonitorImportResult
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
 from orion.shared_models.exceptions import ValidationError
 from orion.shared_models.responses import SuccessResponse, success_response
 

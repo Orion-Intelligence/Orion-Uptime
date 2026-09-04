@@ -9,9 +9,9 @@ from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from odmantic import AIOEngine
 
-from orion.constants.constant import Intervals
 from orion.api.interactive.insight_manager.insight_manager import DashboardManager
 from orion.api.interactive.status_page_manager.status_page_manager import StatusPageManager
+from orion.constants.constant import Intervals
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.auth.authorization import require_admin
 from orion.services.mongo_manager.mongo_controller import get_engine
@@ -20,7 +20,6 @@ from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_br
 from orion.shared_models.exceptions import NotFoundError
 from orion.shared_models.responses import SuccessResponse, success_response
 from routes.insight_routes import get_dashboard_service, get_monitor_service
-
 
 router = APIRouter(prefix="/status-pages", tags=["Status Pages"])
 
