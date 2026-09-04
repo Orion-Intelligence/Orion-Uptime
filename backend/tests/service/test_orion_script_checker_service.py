@@ -139,6 +139,15 @@ def test_checker_reports_down_on_error_status_and_invalid_payload():
     assert json.dumps(result.model_dump(mode="json")["feeders"]) == "[]"
 
 
+def test_checker_reports_down_when_scripts_have_no_usable_fields():
+    checker = OrionScriptChecker(token_manager=FakeTokenManager([_profile()]), client=httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, json={"scripts": [{"name": "_a.py", "url": None}], "has_more": False}))))
+    result = _run(checker, _monitor())
+
+    assert result.success is False
+    assert result.status == MonitorStatus.DOWN
+    assert "Fields received: name, url" in (result.error or "")
+
+
 def test_find_profile_matches_login_origin_case_insensitively():
     profile = _profile()
     assert OrionScriptChecker.find_profile([profile], "HTTPS://Orion.Example.com/") is profile

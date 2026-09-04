@@ -45,6 +45,8 @@ class OrionScriptChecker:
             scripts, status_code = await self._fetch_scripts(monitor, profile.persisted_id)
             response_time_ms = int((time.perf_counter() - start) * 1000)
             feeders = self.build_feeders(scripts)
+            if not feeders:
+                raise FeederFetchError(f"Orion Intelligence returned {len(scripts)} feeder scripts, but none could be read. Fields received: {', '.join(sorted(scripts[0]))}.", status_code)
             is_slow = monitor.expected_response_time_ms is not None and response_time_ms > monitor.expected_response_time_ms
             success = True
             status = MonitorStatus.UP
