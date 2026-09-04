@@ -43,7 +43,7 @@
     "@tailwindcss/postcss": "^4.3.3",
     "@types/node": "^20.17.19",
     "@typescript-eslint/eslint-plugin": "^8.67.0",
-    "@typescript-eslint/parser": "^8.67.0",
+    "@typescript-eslint/parser": "^8.68.0",
     "cypress": "^15.20.1",
     "eslint": "^10.8.1",
     "istanbul-lib-instrument": "6.0.3",
