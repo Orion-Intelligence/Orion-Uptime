@@ -59,6 +59,12 @@ class AuthProfileManager:
             return None
         return self._deserialize(document)
 
+    async def get_profile_model_by_name(self, name: str) -> AuthProfileModel | None:
+        document = await self.collection.find_one({"name": name})
+        if document is None:
+            return None
+        return self._deserialize(document)
+
     async def list_profile_models(self) -> list[AuthProfileModel]:
         profiles = []
         async for document in self.collection.find().sort("created_at", -1):

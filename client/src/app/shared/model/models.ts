@@ -78,11 +78,32 @@ export interface ResourceRecord {
   host?: string;
   login_url?: string;
   method?: string;
+  expected_json?: Record<string, unknown> | null;
   credential_fields?: string[];
   expected_heartbeat_interval?: number;
   last_checked_at?: string | null;
   last_heartbeat_at?: string | null;
   created_at?: string;
+}
+
+export type MonitorConfigType = 'HTTP' | 'API' | 'ping' | 'heartbeat';
+
+export interface MonitorConfigDocument {
+  format: 'orion-monitor-config';
+  version: 1;
+  monitor_id?: string | null;
+  monitor_type: MonitorConfigType;
+  name: string;
+  is_active: boolean;
+  [key: string]: unknown;
+}
+
+export interface MonitorImportResult {
+  action: 'created' | 'updated';
+  monitor_id: string;
+  monitor_type: MonitorConfigType;
+  name: string;
+  heartbeat_token: string | null;
 }
 
 export interface MonitorOverview {

@@ -58,6 +58,7 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
         sender: Callable[[EmailMessage], None] | None = None,
         template_manager: EmailTemplateManager | None = None,
     ) -> None:
+
         self.collection = engine.database[Collections.EMAIL_INTEGRATIONS]
         self.monitor_service = monitor_service
         self.sender = sender
