@@ -51,6 +51,7 @@ export class MonitorListComponent extends NoticePageBase {
     const resourceType = this.resourceType();
     return resourceType !== null && this.isMonitorResource(resourceType);
   });
+  readonly supportsConfigFiles = computed(() => this.isMonitorList() && this.resourceType() !== 'orion_script');
   readonly monitorSummary = computed(() => {
     const summary = { total: this.records().length, up: 0, down: 0, paused: 0, unknown: 0 };
     const overviews = this.overviews();
@@ -158,8 +159,8 @@ export class MonitorListComponent extends NoticePageBase {
     return this.overviews()[record.id];
   }
 
-  private isMonitorResource(resourceType: keyof RealtimeResources,): resourceType is 'HTTP' | 'API' | 'ping' | 'heartbeat' {
-    return ['HTTP', 'API', 'ping', 'heartbeat'].includes(resourceType);
+  private isMonitorResource(resourceType: keyof RealtimeResources,): resourceType is 'HTTP' | 'API' | 'ping' | 'heartbeat' | 'orion_script' {
+    return ['HTTP', 'API', 'ping', 'heartbeat', 'orion_script'].includes(resourceType);
   }
 
   private resourcesOf(resources: RealtimeResources | undefined, resourceType: keyof RealtimeResources): unknown[] | undefined {
@@ -172,6 +173,8 @@ export class MonitorListComponent extends NoticePageBase {
         return resources?.ping;
       case 'heartbeat':
         return resources?.heartbeat;
+      case 'orion_script':
+        return resources?.orion_script;
       case 'auth_profiles':
         return resources?.auth_profiles;
       case 'users':
@@ -443,7 +446,7 @@ export class MonitorListComponent extends NoticePageBase {
   }
 
   hasTimingSettings(record: ResourceRecord): boolean {
-    return ['HTTP', 'API', 'ping'].includes(this.monitorType(record));
+    return ['HTTP', 'API', 'ping', 'orion_script'].includes(this.monitorType(record));
   }
 
   isPingMonitor(record: ResourceRecord): boolean {
@@ -495,6 +498,8 @@ export class MonitorListComponent extends NoticePageBase {
         return 'Ping monitor';
       case 'heartbeat':
         return 'Heartbeat monitor';
+      case 'orion_script':
+        return 'Orion script monitor';
       case 'auth_profiles':
         return 'Auth profile';
       default:
@@ -512,6 +517,8 @@ export class MonitorListComponent extends NoticePageBase {
         return 'Ping monitor';
       case 'heartbeat':
         return 'Heartbeat monitor';
+      case 'orion_script':
+        return 'Orion script monitor';
       default:
         return 'Monitor';
     }

@@ -42,6 +42,13 @@
         </div>
         <ng-container *ngTemplateOutlet="timingFields" />
       }
+      @case ('orion-script') {
+        <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+          <label for="url">Orion URL</label
+          ><input id="url" type="url" formControlName="url" placeholder="https://orion.example.com" />
+        </div>
+        <ng-container *ngTemplateOutlet="timingFields" />
+      }
       @case ('heartbeat') {
         <div class="field">
           <label for="heartbeat-interval">Expected heartbeat interval (seconds)</label

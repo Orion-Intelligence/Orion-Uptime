@@ -343,7 +343,8 @@ case "$COMMAND" in
                 ;;
             -d)
                 stop_docker
-                mkdir -p "$BACKEND_BUILD_DIR"
+                mkdir -p "$BACKEND_BUILD_DIR/assets"
+                cp -r "$CLIENT_DIR/src/assets/html templates" "$BACKEND_BUILD_DIR/assets/"
                 ;;
             -b)
                 stop_docker

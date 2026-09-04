@@ -141,6 +141,31 @@ export const routes: Routes = [
         },
       },
       {
+        path: 'monitors/orion-script/new',
+        loadComponent: loadAddMonitorComponent,
+        canActivate: [adminGuard],
+        title: 'New Orion script monitor · Orion Uptime',
+        data: { kind: 'orion-script', title: 'New Orion script monitor', backUrl: '/monitors/orion-script' },
+      },
+      {
+        path: 'monitors/orion-script/:id',
+        loadComponent: loadMonitorDetailComponent,
+        data: { backUrl: '/monitors/orion-script' },
+      },
+      {
+        path: 'monitors/orion-script',
+        loadComponent: loadMonitorListComponent,
+        data: {
+          title: 'Orion script monitors',
+          description: 'Feeder script health fetched from an Orion Intelligence instance.',
+          resourceType: 'orion_script',
+          newUrl: '/monitors/orion-script/new',
+          detailBase: '/monitors/orion-script',
+          deletePath: '/orion-script-monitors/:id/delete',
+          updatePath: '/orion-script-monitors/:id/update',
+        },
+      },
+      {
         path: 'auth-profiles/new',
         loadComponent: loadAddMonitorComponent,
         canActivate: [adminGuard],

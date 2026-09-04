@@ -48,10 +48,18 @@ class Collections:
     API_MONITORS = "api_monitors"
     PING_MONITORS = "ping_monitors"
     HEARTBEAT_MONITORS = "heartbeat_monitors"
+    ORION_SCRIPT_MONITORS = "orion_script_monitors"
     AUTH_PROFILES = "auth_profiles"
     STATUS_PAGES = "status_pages"
     SLACK_INTEGRATIONS = "slack_integrations"
     EMAIL_INTEGRATIONS = "email_integrations"
+
+
+class OrionIntelligence:
+    FEEDER_SCRIPTS_PATH = "/api/profile/feeder/scripts"
+    FEEDER_PAGE_LIMIT = 1000
+    FEEDER_MAX_PAGES = 10
+    FEEDER_RESULT_SEPARATOR = ":"
 
 
 class Limits:

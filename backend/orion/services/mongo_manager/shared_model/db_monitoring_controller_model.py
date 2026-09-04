@@ -17,6 +17,7 @@ class MonitorType(StrEnum):
     API = "API"
     PING = "ping"
     HEARTBEAT = "heartbeat"
+    ORION_SCRIPT = "orion_script"
 
 
 class BaseMonitorModel(PersistedModel):

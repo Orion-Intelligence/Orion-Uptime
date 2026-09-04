@@ -1,14 +1,16 @@
 from __future__ import annotations
 
+import re
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from odmantic import AIOEngine
 
-from orion.constants.constant import Collections
+from orion.constants.constant import Collections, OrionIntelligence
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_monitor_result_model import MonitorResultModel
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionFeederStatus, feeder_result_id
 
 
 class MonitorResultManager:
@@ -26,8 +28,25 @@ class MonitorResultManager:
     async def seed_history(self, monitor_id: str, monitor_type: MonitorType, days: int = 45) -> None:
         if await self.collection.count_documents({"monitor_id": monitor_id}, limit=1):
             return
+        await self.collection.insert_many(self._seed_documents(monitor_id, monitor_type, datetime.now(UTC), days))
+
+    @staticmethod
+    def _seed_documents(monitor_id: str, monitor_type: MonitorType, now: datetime, days: int = 45) -> list[dict]:
+        return [MonitorResultModel(monitor_id=monitor_id, monitor_type=monitor_type, status=MonitorStatus.UP, status_code=None, response_time_ms=None, success=True, is_slow=False, checked_at=now - timedelta(days=offset)).model_dump(exclude={"id"}) for offset in range(1, days + 1)]
+
+    async def record_feeder_results(self, monitor_id: str, feeders: list[OrionFeederStatus]) -> None:
+        active = [feeder for feeder in feeders if feeder.enabled and feeder.status != MonitorStatus.UNKNOWN]
+        if not active:
+            return
         now = datetime.now(UTC)
-        await self.collection.insert_many([MonitorResultModel(monitor_id=monitor_id, monitor_type=monitor_type, status=MonitorStatus.UP, status_code=None, response_time_ms=None, success=True, is_slow=False, checked_at=now - timedelta(days=offset)).model_dump(exclude={"id"}) for offset in range(1, days + 1)])
+        result_ids = [feeder_result_id(monitor_id, feeder.key) for feeder in active]
+        existing = set(await self.collection.distinct("monitor_id", {"monitor_id": {"$in": result_ids}}))
+        documents = []
+        for feeder, result_id in zip(active, result_ids, strict=True):
+            if result_id not in existing:
+                documents.extend(self._seed_documents(result_id, MonitorType.ORION_SCRIPT, now))
+            documents.append(MonitorResultModel(monitor_id=result_id, monitor_type=MonitorType.ORION_SCRIPT, status=feeder.status, status_code=None, response_time_ms=None, success=feeder.status == MonitorStatus.UP, is_slow=False, checked_at=now).model_dump(exclude={"id"}))
+        await self.collection.insert_many(documents)
 
     async def average_response_time(self) -> float:
         pipeline = [{"$match": {"response_time_ms": {"$ne": None}}}, {"$group": {"_id": None, "avg": {"$avg": "$response_time_ms"}}}]
@@ -44,7 +63,7 @@ class MonitorResultManager:
         return {result["_id"]: result["checked_at"] for result in results}
 
     async def get_latest_per_monitor(self, limit: int = 20) -> list[MonitorResultModel]:
-        pipeline = [{"$sort": {"monitor_id": 1, "checked_at": -1}}, {"$group": {"_id": "$monitor_id", "latest": {"$first": "$$ROOT"}}}, {"$replaceRoot": {"newRoot": "$latest"}}, {"$sort": {"checked_at": -1}}, {"$limit": limit}]
+        pipeline = [{"$match": {"monitor_id": {"$not": {"$regex": re.escape(OrionIntelligence.FEEDER_RESULT_SEPARATOR)}}}}, {"$sort": {"monitor_id": 1, "checked_at": -1}}, {"$group": {"_id": "$monitor_id", "latest": {"$first": "$$ROOT"}}}, {"$replaceRoot": {"newRoot": "$latest"}}, {"$sort": {"checked_at": -1}}, {"$limit": limit}]
         results = await self.collection.aggregate(pipeline).to_list(None)
         return [MonitorResultModel(**with_string_id(document)) for document in results]
 
@@ -105,4 +124,4 @@ class MonitorResultManager:
         return await self.collection.count_documents({"monitor_id": monitor_id, "is_slow": True})
 
     async def delete_for_monitor(self, monitor_id: str) -> None:
-        await self.collection.delete_many({"monitor_id": monitor_id})
+        await self.collection.delete_many({"$or": [{"monitor_id": monitor_id}, {"monitor_id": {"$regex": f"^{re.escape(feeder_result_id(monitor_id, ''))}"}}]})

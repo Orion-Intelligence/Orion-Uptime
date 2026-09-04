@@ -25,7 +25,7 @@ export abstract class PublicStreamPageBase {
     });
   }
 
-  monitorStatus(monitor: PublicStatusMonitor): string {
+  monitorStatus(monitor: Pick<PublicStatusMonitor, 'is_active' | 'status'>): string {
     return monitor.is_active ? monitor.status : 'paused';
   }
 

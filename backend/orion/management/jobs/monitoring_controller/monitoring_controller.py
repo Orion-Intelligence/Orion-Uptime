@@ -16,6 +16,7 @@ from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import
 from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import BaseMonitorModel, HealthCheckResponse, MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionScriptCheckResponse
 from orion.services.realtime_manager.realtime import realtime_broker
 
 if TYPE_CHECKING:
@@ -23,6 +24,7 @@ if TYPE_CHECKING:
     from orion.api.interactive.email_integration_manager.email_integration_manager import EmailIntegrationManager
     from orion.api.interactive.heartbeat_monitor_manager.heartbeat_monitor_manager import HeartbeatMonitorManager
     from orion.api.interactive.http_monitor_manager.http_monitor_manager import HttpMonitorManager
+    from orion.api.interactive.orion_script_monitor_manager.orion_script_monitor_manager import OrionScriptMonitorManager
     from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import PingMonitorManager
     from orion.api.interactive.slack_integration_manager.slack_integration_manager import SlackIntegrationManager
 
@@ -33,11 +35,12 @@ logger = logging.getLogger("orion.uptime.monitoring")
 
 
 class MonitorManager:
-    def __init__(self, http_monitor_service: HttpMonitorManager, api_monitor_manager: ApiMonitorManager, ping_monitor_service: PingMonitorManager, heartbeat_monitor_service: HeartbeatMonitorManager, incident_service: IncidentManager, monitor_result_service: MonitorResultManager, monitor_state_service: MonitorStateManager, checker_factory: CheckerFactory):
+    def __init__(self, http_monitor_service: HttpMonitorManager, api_monitor_manager: ApiMonitorManager, ping_monitor_service: PingMonitorManager, heartbeat_monitor_service: HeartbeatMonitorManager, incident_service: IncidentManager, monitor_result_service: MonitorResultManager, monitor_state_service: MonitorStateManager, checker_factory: CheckerFactory, orion_script_monitor_service: OrionScriptMonitorManager | None = None):
         self.http_monitor_service = http_monitor_service
         self.api_monitor_service = api_monitor_manager
         self.ping_monitor_service = ping_monitor_service
         self.heartbeat_monitor_service = heartbeat_monitor_service
+        self.orion_script_monitor_service = orion_script_monitor_service
         self.incident_service = incident_service
         self.monitor_result_service = monitor_result_service
         self.monitor_state_service = monitor_state_service
@@ -45,6 +48,8 @@ class MonitorManager:
         self.slack_integration_service: SlackIntegrationManager | None = None
         self.email_integration_service: EmailIntegrationManager | None = None
         self._monitor_services: dict[MonitorType, MonitorRepository] = {MonitorType.HTTP: http_monitor_service, MonitorType.API: api_monitor_manager, MonitorType.PING: ping_monitor_service, MonitorType.HEARTBEAT: heartbeat_monitor_service}
+        if orion_script_monitor_service is not None:
+            self._monitor_services[MonitorType.ORION_SCRIPT] = orion_script_monitor_service
 
     async def list_active_monitors(self):
         return [monitor for monitor in await self.list_monitors() if monitor.is_active]
@@ -68,6 +73,10 @@ class MonitorManager:
             await self.monitor_result_service.record_result(monitor_id=monitor.persisted_id, monitor_type=monitor.monitor_type, status=state_result.current_status, status_code=result.status_code, response_time_ms=result.response_time_ms, success=state_result.current_status == MonitorStatus.UP, is_slow=result.is_slow)
 
             await service.update_monitoring_result(monitor_id=monitor.persisted_id, status=state_result.current_status, status_code=result.status_code, response_time_ms=result.response_time_ms, checked_at=checked_at)
+
+            if isinstance(result, OrionScriptCheckResponse) and result.success and self.orion_script_monitor_service is not None:
+                await self.orion_script_monitor_service.store_feeders(monitor.persisted_id, result.feeders)
+                await self.monitor_result_service.record_feeder_results(monitor.persisted_id, result.feeders)
 
             incident = await self._handle_incident_transition(monitor, result, state_result)
             await self._notify_integrations(monitor, result, state_result, incident)
@@ -168,7 +177,8 @@ class MonitorManager:
         api_monitors = await self.api_monitor_service.list_monitor_models()
         ping_monitors = await self.ping_monitor_service.list_monitor_models()
         heartbeat_monitors = await self.heartbeat_monitor_service.list_monitor_models()
-        return [*http_monitors, *api_monitors, *ping_monitors, *heartbeat_monitors]
+        orion_script_monitors = await self.orion_script_monitor_service.list_monitor_models() if self.orion_script_monitor_service is not None else []
+        return [*http_monitors, *api_monitors, *ping_monitors, *heartbeat_monitors, *orion_script_monitors]
 
     async def delete_monitor_history(self, monitor_id: str) -> None:
         await self.monitor_result_service.delete_for_monitor(monitor_id)

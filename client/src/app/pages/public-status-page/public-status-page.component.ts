@@ -2,7 +2,7 @@ import { DatePipe, DecimalPipe, NgOptimizedImage, isPlatformBrowser } from '@ang
 import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
-import { PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
+import { PublicOrionFeeder, PublicOrionScript, PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
 
 const MONITOR_GROUPS = [
   { type: 'HTTP', label: 'HTTP monitors' },
@@ -15,6 +15,17 @@ interface MonitorGroup {
   type: string;
   label: string;
   monitors: PublicStatusMonitor[];
+}
+
+interface FeederTab {
+  key: string;
+  label: string;
+  feeders: PublicOrionFeeder[];
+}
+
+interface OrionSection {
+  script: PublicOrionScript;
+  tabs: FeederTab[];
 }
 
 @Component({
@@ -36,6 +47,9 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
       }))
       .filter((group) => group.monitors.length > 0);
   });
+  readonly selectedTabs = signal<Partial<Record<string, string>>>({});
+  readonly orionSections = computed<OrionSection[]>(() =>
+    (this.page()?.orion_scripts ?? []).map((script) => ({ script, tabs: this.feederTabs(script.feeders) })),);
 
   constructor() {
     super();
@@ -45,6 +59,26 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
       }, 1000);
       this.connect();
     }
+  }
+
+  activeTab(section: OrionSection): FeederTab | undefined {
+    const selected = this.selectedTabs()[section.script.id];
+    return section.tabs.find((tab) => tab.key === selected) ?? section.tabs[0];
+  }
+
+  selectTab(scriptId: string, tabKey: string): void {
+    this.selectedTabs.update((tabs) => ({ ...tabs, [scriptId]: tabKey }));
+  }
+
+  private feederTabs(feeders: PublicOrionFeeder[]): FeederTab[] {
+    const tabs = new Map<string, FeederTab>();
+    for (const feeder of feeders) {
+      const key = feeder.rule_key ?? '';
+      const tab = tabs.get(key) ?? { key, label: feeder.rule_key ?? 'Other', feeders: [] };
+      tab.feeders.push(feeder);
+      tabs.set(key, tab);
+    }
+    return [...tabs.values()].sort((a, b) => a.label.localeCompare(b.label));
   }
 
   nextUpdateIn(page: PublicStatusPage): number {

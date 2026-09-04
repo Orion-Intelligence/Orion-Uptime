@@ -19,6 +19,7 @@ from routes.http_monitor_routes import router as http_monitor_router
 from routes.insight_routes import router as dashboard_router
 from routes.monitor_config_routes import router as monitor_config_router
 from routes.orion_login_routes import router as auth_profiles_router
+from routes.orion_script_monitor_routes import router as orion_script_router
 from routes.ping_monitor_routes import router as ping_router
 from routes.realtime_routes import router as realtime_router
 from routes.slack_integration_routes import router as slack_integration_router
@@ -33,6 +34,7 @@ api_router.include_router(dashboard_router)
 api_router.include_router(api_monitor_router)
 api_router.include_router(ping_router)
 api_router.include_router(heartbeat_router)
+api_router.include_router(orion_script_router)
 api_router.include_router(auth_profiles_router)
 api_router.include_router(realtime_router)
 api_router.include_router(status_page_router)

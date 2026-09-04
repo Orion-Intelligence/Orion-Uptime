@@ -174,6 +174,7 @@ export interface PublicStatusPage {
   refresh_interval_seconds: number;
   uptime_status: PublicUptimeStatus;
   monitors: PublicStatusMonitor[];
+  orion_scripts: PublicOrionScript[];
 }
 
 export interface DailyUptime {
@@ -184,6 +185,26 @@ export interface DailyUptime {
 export interface PublicStatusMonitor extends MonitorOverview {
   uptime_90_days: number | null;
   daily_uptime: DailyUptime[];
+}
+
+export interface PublicOrionFeeder {
+  key: string;
+  name: string;
+  rule_key: string | null;
+  status: 'up' | 'down' | 'unknown';
+  is_active: boolean;
+  last_checked_at: string | null;
+  uptime_90_days: number | null;
+  daily_uptime: DailyUptime[];
+}
+
+export interface PublicOrionScript {
+  id: string;
+  name: string;
+  status: 'up' | 'down' | 'unknown';
+  is_active: boolean;
+  last_checked_at: string | null;
+  feeders: PublicOrionFeeder[];
 }
 
 export interface PublicUptimeStatus {
@@ -266,6 +287,7 @@ export interface RealtimeResources {
   API: ResourceRecord[];
   ping: ResourceRecord[];
   heartbeat: ResourceRecord[];
+  orion_script: ResourceRecord[];
   auth_profiles: ResourceRecord[];
   users: UserResponse[];
   status_pages: StatusPage[];

@@ -17,6 +17,7 @@ from orion.api.interactive.incident_manager.incident_manager import IncidentMana
 from orion.api.interactive.insight_manager.insight_manager import DashboardManager
 from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
 from orion.api.interactive.orion_login_manager.orion_token_manager import AccessTokenCookieManager
+from orion.api.interactive.orion_script_monitor_manager.orion_script_monitor_manager import OrionScriptMonitorManager
 from orion.api.interactive.ping_monitor_manager.ping_monitor_manager import PingMonitorManager
 from orion.api.interactive.slack_integration_manager.slack_integration_manager import SlackIntegrationManager
 from orion.api.interactive.status_page_manager.status_page_manager import StatusPageManager
@@ -42,6 +43,7 @@ class Services(NamedTuple):
     api_monitor_manager: ApiMonitorManager
     ping_monitor_service: PingMonitorManager
     heartbeat_monitor_service: HeartbeatMonitorManager
+    orion_script_monitor_service: OrionScriptMonitorManager
     user_service: UserManager
     checker_factory: CheckerFactory
     monitor_service: MonitorManager
@@ -120,9 +122,10 @@ class ServiceManager:
         api_monitor_manager = ApiMonitorManager(engine, auth_profile_service)
         ping_monitor_service = PingMonitorManager(engine)
         heartbeat_monitor_service = HeartbeatMonitorManager(engine)
+        orion_script_monitor_service = OrionScriptMonitorManager(engine, auth_profile_service)
         incident_service = IncidentManager(engine)
         monitor_result_service = MonitorResultManager(engine)
-        monitor_service = MonitorManager(http_monitor_service=http_monitor_service, api_monitor_manager=api_monitor_manager, ping_monitor_service=ping_monitor_service, heartbeat_monitor_service=heartbeat_monitor_service, incident_service=incident_service, monitor_result_service=monitor_result_service, monitor_state_service=MonitorStateManager(engine), checker_factory=checker_factory)
+        monitor_service = MonitorManager(http_monitor_service=http_monitor_service, api_monitor_manager=api_monitor_manager, ping_monitor_service=ping_monitor_service, heartbeat_monitor_service=heartbeat_monitor_service, incident_service=incident_service, monitor_result_service=monitor_result_service, monitor_state_service=MonitorStateManager(engine), checker_factory=checker_factory, orion_script_monitor_service=orion_script_monitor_service)
         slack_integration_service = SlackIntegrationManager(engine, monitor_service)
         email_integration_service = EmailIntegrationManager(engine, monitor_service)
         monitor_service.slack_integration_service = slack_integration_service
@@ -135,6 +138,7 @@ class ServiceManager:
             api_monitor_manager=api_monitor_manager,
             ping_monitor_service=ping_monitor_service,
             heartbeat_monitor_service=heartbeat_monitor_service,
+            orion_script_monitor_service=orion_script_monitor_service,
             user_service=UserManager(engine, password_service),
             checker_factory=checker_factory,
             monitor_service=monitor_service,
@@ -156,7 +160,7 @@ class ServiceManager:
 
     @staticmethod
     def viewer_resources(overviews) -> dict:
-        resources = {"HTTP": [], "API": [], "ping": [], "heartbeat": [], "auth_profiles": [], "users": [], "status_pages": [], "slack_integrations": [], "email_integrations": []}
+        resources = {"HTTP": [], "API": [], "ping": [], "heartbeat": [], "orion_script": [], "auth_profiles": [], "users": [], "status_pages": [], "slack_integrations": [], "email_integrations": []}
         for overview in overviews:
             if overview.monitor_type not in resources:
                 continue
@@ -165,10 +169,10 @@ class ServiceManager:
 
     @staticmethod
     async def admin_resources(services: Services) -> dict:
-        http_monitors, api_monitors, ping_monitors, heartbeat_monitors, auth_profiles, users, status_pages, slack_integrations, email_integrations = await asyncio.gather(
-            services.http_monitor_service.list_monitors(), services.api_monitor_manager.list_monitors(), services.ping_monitor_service.list_monitors(), services.heartbeat_monitor_service.list_monitors(), services.auth_profile_service.list_profiles(), services.user_service.list_users(), services.status_page_service.list_pages(), services.slack_integration_service.list_integrations(), services.email_integration_service.list_integrations()
+        http_monitors, api_monitors, ping_monitors, heartbeat_monitors, orion_script_monitors, auth_profiles, users, status_pages, slack_integrations, email_integrations = await asyncio.gather(
+            services.http_monitor_service.list_monitors(), services.api_monitor_manager.list_monitors(), services.ping_monitor_service.list_monitors(), services.heartbeat_monitor_service.list_monitors(), services.orion_script_monitor_service.list_monitors(), services.auth_profile_service.list_profiles(), services.user_service.list_users(), services.status_page_service.list_pages(), services.slack_integration_service.list_integrations(), services.email_integration_service.list_integrations()
         )
-        return {"HTTP": http_monitors, "API": api_monitors, "ping": ping_monitors, "heartbeat": heartbeat_monitors, "auth_profiles": auth_profiles, "users": users, "status_pages": status_pages, "slack_integrations": slack_integrations, "email_integrations": email_integrations}
+        return {"HTTP": http_monitors, "API": api_monitors, "ping": ping_monitors, "heartbeat": heartbeat_monitors, "orion_script": orion_script_monitors, "auth_profiles": auth_profiles, "users": users, "status_pages": status_pages, "slack_integrations": slack_integrations, "email_integrations": email_integrations}
 
     async def build_realtime_snapshot(self, changed, include_admin):
         services = self.services

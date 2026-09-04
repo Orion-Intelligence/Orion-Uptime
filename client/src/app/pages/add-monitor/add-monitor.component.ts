@@ -6,7 +6,7 @@ import { finalize } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
 import { AuthProfileOption } from '../../shared/model/models';
 
-type ResourceKind = 'http' | 'api' | 'ping' | 'heartbeat' | 'auth-profile';
+type ResourceKind = 'http' | 'api' | 'ping' | 'heartbeat' | 'orion-script' | 'auth-profile';
 
 interface CreatedResource {
   heartbeat_token?: string;
@@ -115,6 +115,8 @@ export class AddMonitorComponent {
         return `Ping monitor “${name}” created.`;
       case 'heartbeat':
         return `Heartbeat monitor “${name}” created.`;
+      case 'orion-script':
+        return `Orion script monitor “${name}” created.`;
       case 'auth-profile':
         return data.login_status_code
           ? `Auth profile “${name}” created · Login HTTP ${data.login_status_code}.`
@@ -158,6 +160,17 @@ export class AddMonitorComponent {
           body: {
             name,
             host: this.required(value.host, 'Host'),
+            check_interval: value.check_interval,
+            timeout: value.timeout,
+            expected_response_time_ms: this.optionalNumber(value.expected_response_time_ms),
+          },
+        };
+      case 'orion-script':
+        return {
+          endpoint: '/orion-script-monitors/create',
+          body: {
+            name,
+            url: this.required(value.url, 'Orion URL'),
             check_interval: value.check_interval,
             timeout: value.timeout,
             expected_response_time_ms: this.optionalNumber(value.expected_response_time_ms),

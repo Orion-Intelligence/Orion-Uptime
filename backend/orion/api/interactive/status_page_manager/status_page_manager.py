@@ -16,8 +16,24 @@ from orion.constants.constant import Collections
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_insight_model import MonitorOverviewResponse
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
-from orion.services.mongo_manager.shared_model.db_status_page_model import CreateStatusPageRequest, DailyUptimeResponse, PublicMonitorDetailResponse, PublicMonitorEventResponse, PublicMonitorStatusResponse, PublicResponseTimeMetrics, PublicResponseTimePoint, PublicStatusPageResponse, PublicUptimeStatusResponse, StatusPageModel, StatusPageResponse, UpdateStatusPageRequest
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionScriptMonitorModel, feeder_result_id
+from orion.services.mongo_manager.shared_model.db_status_page_model import (
+    CreateStatusPageRequest,
+    DailyUptimeResponse,
+    PublicMonitorDetailResponse,
+    PublicMonitorEventResponse,
+    PublicMonitorStatusResponse,
+    PublicOrionFeederResponse,
+    PublicOrionScriptResponse,
+    PublicResponseTimeMetrics,
+    PublicResponseTimePoint,
+    PublicStatusPageResponse,
+    PublicUptimeStatusResponse,
+    StatusPageModel,
+    StatusPageResponse,
+    UpdateStatusPageRequest,
+)
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
@@ -144,7 +160,9 @@ class StatusPageManager(IntegrationCollectionMixin):
 
     async def build_public_response(self, page: StatusPageModel, overviews: list[MonitorOverviewResponse]) -> PublicStatusPageResponse:
         overview_map = {overview.id: overview for overview in overviews}
-        selected = [overview_map[monitor_id] for monitor_id in page.monitor_ids if monitor_id in overview_map]
+        published = [overview_map[monitor_id] for monitor_id in page.monitor_ids if monitor_id in overview_map]
+        orion_overviews = [overview for overview in published if overview.monitor_type == MonitorType.ORION_SCRIPT.value]
+        selected = [overview for overview in published if overview.monitor_type != MonitorType.ORION_SCRIPT.value]
         active = [overview for overview in selected if overview.is_active]
         monitors_up = sum(1 for overview in active if overview.status == MonitorStatus.UP)
         monitors_down = sum(1 for overview in active if overview.status == MonitorStatus.DOWN)
@@ -160,16 +178,47 @@ class StatusPageManager(IntegrationCollectionMixin):
             overall_status = "operational"
 
         now = datetime.now(UTC)
-        uptime_data = await self._uptime_data(page.monitor_ids, now)
+        uptime_data = await self._uptime_data([overview.id for overview in selected], now)
         public_monitors = self._build_public_monitors(selected, uptime_data, now)
+        orion_scripts = await self._build_orion_scripts(orion_overviews, now)
 
-        return PublicStatusPageResponse(name=page.name, slug=page.slug, description=page.description, overall_status=overall_status, monitor_count=len(selected), monitors_up=monitors_up, monitors_down=monitors_down, monitors_unknown=monitors_unknown, monitors_paused=monitors_paused, generated_at=now, uptime_status=self._uptime_status(uptime_data), monitors=public_monitors)
+        return PublicStatusPageResponse(name=page.name, slug=page.slug, description=page.description, overall_status=overall_status, monitor_count=len(selected), monitors_up=monitors_up, monitors_down=monitors_down, monitors_unknown=monitors_unknown, monitors_paused=monitors_paused, generated_at=now, uptime_status=self._uptime_status(uptime_data), monitors=public_monitors, orion_scripts=orion_scripts)
 
     def _build_public_monitors(self, overviews: list[MonitorOverviewResponse], uptime_data: dict, now: datetime) -> list[PublicMonitorStatusResponse]:
+        lookup = self._uptime_lookup(uptime_data, now)
+        return [PublicMonitorStatusResponse(**overview.model_dump(), **self._uptime_fields(overview.id, lookup)) for overview in overviews]
+
+    async def _build_orion_scripts(self, overviews: list[MonitorOverviewResponse], now: datetime) -> list[PublicOrionScriptResponse]:
+        monitors: list[tuple[MonitorOverviewResponse, OrionScriptMonitorModel]] = []
+        for overview in overviews:
+            monitor = await self.monitor_service.get_monitor(overview.id, MonitorType.ORION_SCRIPT)
+            if isinstance(monitor, OrionScriptMonitorModel):
+                monitors.append((overview, monitor))
+        feeder_ids = [feeder_result_id(overview.id, feeder.key) for overview, monitor in monitors for feeder in monitor.feeders]
+        lookup = self._uptime_lookup(await self._uptime_data(feeder_ids, now) if feeder_ids else {}, now)
+        return [
+            PublicOrionScriptResponse(
+                id=overview.id,
+                name=overview.name,
+                status=overview.status,
+                is_active=overview.is_active,
+                last_checked_at=overview.last_checked_at,
+                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at, **self._uptime_fields(feeder_result_id(overview.id, feeder.key), lookup)) for feeder in monitor.feeders],
+            )
+            for overview, monitor in monitors
+        ]
+
+    @classmethod
+    def _uptime_lookup(cls, uptime_data: dict, now: datetime) -> tuple[dict, dict, list[str]]:
         daily_results = {(result["_id"]["monitor_id"], result["_id"]["date"]): result for result in uptime_data.get("daily", [])}
-        monitor_totals = {result["_id"]: self._percentage(result) for result in uptime_data.get("monitors_90", [])}
+        monitor_totals = {result["_id"]: cls._percentage(result) for result in uptime_data.get("monitors_90", [])}
         dates = [(now.date() - timedelta(days=offset)).isoformat() for offset in range(89, -1, -1)]
-        return [PublicMonitorStatusResponse(**overview.model_dump(), uptime_90_days=monitor_totals.get(overview.id), daily_uptime=[DailyUptimeResponse(date=date, uptime_percentage=self._percentage(daily_results.get((overview.id, date)))) for date in dates]) for overview in overviews]
+        return daily_results, monitor_totals, dates
+
+    @classmethod
+    def _uptime_fields(cls, result_id: str, lookup: tuple[dict, dict, list[str]]) -> dict:
+        daily_results, monitor_totals, dates = lookup
+        return {"uptime_90_days": monitor_totals.get(result_id), "daily_uptime": [DailyUptimeResponse(date=date, uptime_percentage=cls._percentage(daily_results.get((result_id, date)))) for date in dates]}
 
     @classmethod
     def _uptime_status(cls, uptime_data: dict) -> PublicUptimeStatusResponse:

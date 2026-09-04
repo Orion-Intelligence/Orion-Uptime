@@ -4,6 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 
 from orion.services.mongo_manager.shared_model.db_insight_model import MonitorOverviewResponse
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.services.mongo_manager.shared_model.persisted_model import PersistedModel
 
 
@@ -52,6 +53,26 @@ class PublicMonitorStatusResponse(MonitorOverviewResponse):
     daily_uptime: list[DailyUptimeResponse]
 
 
+class PublicOrionFeederResponse(BaseModel):
+    key: str
+    name: str
+    rule_key: str | None
+    status: MonitorStatus
+    is_active: bool
+    last_checked_at: datetime | None
+    uptime_90_days: float | None
+    daily_uptime: list[DailyUptimeResponse]
+
+
+class PublicOrionScriptResponse(BaseModel):
+    id: str
+    name: str
+    status: MonitorStatus
+    is_active: bool
+    last_checked_at: datetime | None
+    feeders: list[PublicOrionFeederResponse]
+
+
 class PublicUptimeStatusResponse(BaseModel):
     last_24_hours: float | None
     last_7_days: float | None
@@ -73,6 +94,7 @@ class PublicStatusPageResponse(BaseModel):
     refresh_interval_seconds: int = 60
     uptime_status: PublicUptimeStatusResponse
     monitors: list[PublicMonitorStatusResponse]
+    orion_scripts: list[PublicOrionScriptResponse] = Field(default_factory=list)
 
 
 class PublicResponseTimePoint(BaseModel):

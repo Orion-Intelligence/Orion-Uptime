@@ -62,6 +62,9 @@ export class AppShellComponent {
     if (path.startsWith('/monitors/heartbeat/new')) {
       return 'New Heartbeat monitor';
     }
+    if (path.startsWith('/monitors/orion-script/new')) {
+      return 'New Orion script monitor';
+    }
     if (/^\/monitors\/[^/]+\/[^/]+$/.test(path)) {
       return 'Monitor details';
     }
@@ -76,6 +79,9 @@ export class AppShellComponent {
     }
     if (path.startsWith('/monitors/heartbeat')) {
       return 'Heartbeat monitors';
+    }
+    if (path.startsWith('/monitors/orion-script')) {
+      return 'Orion script monitors';
     }
     if (path === '/status-pages/new') {
       return 'New status page';
