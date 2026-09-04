@@ -93,7 +93,7 @@ def test_checker_retries_once_after_unauthorized_response():
         calls += 1
         if request.headers["cookie"] == "access_token=token-1":
             return httpx.Response(401, json={"detail": "expired"})
-        return httpx.Response(200, json={"scripts": [], "has_more": False})
+        return httpx.Response(200, json={"scripts": [{"id": "s1", "entry_kind": "script", "file_name": "_a.py"}], "has_more": False})
 
     token_manager = FakeTokenManager([_profile()])
     checker = OrionScriptChecker(token_manager=token_manager, client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
@@ -102,7 +102,17 @@ def test_checker_retries_once_after_unauthorized_response():
     assert calls == 2
     assert token_manager.refreshes == 1
     assert result.success is True
-    assert result.feeders == []
+    assert [feeder.key for feeder in result.feeders] == ["s1"]
+
+
+def test_checker_reports_down_when_no_feeder_scripts_are_visible():
+    checker = OrionScriptChecker(token_manager=FakeTokenManager([_profile()]), client=httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, json={"scripts": [], "total": 0, "has_more": False}))))
+    result = _run(checker, _monitor())
+
+    assert result.success is False
+    assert result.status == MonitorStatus.DOWN
+    assert result.status_code == 200
+    assert "no feeder scripts" in (result.error or "")
 
 
 def test_checker_reports_down_without_matching_auth_profile():

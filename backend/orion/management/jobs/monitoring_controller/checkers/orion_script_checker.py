@@ -109,6 +109,8 @@ class OrionScriptChecker:
             scripts.extend(item for item in payload["scripts"] if isinstance(item, dict))
             if not payload.get("has_more"):
                 break
+        if not scripts:
+            raise FeederFetchError("Orion Intelligence returned no feeder scripts for this auth profile. Only administrator accounts can see every feeder script; other accounts only see scripts they own.", status_code)
         return scripts, status_code
 
     async def _request(self, monitor: OrionScriptMonitorModel, token: str, page: int) -> httpx.Response:
