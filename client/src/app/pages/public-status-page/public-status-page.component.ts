@@ -72,6 +72,10 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
     this.selectedTabs.update((tabs) => ({ ...tabs, [scriptId]: tabKey }));
   }
 
+  feederName(feeder: PublicOrionFeeder): string {
+    return /^https?:\/\//i.test(feeder.name) ? feeder.name : feeder.name.replace(/^_+/, '').replace(/\.py$/i, '');
+  }
+
   private feederTabs(feeders: PublicOrionFeeder[]): FeederTab[] {
     const tabs = new Map<string, FeederTab>();
     for (const feeder of feeders) {
