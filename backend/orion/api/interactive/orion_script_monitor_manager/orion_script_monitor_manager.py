@@ -24,13 +24,14 @@ class OrionScriptMonitorManager(MonitorRepository):
         self.collection = engine.database[Collections.ORION_SCRIPT_MONITORS]
         self.auth_profile_service = auth_profile_service
 
-    async def create_monitor(self, name: str, url: str, check_interval: int, timeout: int, expected_response_time_ms: int | None, created_by: str | None = None) -> OrionScriptMonitorResponse:
+    async def create_monitor(self, name: str, url: str, check_interval: int, timeout: int, expected_response_time_ms: int | None, created_by: str | None = None, auth_profile_id: str | None = None) -> OrionScriptMonitorResponse:
         url = await self._validated_url(url)
+        await self._validate_profile(url, auth_profile_id)
         if await self.collection.find_one({"url": url}) is not None:
             raise ConflictError(Messages.MONITOR_ALREADY_EXISTS)
 
         now = datetime.now(UTC)
-        monitor = OrionScriptMonitorModel(name=name, url=url, monitor_type=MonitorType.ORION_SCRIPT, check_interval=check_interval, timeout=timeout, expected_response_time_ms=expected_response_time_ms, created_by=created_by, is_active=True, status=MonitorStatus.UNKNOWN, created_at=now, updated_at=now)
+        monitor = OrionScriptMonitorModel(name=name, url=url, monitor_type=MonitorType.ORION_SCRIPT, check_interval=check_interval, timeout=timeout, expected_response_time_ms=expected_response_time_ms, auth_profile_id=auth_profile_id, created_by=created_by, is_active=True, status=MonitorStatus.UNKNOWN, created_at=now, updated_at=now)
         document = monitor.model_dump()
         document.pop("id", None)
         result = await self.collection.insert_one(document)
@@ -66,7 +67,7 @@ class OrionScriptMonitorManager(MonitorRepository):
     async def list_monitors(self) -> list[OrionScriptMonitorResponse]:
         return [OrionScriptMonitorResponse(**monitor.model_dump()) for monitor in await self.list_monitor_models()]
 
-    async def update_monitor(self, monitor_id: str, name: str | None = None, url: str | None = None, check_interval: int | None = None, timeout: int | None = None, expected_response_time_ms: int | None = None, is_active: bool | None = None, expected_response_time_ms_set: bool = False) -> OrionScriptMonitorResponse:
+    async def update_monitor(self, monitor_id: str, name: str | None = None, url: str | None = None, check_interval: int | None = None, timeout: int | None = None, expected_response_time_ms: int | None = None, is_active: bool | None = None, expected_response_time_ms_set: bool = False, auth_profile_id: str | None = None, auth_profile_id_set: bool = False) -> OrionScriptMonitorResponse:
         monitor = await self.get_monitor_model(monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
@@ -77,6 +78,10 @@ class OrionScriptMonitorManager(MonitorRepository):
             if await self.collection.find_one({"url": url, "_id": {"$ne": ObjectId(monitor_id)}}) is not None:
                 raise ConflictError(Messages.MONITOR_ALREADY_EXISTS)
             monitor.url = url
+        if auth_profile_id_set:
+            monitor.auth_profile_id = auth_profile_id
+        if url is not None or auth_profile_id_set:
+            await self._validate_profile(monitor.url, monitor.auth_profile_id)
         if check_interval is not None:
             monitor.check_interval = check_interval
         if timeout is not None:
@@ -113,6 +118,17 @@ class OrionScriptMonitorManager(MonitorRepository):
     async def _validated_url(self, url: str) -> str:
         url = url.strip().rstrip("/")
         await validate_target_url(url)
-        if self.auth_profile_service is not None and OrionScriptChecker.find_profile(await self.auth_profile_service.list_profile_models(), url) is None:
-            raise ValidationError("No auth profile logs into this Orion Intelligence instance. Create an auth profile whose login URL is on the same origin first.")
         return url
+
+    async def _validate_profile(self, url: str, auth_profile_id: str | None) -> None:
+        if self.auth_profile_service is None:
+            return
+        if auth_profile_id is not None:
+            profile = await self.auth_profile_service.get_profile_model(auth_profile_id)
+            if profile is None:
+                raise NotFoundError("Auth profile not found.")
+            if OrionScriptChecker.find_profile([profile], url) is None:
+                raise ValidationError("The selected auth profile does not log into this Orion Intelligence instance. Pick a profile whose login URL is on the same origin.")
+            return
+        if OrionScriptChecker.find_profile(await self.auth_profile_service.list_profile_models(), url) is None:
+            raise ValidationError("No auth profile logs into this Orion Intelligence instance. Create an auth profile whose login URL is on the same origin first.")

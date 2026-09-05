@@ -17,7 +17,7 @@ from orion.shared_models.responses import SuccessResponse, success_response
 
 def get_monitor_config_service(engine: AIOEngine = Depends(get_engine)) -> MonitorConfigManager:
     return MonitorConfigManager(
-        http_monitors=HttpMonitorManager(engine),
+        http_monitors=HttpMonitorManager(engine, AuthProfileManager(engine)),
         api_monitors=ApiMonitorManager(engine, AuthProfileManager(engine)),
         ping_monitors=PingMonitorManager(engine),
         heartbeat_monitors=HeartbeatMonitorManager(engine),

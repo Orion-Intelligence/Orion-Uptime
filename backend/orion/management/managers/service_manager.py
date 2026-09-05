@@ -118,7 +118,7 @@ class ServiceManager:
         await auth_profile_service.create_indexes()
         auth_token_state.token_manager = AccessTokenCookieManager(auth_profile_service)
         checker_factory = CheckerFactory(token_manager=auth_token_state.token_manager)
-        http_monitor_service = HttpMonitorManager(engine)
+        http_monitor_service = HttpMonitorManager(engine, auth_profile_service)
         api_monitor_manager = ApiMonitorManager(engine, auth_profile_service)
         ping_monitor_service = PingMonitorManager(engine)
         heartbeat_monitor_service = HeartbeatMonitorManager(engine)

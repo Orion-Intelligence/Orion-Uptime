@@ -25,6 +25,7 @@ class OrionScriptMonitorModel(BaseMonitorModel):
     url: str
     monitor_type: MonitorType = MonitorType.ORION_SCRIPT
     expected_response_time_ms: int | None = None
+    auth_profile_id: str | None = None
     feeders: list[OrionFeederStatus] = Field(default_factory=list)
 
 
@@ -38,6 +39,7 @@ class CreateOrionScriptMonitorRequest(BaseModel):
     expected_response_time_ms: int | None = None
     check_interval: int = Field(default=300, ge=10, le=86400)
     timeout: int = Field(default=30, ge=1, le=300)
+    auth_profile_id: str | None = None
 
 
 class UpdateOrionScriptMonitorRequest(BaseModel):
@@ -47,6 +49,7 @@ class UpdateOrionScriptMonitorRequest(BaseModel):
     check_interval: int | None = Field(default=None, ge=10, le=86400)
     timeout: int | None = Field(default=None, ge=1, le=300)
     is_active: bool | None = None
+    auth_profile_id: str | None = None
 
 
 class OrionScriptMonitorResponse(BaseModel):
@@ -64,4 +67,5 @@ class OrionScriptMonitorResponse(BaseModel):
     last_status_code: int | None = None
     status: MonitorStatus
     expected_response_time_ms: int | None
+    auth_profile_id: str | None = None
     feeders: list[OrionFeederStatus] = Field(default_factory=list)

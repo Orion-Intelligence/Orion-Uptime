@@ -10,7 +10,7 @@ from orion.services.mongo_manager.shared_model.db_monitoring_controller_model im
 class CheckerFactory:
     def __init__(self, token_manager: AccessTokenCookieManager | None = None):
         self._api_checker = ApiChecker(token_manager=token_manager)
-        self._checkers = {MonitorType.HTTP: HTTPChecker(), MonitorType.API: self._api_checker, MonitorType.PING: PingChecker(), MonitorType.HEARTBEAT: HeartbeatChecker(), MonitorType.ORION_SCRIPT: OrionScriptChecker(token_manager=token_manager)}
+        self._checkers = {MonitorType.HTTP: HTTPChecker(token_manager=token_manager), MonitorType.API: self._api_checker, MonitorType.PING: PingChecker(), MonitorType.HEARTBEAT: HeartbeatChecker(), MonitorType.ORION_SCRIPT: OrionScriptChecker(token_manager=token_manager)}
 
     def get_checker(self, monitor_type: MonitorType):
         try:

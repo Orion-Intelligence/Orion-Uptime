@@ -8,6 +8,7 @@ from bson.errors import InvalidId
 from odmantic import AIOEngine
 
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
+from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
 from orion.constants.constant import Collections, Messages
 from orion.helper_manager.target_policy import validate_target_url
 from orion.management.jobs.monitoring_controller.monitor_repository import MonitorRepository
@@ -19,18 +20,20 @@ from orion.shared_models.exceptions import ConflictError, NotFoundError
 
 
 class HttpMonitorManager(MonitorRepository):
-    def __init__(self, engine: AIOEngine):
+    def __init__(self, engine: AIOEngine, auth_profile_service: AuthProfileManager | None = None):
         self.collection = engine.database[Collections.HTTP_MONITORS]
+        self.auth_profile_service = auth_profile_service
 
-    async def create_monitor(self, name: str, url: str, check_interval: int, timeout: int, expected_status_code: int, expected_response_time_ms: int | None) -> HttpMonitorResponse:
+    async def create_monitor(self, name: str, url: str, check_interval: int, timeout: int, expected_status_code: int, expected_response_time_ms: int | None, auth_profile_id: str | None = None) -> HttpMonitorResponse:
         await validate_target_url(url)
+        await self._validate_auth_profile(auth_profile_id)
         if await self.collection.find_one({"url": url}) is not None:
             raise ConflictError(Messages.MONITOR_ALREADY_EXISTS)
 
         final_name = await self._unique_name(name)
 
         now = datetime.now(UTC)
-        monitor = HTTPMonitorModel(name=final_name, url=url, check_interval=check_interval, timeout=timeout, expected_status_code=expected_status_code, status=MonitorStatus.UNKNOWN, is_active=True, created_at=now, updated_at=now, last_checked_at=None, expected_response_time_ms=expected_response_time_ms)
+        monitor = HTTPMonitorModel(name=final_name, url=url, check_interval=check_interval, timeout=timeout, expected_status_code=expected_status_code, status=MonitorStatus.UNKNOWN, is_active=True, created_at=now, updated_at=now, last_checked_at=None, expected_response_time_ms=expected_response_time_ms, auth_profile_id=auth_profile_id)
         document = monitor.model_dump()
         document.pop("id", None)
         result = await self.collection.insert_one(document)
@@ -68,7 +71,7 @@ class HttpMonitorManager(MonitorRepository):
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
         return HttpMonitorResponse(**monitor.model_dump())
 
-    async def update_monitor(self, http_monitor_id: str, name: str | None, url: str | None, check_interval: int | None, timeout: int | None, expected_status_code: int | None, expected_response_time_ms: int | None, is_active: bool | None = None, expected_response_time_ms_set: bool = False) -> HttpMonitorResponse:
+    async def update_monitor(self, http_monitor_id: str, name: str | None, url: str | None, check_interval: int | None, timeout: int | None, expected_status_code: int | None, expected_response_time_ms: int | None, is_active: bool | None = None, expected_response_time_ms_set: bool = False, auth_profile_id: str | None = None, auth_profile_id_set: bool = False) -> HttpMonitorResponse:
         monitor = await self.get_monitor_model(http_monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
@@ -91,6 +94,9 @@ class HttpMonitorManager(MonitorRepository):
             update_data["expected_response_time_ms"] = expected_response_time_ms
         if is_active is not None and is_active != monitor.is_active:
             update_data["is_active"] = is_active
+        if auth_profile_id_set and auth_profile_id != monitor.auth_profile_id:
+            await self._validate_auth_profile(auth_profile_id)
+            update_data["auth_profile_id"] = auth_profile_id
 
         if not update_data:
             return HttpMonitorResponse(**monitor.model_dump())
@@ -106,6 +112,14 @@ class HttpMonitorManager(MonitorRepository):
                 await scheduler_state.scheduler.start_worker(updated_monitor)
         realtime_broker.notify("monitor", updated_monitor.id)
         return HttpMonitorResponse(**updated_monitor.model_dump())
+
+    async def _validate_auth_profile(self, auth_profile_id: str | None) -> None:
+        if auth_profile_id is None:
+            return
+        if self.auth_profile_service is None:
+            raise NotFoundError("Auth profile validation is unavailable.")
+        if await self.auth_profile_service.get_profile_model(auth_profile_id) is None:
+            raise NotFoundError("Auth profile not found.")
 
     async def delete_monitor(self, http_monitor_id: str) -> None:
         monitor = await self.get_monitor_model(http_monitor_id)

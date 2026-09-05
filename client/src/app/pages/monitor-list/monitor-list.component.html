@@ -139,21 +139,21 @@
             <span class="tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">Created {{ record.created_at | date: 'MMM d, y' }}</span>
           }
           @if (canManage()) {
-            <div animate.enter="fade-in" class="tw:flex tw:items-center tw:gap-2">
+            <div animate.enter="fade-in" class="tw:inline-flex tw:items-stretch tw:overflow-hidden tw:rounded-[10px] tw:border tw:border-[#c4d5e7] tw:bg-white tw:transition-colors tw:*:relative tw:hover:border-[#a8c7e4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:hover:border-[#57a5eb]/45 tw:[&>*+*]:before:pointer-events-none tw:[&>*+*]:before:absolute tw:[&>*+*]:before:inset-y-2 tw:[&>*+*]:before:left-0 tw:[&>*+*]:before:w-px tw:[&>*+*]:before:bg-[#d7e2ef] tw:[&>*+*]:before:content-[''] tw:dark:[&>*+*]:before:bg-white/12">
               @if (supportsConfigFiles()) {
-                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
+                <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
                   {{ exportingId() === record.id ? 'Exporting…' : 'Export' }}
                 </button>
               }
               @if (editBase()) {
-                <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" [routerLink]="[editBase(), record.id, 'edit']" [attr.aria-label]="'Edit ' + record.name">Edit</a>
+                <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" [routerLink]="[editBase(), record.id, 'edit']" [attr.aria-label]="'Edit ' + record.name">Edit</a>
               }
               @if (stats) {
-                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(record)" [disabled]="updatingId() === record.id" [attr.aria-label]="(stats.is_active ? 'Pause ' : 'Start ') + record.name">
+                <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(record)" [disabled]="updatingId() === record.id" [attr.aria-label]="(stats.is_active ? 'Pause ' : 'Start ') + record.name">
                   {{ updatingId() === record.id ? 'Updating…' : stats.is_active ? 'Pause' : 'Start' }}
                 </button>
               }
-              <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deleteResource(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
+              <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b] tw:dark:hover:bg-[#f97066]/12" type="button" (click)="deleteResource(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
                 {{ deletingId() === record.id ? 'Deleting…' : 'Delete' }}
               </button>
             </div>

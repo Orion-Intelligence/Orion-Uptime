@@ -34,6 +34,15 @@
           <label for="status">Expected status</label
           ><input id="status" type="number" min="100" max="599" formControlName="expected_status_code" />
         </div>
+        <div class="field">
+          <label for="auth-profile">Auth profile (optional)</label
+          ><select id="auth-profile" formControlName="auth_profile_id">
+            <option value="">None</option>
+            @for (profile of matchingAuthProfiles(); track profile.id) {
+              <option [value]="profile.id">{{ profileLabel(profile) }}</option>
+            }
+          </select>
+        </div>
       }
       @case ('ping') {
         <div class="field tw:col-span-full tw:max-[700px]:col-auto">
@@ -46,6 +55,15 @@
         <div class="field tw:col-span-full tw:max-[700px]:col-auto">
           <label for="url">Orion URL</label
           ><input id="url" type="url" formControlName="url" placeholder="https://orion.example.com" />
+        </div>
+        <div class="field tw:col-span-full tw:max-[700px]:col-auto">
+          <label for="auth-profile">Auth profile for this domain</label
+          ><select id="auth-profile" formControlName="auth_profile_id">
+            <option value="">{{ matchingAuthProfiles().length ? 'Automatic (first profile on this domain)' : (targetUrl() ? 'No auth profile logs into this domain yet' : 'Enter the Orion URL to list matching profiles') }}</option>
+            @for (profile of matchingAuthProfiles(); track profile.id) {
+              <option [value]="profile.id">{{ profileLabel(profile) }}</option>
+            }
+          </select>
         </div>
         <ng-container *ngTemplateOutlet="timingFields" />
       }
@@ -118,8 +136,8 @@
           <label for="auth-profile">Auth profile (optional)</label
           ><select id="auth-profile" formControlName="auth_profile_id">
             <option value="">None</option>
-            @for (profile of authProfiles(); track profile.id) {
-              <option [value]="profile.id">{{ profile.name }}</option>
+            @for (profile of matchingAuthProfiles(); track profile.id) {
+              <option [value]="profile.id">{{ profileLabel(profile) }}</option>
             }
           </select>
         </div>

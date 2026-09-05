@@ -22,6 +22,8 @@ class HttpMonitorConfig(MonitorConfigBase):
     timeout: int = Field(gt=0)
     expected_status_code: int = Field(ge=100, le=599)
     expected_response_time_ms: int | None = Field(default=None, ge=0)
+    auth_profile_id: str | None = None
+    auth_profile_name: str | None = Field(default=None, min_length=1, max_length=100)
 
 
 class ApiMonitorConfig(MonitorConfigBase):

@@ -12,6 +12,7 @@ class HTTPMonitorModel(BaseMonitorModel):
     url: str
     expected_status_code: int
     expected_response_time_ms: int | None = None
+    auth_profile_id: str | None = None
 
 
 class CreateHttpMonitorRequest(BaseModel):
@@ -21,6 +22,7 @@ class CreateHttpMonitorRequest(BaseModel):
     check_interval: int = Field(ge=10, le=86400)
     timeout: int = Field(gt=0)
     expected_status_code: int = Field(ge=100, le=599)
+    auth_profile_id: str | None = None
 
 
 class UpdateHttpMonitorRequest(BaseModel):
@@ -31,6 +33,7 @@ class UpdateHttpMonitorRequest(BaseModel):
     timeout: int | None = Field(default=None, gt=0)
     expected_status_code: int | None = Field(default=None, ge=100, le=599)
     is_active: bool | None = None
+    auth_profile_id: str | None = None
 
 
 class HttpMonitorResponse(BaseModel):
@@ -49,3 +52,4 @@ class HttpMonitorResponse(BaseModel):
     last_response_time_ms: int | None
     status: MonitorStatus
     expected_response_time_ms: int | None
+    auth_profile_id: str | None = None

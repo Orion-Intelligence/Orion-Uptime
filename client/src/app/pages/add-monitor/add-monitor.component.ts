@@ -1,6 +1,7 @@
 import { NgTemplateOutlet } from '@angular/common';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
@@ -50,6 +51,13 @@ export class AddMonitorComponent {
   readonly loading = signal(false);
   readonly error = signal('');
   readonly authProfiles = signal<AuthProfileOption[]>([]);
+  readonly targetUrl = signal('');
+  readonly usesAuthProfiles = this.kind === 'http' || this.kind === 'api' || this.kind === 'orion-script';
+  readonly matchingAuthProfiles = computed(() => {
+    const origin = this.origin(this.targetUrl());
+    const profiles = this.authProfiles();
+    return this.kind === 'orion-script' ? profiles.filter((profile) => this.origin(profile.login_url) === origin) : profiles;
+  });
   readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
     url: [''],
@@ -72,11 +80,18 @@ export class AddMonitorComponent {
   });
 
   constructor() {
-    if (this.kind === 'api') {
+    if (this.usesAuthProfiles) {
       this.api.get<AuthProfileOption[]>('/auth-profiles/list_all').subscribe({
         next: (response) => {
           this.authProfiles.set(response.data); 
         },
+      });
+      this.form.controls.url.valueChanges.pipe(takeUntilDestroyed()).subscribe((url) => {
+        this.targetUrl.set(url);
+        const selected = this.form.controls.auth_profile_id.value;
+        if (selected && !this.matchingAuthProfiles().some((profile) => profile.id === selected)) {
+          this.form.controls.auth_profile_id.setValue('');
+        }
       });
     }
     if (this.editing) {
@@ -118,6 +133,19 @@ export class AddMonitorComponent {
       login_url: resource.login_url ?? '',
       credentials: this.jsonText(resource.credentials, defaults.credentials),
     });
+  }
+
+  profileLabel(profile: AuthProfileOption): string {
+    return `${profile.name} · ${this.origin(profile.login_url) || profile.login_url}`;
+  }
+
+  private origin(url: string): string {
+    try {
+      return new URL(url.trim()).origin.toLowerCase();
+    }
+    catch {
+      return '';
+    }
   }
 
   private jsonText(value: Record<string, unknown> | null | undefined, fallback: string): string {
@@ -207,6 +235,7 @@ export class AddMonitorComponent {
             timeout: value.timeout,
             expected_status_code: value.expected_status_code,
             expected_response_time_ms: this.optionalNumber(value.expected_response_time_ms),
+            auth_profile_id: value.auth_profile_id || null,
           },
         };
       case 'ping':
@@ -229,6 +258,7 @@ export class AddMonitorComponent {
             check_interval: value.check_interval,
             timeout: value.timeout,
             expected_response_time_ms: this.optionalNumber(value.expected_response_time_ms),
+            auth_profile_id: value.auth_profile_id || null,
           },
         };
       case 'heartbeat':

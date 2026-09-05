@@ -17,15 +17,20 @@ NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 
 class FakeTokenManager:
     def __init__(self, profiles: list[AuthProfileModel], token: str = "token-1"):
-        self.auth_profile_service = SimpleNamespace(list_profile_models=self._list_profiles)
+        self.auth_profile_service = SimpleNamespace(list_profile_models=self._list_profiles, get_profile_model=self._get_profile)
         self._profiles = profiles
         self._token = token
         self.refreshes = 0
+        self.token_profile_ids: list[str] = []
 
     async def _list_profiles(self):
         return self._profiles
 
+    async def _get_profile(self, profile_id: str):
+        return next((profile for profile in self._profiles if profile.id == profile_id), None)
+
     async def get_token(self, profile_id: str, *, force_refresh: bool = False) -> str:
+        self.token_profile_ids.append(profile_id)
         if force_refresh:
             self.refreshes += 1
             self._token = "token-2"
@@ -139,6 +144,26 @@ def test_checker_reports_down_without_matching_auth_profile():
     assert result.status == MonitorStatus.DOWN
     assert result.error is not None
     assert "https://orion.example.com" in result.error
+
+
+def test_checker_uses_the_selected_auth_profile_over_domain_match():
+    first = _profile()
+    second = _profile().model_copy(update={"id": "64f000000000000000000003", "name": "Orion admin"})
+    token_manager = FakeTokenManager([first, second])
+    checker = OrionScriptChecker(token_manager=token_manager, client=httpx.AsyncClient(transport=httpx.MockTransport(_route(httpx.Response(200, json=_scripts_payload())))))
+    result = _run(checker, _monitor().model_copy(update={"auth_profile_id": second.id}))
+
+    assert result.success is True
+    assert token_manager.token_profile_ids == [second.id]
+
+
+def test_checker_reports_down_when_selected_auth_profile_is_missing():
+    checker = OrionScriptChecker(token_manager=FakeTokenManager([_profile()]), client=httpx.AsyncClient(transport=httpx.MockTransport(_route(httpx.Response(200, json=_scripts_payload())))))
+    result = _run(checker, _monitor().model_copy(update={"auth_profile_id": "64f000000000000000000009"}))
+
+    assert result.success is False
+    assert result.status == MonitorStatus.DOWN
+    assert "no longer exists" in (result.error or "")
 
 
 def test_checker_reports_down_on_error_status_and_invalid_payload():

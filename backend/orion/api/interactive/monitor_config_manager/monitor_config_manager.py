@@ -28,6 +28,7 @@ class MonitorConfigManager:
             monitor = await self.http_monitors.get_monitor_model(monitor_id)
             if monitor is None:
                 raise NotFoundError("HTTP monitor not found.")
+            auth_profile_id, auth_profile_name = await self._exported_auth_profile(monitor.auth_profile_id)
             return HttpMonitorConfig(
                 monitor_id=monitor.persisted_id,
                 monitor_type=MonitorType.HTTP,
@@ -37,6 +38,8 @@ class MonitorConfigManager:
                 timeout=monitor.timeout,
                 expected_status_code=monitor.expected_status_code,
                 expected_response_time_ms=monitor.expected_response_time_ms,
+                auth_profile_id=auth_profile_id,
+                auth_profile_name=auth_profile_name,
                 is_active=monitor.is_active,
             )
 
@@ -44,13 +47,7 @@ class MonitorConfigManager:
             monitor = await self.api_monitors.get_monitor_model(monitor_id)
             if monitor is None:
                 raise NotFoundError("API monitor not found.")
-            auth_profile_id = monitor.auth_profile_id
-            auth_profile_name = None
-            if auth_profile_id and self.api_monitors.auth_profile_service is not None:
-                auth_profile = await self.api_monitors.auth_profile_service.get_profile_model(auth_profile_id)
-                if auth_profile is not None:
-                    auth_profile_id = None
-                    auth_profile_name = auth_profile.name
+            auth_profile_id, auth_profile_name = await self._exported_auth_profile(monitor.auth_profile_id)
             return ApiMonitorConfig(
                 monitor_id=monitor.persisted_id,
                 monitor_type=MonitorType.API,
@@ -99,7 +96,7 @@ class MonitorConfigManager:
         )
 
     async def import_monitor(self, config: MonitorConfigDocument) -> MonitorImportResult:
-        if isinstance(config, ApiMonitorConfig):
+        if isinstance(config, ApiMonitorConfig | HttpMonitorConfig):
             config = await self._resolve_auth_profile(config)
         existing = await self._existing_monitor(config)
         if existing is not None:
@@ -132,6 +129,7 @@ class MonitorConfigManager:
                 timeout=config.timeout,
                 expected_status_code=config.expected_status_code,
                 expected_response_time_ms=config.expected_response_time_ms,
+                auth_profile_id=config.auth_profile_id,
             )
             if not config.is_active:
                 await self._update_monitor(created.id, config, {"is_active": False})
@@ -191,6 +189,8 @@ class MonitorConfigManager:
                 expected_status_code=changes.get("expected_status_code"),
                 expected_response_time_ms=changes.get("expected_response_time_ms"),
                 is_active=changes.get("is_active"),
+                auth_profile_id=changes.get("auth_profile_id"),
+                auth_profile_id_set="auth_profile_id" in changes,
             )
             if clear_expected_response_time and len(changes) == 1:
                 realtime_broker.notify("monitor", monitor_id)
@@ -232,7 +232,15 @@ class MonitorConfigManager:
     def _configuration_fields(config: MonitorConfigBase) -> dict:
         return config.model_dump(exclude={"format", "version", "monitor_id", "monitor_type", "is_active", "auth_profile_name"})
 
-    async def _resolve_auth_profile(self, config: ApiMonitorConfig) -> ApiMonitorConfig:
+    async def _exported_auth_profile(self, auth_profile_id: str | None) -> tuple[str | None, str | None]:
+        if not auth_profile_id or self.api_monitors.auth_profile_service is None:
+            return auth_profile_id, None
+        auth_profile = await self.api_monitors.auth_profile_service.get_profile_model(auth_profile_id)
+        if auth_profile is None:
+            return auth_profile_id, None
+        return None, auth_profile.name
+
+    async def _resolve_auth_profile(self, config: ApiMonitorConfig | HttpMonitorConfig) -> ApiMonitorConfig | HttpMonitorConfig:
         requested_id = config.auth_profile_id
         requested_name = config.auth_profile_name
         if requested_name is None and requested_id is not None and not ObjectId.is_valid(requested_id):

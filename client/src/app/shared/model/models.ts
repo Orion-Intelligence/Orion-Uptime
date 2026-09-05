@@ -45,6 +45,7 @@ export interface DashboardSummary {
 export interface AuthProfileOption {
   id: string;
   name: string;
+  login_url: string;
 }
 
 export interface EditableResource {

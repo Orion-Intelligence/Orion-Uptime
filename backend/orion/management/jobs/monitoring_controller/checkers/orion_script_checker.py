@@ -38,7 +38,7 @@ class OrionScriptChecker:
         timed_out = False
         feeders: list[OrionFeederStatus] = []
         try:
-            profile = await self._resolve_profile(monitor.url)
+            profile = await self._resolve_profile(monitor)
             start = time.perf_counter()
             scripts, rule_paths, status_code = await self._fetch_scripts(monitor, profile.persisted_id)
             response_time_ms = int((time.perf_counter() - start) * 1000)
@@ -78,12 +78,17 @@ class OrionScriptChecker:
         origin = cls._origin(url)
         return next((profile for profile in profiles if cls._origin(profile.login_url) == origin), None)
 
-    async def _resolve_profile(self, url: str) -> AuthProfileModel:
+    async def _resolve_profile(self, monitor: OrionScriptMonitorModel) -> AuthProfileModel:
         if self.token_manager is None:
             raise AuthTokenError("The access-token cookie manager is unavailable.")
-        profile = self.find_profile(await self.token_manager.auth_profile_service.list_profile_models(), url)
+        if monitor.auth_profile_id:
+            profile = await self.token_manager.auth_profile_service.get_profile_model(monitor.auth_profile_id)
+            if profile is None:
+                raise AuthTokenError("The auth profile selected for this monitor no longer exists. Edit the monitor and pick another profile.")
+            return profile
+        profile = self.find_profile(await self.token_manager.auth_profile_service.list_profile_models(), monitor.url)
         if profile is None:
-            raise AuthTokenError(f"No auth profile logs into {self._origin(url)}. Create an auth profile for that Orion Intelligence instance first.")
+            raise AuthTokenError(f"No auth profile logs into {self._origin(monitor.url)}. Create an auth profile for that Orion Intelligence instance first.")
         return profile
 
     async def _fetch_scripts(self, monitor: OrionScriptMonitorModel, profile_id: str) -> tuple[list[dict], dict[str, str], int | None]:
