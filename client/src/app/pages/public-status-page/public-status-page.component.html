@@ -112,7 +112,10 @@
           @let tab = activeTab(section);
           <section animate.enter="list-item-enter" class="tw:mb-5 tw:rounded-[6px] tw:bg-white tw:px-5 tw:py-[17.5px] tw:text-[#131a26] tw:shadow-[0_20px_60px_rgb(0_0_0_/_10%)] tw:last:mb-0 tw:max-[640px]:p-7.5" [attr.aria-labelledby]="'orion-script-' + section.script.id">
             <div class="tw:mb-[15px] tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-b tw:border-[#e6e7e8] tw:pb-3">
-              <h3 class="tw:m-0 tw:text-[16px] tw:leading-[1.4] tw:font-semibold" [id]="'orion-script-' + section.script.id">{{ section.script.name }}</h3>
+              <h3 class="tw:m-0 tw:flex tw:flex-wrap tw:items-center tw:gap-2 tw:text-[16px] tw:leading-[1.4] tw:font-semibold" [id]="'orion-script-' + section.script.id">
+                Orion Scripts
+                <span class="tw:rounded-full tw:bg-[#f1f5f9] tw:px-2 tw:py-0.5 tw:text-[11px] tw:font-medium tw:text-[#687790]">Not included in scoring</span>
+              </h3>
               <span class="monitor-status tw:inline-flex tw:items-center tw:gap-2.5 tw:text-[16px] tw:leading-[1.33] tw:font-normal tw:capitalize tw:text-[#687790] tw:[&.down]:text-[#df484a] tw:[&.paused]:text-[#f29030] tw:[&.up]:text-[#3bd671]" [class]="'monitor-status ' + monitorStatus(section.script)" [title]="monitorStatus(section.script)">
                 <i class="tw:relative tw:size-3 tw:flex-none tw:rounded-full tw:bg-[#687790] tw:after:absolute tw:after:inset-0 tw:after:rounded-full tw:after:bg-current tw:after:content-[''] tw:in-[.monitor-status.down]:bg-[#df484a] tw:in-[.monitor-status.paused]:bg-[#f29030] tw:in-[.monitor-status.up]:bg-[#3bd671]"></i>
                 <span class="tw:max-[640px]:hidden">{{ monitorStatus(section.script) }}</span>
