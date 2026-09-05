@@ -57,6 +57,7 @@ class Collections:
 
 class OrionIntelligence:
     FEEDER_SCRIPTS_PATH = "/api/profile/feeder/scripts"
+    FEEDER_ENTRY_TYPES = ("scripts", "values")
     FEEDER_PAGE_LIMIT = 1000
     FEEDER_MAX_PAGES = 10
     FEEDER_RESULT_SEPARATOR = ":"

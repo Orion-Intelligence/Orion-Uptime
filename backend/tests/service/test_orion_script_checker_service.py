@@ -70,6 +70,7 @@ def test_checker_builds_feeder_statuses_from_scripts_and_values():
     assert result.status == MonitorStatus.UP
     assert result.status_code == 200
     assert requests[0].url.path == "/api/profile/feeder/scripts"
+    assert [request.url.params["entry_type"] for request in requests] == ["scripts", "values"]
     assert requests[0].headers["cookie"] == "access_token=token-1"
     by_key = {feeder.key: feeder for feeder in result.feeders}
     assert by_key["s1"].status == MonitorStatus.UP
@@ -99,7 +100,7 @@ def test_checker_retries_once_after_unauthorized_response():
     checker = OrionScriptChecker(token_manager=token_manager, client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
     result = _run(checker, _monitor())
 
-    assert calls == 2
+    assert calls == 3
     assert token_manager.refreshes == 1
     assert result.success is True
     assert [feeder.key for feeder in result.feeders] == ["s1"]

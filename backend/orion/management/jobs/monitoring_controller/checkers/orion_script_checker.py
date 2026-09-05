@@ -94,30 +94,31 @@ class OrionScriptChecker:
         token = await self.token_manager.get_token(profile_id)
         scripts: list[dict] = []
         status_code = None
-        for page in range(1, OrionIntelligence.FEEDER_MAX_PAGES + 1):
-            response = await self._request(monitor, token, page)
-            if response.status_code == 401:
-                token = await self.token_manager.get_token(profile_id, force_refresh=True)
-                response = await self._request(monitor, token, page)
-            status_code = response.status_code
-            if response.status_code != 200:
-                raise FeederFetchError(f"Orion Intelligence returned HTTP {response.status_code} for the feeder script list.", response.status_code)
-            try:
-                payload = response.json()
-            except ValueError:
-                raise FeederFetchError("Orion Intelligence returned a feeder script list that was not valid JSON.", response.status_code) from None
-            if not isinstance(payload, dict) or not isinstance(payload.get("scripts"), list):
-                raise FeederFetchError("Orion Intelligence returned a feeder script list without a scripts array.", response.status_code)
-            scripts.extend(item for item in payload["scripts"] if isinstance(item, dict))
-            if not payload.get("has_more"):
-                break
+        for entry_type in OrionIntelligence.FEEDER_ENTRY_TYPES:
+            for page in range(1, OrionIntelligence.FEEDER_MAX_PAGES + 1):
+                response = await self._request(monitor, token, entry_type, page)
+                if response.status_code == 401:
+                    token = await self.token_manager.get_token(profile_id, force_refresh=True)
+                    response = await self._request(monitor, token, entry_type, page)
+                status_code = response.status_code
+                if response.status_code != 200:
+                    raise FeederFetchError(f"Orion Intelligence returned HTTP {response.status_code} for the feeder script list.", response.status_code)
+                try:
+                    payload = response.json()
+                except ValueError:
+                    raise FeederFetchError("Orion Intelligence returned a feeder script list that was not valid JSON.", response.status_code) from None
+                if not isinstance(payload, dict) or not isinstance(payload.get("scripts"), list):
+                    raise FeederFetchError("Orion Intelligence returned a feeder script list without a scripts array.", response.status_code)
+                scripts.extend(item for item in payload["scripts"] if isinstance(item, dict))
+                if not payload.get("has_more"):
+                    break
         if not scripts:
             raise FeederFetchError("Orion Intelligence returned no feeder scripts for this auth profile. Only administrator accounts can see every feeder script; other accounts only see scripts they own.", status_code)
         return scripts, status_code
 
-    async def _request(self, monitor: OrionScriptMonitorModel, token: str, page: int) -> httpx.Response:
+    async def _request(self, monitor: OrionScriptMonitorModel, token: str, entry_type: str, page: int) -> httpx.Response:
         url = f"{monitor.url.rstrip('/')}{OrionIntelligence.FEEDER_SCRIPTS_PATH}"
-        return await self.client.get(url, params={"page": page, "limit": OrionIntelligence.FEEDER_PAGE_LIMIT}, headers={"Cookie": f"{Cookies.ACCESS_TOKEN}={token}"}, timeout=monitor.timeout)
+        return await self.client.get(url, params={"page": page, "limit": OrionIntelligence.FEEDER_PAGE_LIMIT, "entry_type": entry_type}, headers={"Cookie": f"{Cookies.ACCESS_TOKEN}={token}"}, timeout=monitor.timeout)
 
     @classmethod
     def build_feeders(cls, scripts: list[dict]) -> list[OrionFeederStatus]:
