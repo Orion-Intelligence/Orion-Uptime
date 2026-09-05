@@ -130,7 +130,7 @@
               </div>
             }
 
-            <div class="tw:max-h-[520px] tw:overflow-y-auto">
+            <div class="tw:max-h-[520px] tw:overflow-y-auto tw:[scrollbar-width:none] tw:[&::-webkit-scrollbar]:hidden">
             @for (feeder of tab?.feeders ?? []; track feeder.key) {
               <article animate.enter="list-item-enter" class="tw:mb-[15px] tw:border-b tw:border-[#e6e7e8] tw:pb-[15px] tw:last:mb-0 tw:last:border-b-0 tw:last:pb-0">
                 <div class="tw:grid tw:grid-cols-[280px_530px_70px] tw:items-center tw:justify-between tw:max-[640px]:grid-cols-[minmax(0,1fr)_auto] tw:max-[640px]:gap-x-[15px]">
