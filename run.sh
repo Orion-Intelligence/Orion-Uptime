@@ -81,6 +81,10 @@ ensure_local_ssl_cert() {
     echo "Generated a self-signed development certificate in $LOCAL_SSL_DIR"
 }
 
+ensure_shared_bridge() {
+    docker network create --driver bridge shared_bridge >/dev/null 2>&1 || true
+}
+
 start_production_stack() {
     ensure_env_file
     ensure_production_settings
@@ -366,6 +370,7 @@ case "$COMMAND" in
                 ;;
         esac
         ensure_local_ssl_cert
+        ensure_shared_bridge
         compose build --pull
         compose up -d
         wait_for_application_services
@@ -377,6 +382,7 @@ case "$COMMAND" in
         ensure_env_file
         ensure_client_build
         ensure_local_ssl_cert
+        ensure_shared_bridge
         compose up -d
         wait_for_application_services
         restart_ng_serve
@@ -385,6 +391,7 @@ case "$COMMAND" in
         ensure_env_file
         ensure_client_build
         ensure_local_ssl_cert
+        ensure_shared_bridge
         compose up -d
         wait_for_application_services
         ;;

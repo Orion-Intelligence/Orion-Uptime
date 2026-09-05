@@ -42,9 +42,9 @@ class OrionScriptChecker:
         try:
             profile = await self._resolve_profile(monitor.url)
             start = time.perf_counter()
-            scripts, status_code = await self._fetch_scripts(monitor, profile.persisted_id)
+            scripts, rule_paths, status_code = await self._fetch_scripts(monitor, profile.persisted_id)
             response_time_ms = int((time.perf_counter() - start) * 1000)
-            feeders = self.build_feeders(scripts)
+            feeders = self.build_feeders(scripts, rule_paths)
             if not feeders:
                 raise FeederFetchError(f"Orion Intelligence returned {len(scripts)} feeder scripts, but none could be read. Fields received: {', '.join(sorted(scripts[0]))}.", status_code)
             is_slow = monitor.expected_response_time_ms is not None and response_time_ms > monitor.expected_response_time_ms
@@ -88,40 +88,49 @@ class OrionScriptChecker:
             raise AuthTokenError(f"No auth profile logs into {self._origin(url)}. Create an auth profile for that Orion Intelligence instance first.")
         return profile
 
-    async def _fetch_scripts(self, monitor: OrionScriptMonitorModel, profile_id: str) -> tuple[list[dict], int | None]:
+    async def _fetch_scripts(self, monitor: OrionScriptMonitorModel, profile_id: str) -> tuple[list[dict], dict[str, str], int | None]:
         if self.token_manager is None:
             raise AuthTokenError("The access-token cookie manager is unavailable.")
         token = await self.token_manager.get_token(profile_id)
+        catalog, token, status_code = await self._get_json(monitor, profile_id, token, OrionIntelligence.FEEDER_CATALOG_PATH, {})
+        if not isinstance(catalog.get("rules"), list):
+            raise FeederFetchError("Orion Intelligence returned a feeder catalog without a rules array.", status_code)
+        rule_paths = {str(rule.get("key")): str(rule.get("path") or "") for rule in catalog["rules"] if isinstance(rule, dict) and rule.get("key")}
         scripts: list[dict] = []
-        status_code = None
         for entry_type in OrionIntelligence.FEEDER_ENTRY_TYPES:
             for page in range(1, OrionIntelligence.FEEDER_MAX_PAGES + 1):
-                response = await self._request(monitor, token, entry_type, page)
-                if response.status_code == 401:
-                    token = await self.token_manager.get_token(profile_id, force_refresh=True)
-                    response = await self._request(monitor, token, entry_type, page)
-                status_code = response.status_code
-                if response.status_code != 200:
-                    raise FeederFetchError(f"Orion Intelligence returned HTTP {response.status_code} for the feeder script list.", response.status_code)
-                try:
-                    payload = response.json()
-                except ValueError:
-                    raise FeederFetchError("Orion Intelligence returned a feeder script list that was not valid JSON.", response.status_code) from None
-                if not isinstance(payload, dict) or not isinstance(payload.get("scripts"), list):
-                    raise FeederFetchError("Orion Intelligence returned a feeder script list without a scripts array.", response.status_code)
+                payload, token, status_code = await self._get_json(monitor, profile_id, token, OrionIntelligence.FEEDER_SCRIPTS_PATH, {"page": page, "limit": OrionIntelligence.FEEDER_PAGE_LIMIT, "entry_type": entry_type})
+                if not isinstance(payload.get("scripts"), list):
+                    raise FeederFetchError("Orion Intelligence returned a feeder script list without a scripts array.", status_code)
                 scripts.extend(item for item in payload["scripts"] if isinstance(item, dict))
                 if not payload.get("has_more"):
                     break
         if not scripts:
             raise FeederFetchError("Orion Intelligence returned no feeder scripts for this auth profile. Only administrator accounts can see every feeder script; other accounts only see scripts they own.", status_code)
-        return scripts, status_code
+        return scripts, rule_paths, status_code
 
-    async def _request(self, monitor: OrionScriptMonitorModel, token: str, entry_type: str, page: int) -> httpx.Response:
-        url = f"{monitor.url.rstrip('/')}{OrionIntelligence.FEEDER_SCRIPTS_PATH}"
-        return await self.client.get(url, params={"page": page, "limit": OrionIntelligence.FEEDER_PAGE_LIMIT, "entry_type": entry_type}, headers={"Cookie": f"{Cookies.ACCESS_TOKEN}={token}"}, timeout=monitor.timeout)
+    async def _get_json(self, monitor: OrionScriptMonitorModel, profile_id: str, token: str, path: str, params: dict) -> tuple[dict, str, int]:
+        if self.token_manager is None:
+            raise AuthTokenError("The access-token cookie manager is unavailable.")
+        response = await self._request(monitor, token, path, params)
+        if response.status_code == 401:
+            token = await self.token_manager.get_token(profile_id, force_refresh=True)
+            response = await self._request(monitor, token, path, params)
+        if response.status_code != 200:
+            raise FeederFetchError(f"Orion Intelligence returned HTTP {response.status_code} for {path}.", response.status_code)
+        try:
+            payload = response.json()
+        except ValueError:
+            raise FeederFetchError(f"Orion Intelligence returned a response for {path} that was not valid JSON.", response.status_code) from None
+        if not isinstance(payload, dict):
+            raise FeederFetchError(f"Orion Intelligence returned an unexpected response for {path}.", response.status_code)
+        return payload, token, response.status_code
+
+    async def _request(self, monitor: OrionScriptMonitorModel, token: str, path: str, params: dict) -> httpx.Response:
+        return await self.client.get(f"{monitor.url.rstrip('/')}{path}", params=params, headers={"Cookie": f"{Cookies.ACCESS_TOKEN}={token}"}, timeout=monitor.timeout)
 
     @classmethod
-    def build_feeders(cls, scripts: list[dict]) -> list[OrionFeederStatus]:
+    def build_feeders(cls, scripts: list[dict], rule_paths: dict[str, str] | None = None) -> list[OrionFeederStatus]:
         feeders: list[OrionFeederStatus] = []
         seen: set[str] = set()
         for script in scripts:
@@ -129,10 +138,11 @@ class OrionScriptChecker:
             if not script_id:
                 continue
             rule_key = script.get("rule_key") or None
+            section = cls._section(rule_key, rule_paths or {})
             enabled = script.get("enabled") is not False
             if script.get("entry_kind") != "values":
                 status, checked_at, message = cls._script_status(script)
-                cls._append(feeders, seen, OrionFeederStatus(key=script_id, name=str(script.get("file_name") or script_id), rule_key=rule_key, status=status, enabled=enabled, last_checked_at=checked_at, message=message))
+                cls._append(feeders, seen, OrionFeederStatus(key=script_id, name=str(script.get("file_name") or script_id), rule_key=rule_key, section=section, status=status, enabled=enabled, last_checked_at=checked_at, message=message))
             for value in script.get("values") or []:
                 if not isinstance(value, dict):
                     continue
@@ -142,8 +152,14 @@ class OrionScriptChecker:
                 digest = hashlib.sha256(value_url.encode()).hexdigest()[:12]
                 status = VALUE_STATUSES.get(str(value.get("status") or "").lower(), MonitorStatus.UNKNOWN)
                 message = value.get("last_error") if status == MonitorStatus.DOWN else value.get("last_success_message")
-                cls._append(feeders, seen, OrionFeederStatus(key=f"{script_id}{OrionIntelligence.FEEDER_RESULT_SEPARATOR}{digest}", name=value_url, rule_key=rule_key, status=status, enabled=enabled, last_checked_at=cls._parse_datetime(value.get("last_checked_at")), message=cls._trim(message)))
+                cls._append(feeders, seen, OrionFeederStatus(key=f"{script_id}{OrionIntelligence.FEEDER_RESULT_SEPARATOR}{digest}", name=value_url, rule_key=rule_key, section=section, status=status, enabled=enabled, last_checked_at=cls._parse_datetime(value.get("last_checked_at")), message=cls._trim(message)))
         return feeders
+
+    @staticmethod
+    def _section(rule_key: str | None, rule_paths: dict[str, str]) -> str | None:
+        if rule_key and rule_paths.get(rule_key) == OrionIntelligence.FEEDER_SOCIAL_PATH:
+            return OrionIntelligence.FEEDER_SOCIAL_SECTION
+        return rule_key
 
     @staticmethod
     def _append(feeders: list[OrionFeederStatus], seen: set[str], feeder: OrionFeederStatus) -> None:

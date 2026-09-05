@@ -57,6 +57,7 @@ class PublicOrionFeederResponse(BaseModel):
     key: str
     name: str
     rule_key: str | None
+    section: str | None
     status: MonitorStatus
     is_active: bool
     last_checked_at: datetime | None

@@ -37,6 +37,9 @@ services:
       - no-new-privileges:true
     cap_drop:
       - ALL
+    networks:
+      default: {}
+      shared_bridge: {}
     restart: always
 
   seed:
@@ -103,6 +106,10 @@ services:
       retries: 5
       start_period: 10s
     restart: always
+
+networks:
+  shared_bridge:
+    external: true
 
 volumes:
   mongodb_data:

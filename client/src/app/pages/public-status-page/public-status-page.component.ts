@@ -4,6 +4,8 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
 import { PublicOrionFeeder, PublicOrionScript, PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
 
+const SOCIAL_SECTION = 'social';
+
 const MONITOR_GROUPS = [
   { type: 'HTTP', label: 'HTTP monitors' },
   { type: 'API', label: 'API monitors' },
@@ -73,12 +75,20 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
   private feederTabs(feeders: PublicOrionFeeder[]): FeederTab[] {
     const tabs = new Map<string, FeederTab>();
     for (const feeder of feeders) {
-      const key = feeder.rule_key ?? '';
-      const tab = tabs.get(key) ?? { key, label: feeder.rule_key ?? 'Other', feeders: [] };
+      const key = feeder.section ?? feeder.rule_key ?? '';
+      const tab = tabs.get(key) ?? { key, label: this.tabLabel(key), feeders: [] };
       tab.feeders.push(feeder);
       tabs.set(key, tab);
     }
-    return [...tabs.values()].sort((a, b) => a.label.localeCompare(b.label));
+    return [...tabs.values()].sort((a, b) => Number(a.key === SOCIAL_SECTION) - Number(b.key === SOCIAL_SECTION) || a.label.localeCompare(b.label));
+  }
+
+  private tabLabel(key: string): string {
+    if (key === SOCIAL_SECTION) {
+      return 'Social Media';
+    }
+    const label = key.replace(/_/g, ' ').trim();
+    return label ? label.charAt(0).toUpperCase() + label.slice(1) : 'Other';
   }
 
   nextUpdateIn(page: PublicStatusPage): number {

@@ -14,6 +14,7 @@ class OrionFeederStatus(BaseModel):
     key: str
     name: str
     rule_key: str | None = None
+    section: str | None = None
     status: MonitorStatus = MonitorStatus.UNKNOWN
     enabled: bool = True
     last_checked_at: datetime | None = None

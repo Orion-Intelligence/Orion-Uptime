@@ -120,13 +120,14 @@
             </div>
 
             @if (section.tabs.length) {
-              <div class="tw:mb-[15px] tw:flex tw:max-w-full tw:flex-wrap tw:overflow-hidden tw:rounded-lg tw:border tw:border-[#e6e7e8] tw:bg-[#f7f7f7]" role="tablist" [attr.aria-label]="section.script.name + ' feeder categories'">
+              <div class="tw:mb-[15px] tw:inline-flex tw:max-w-full tw:flex-wrap tw:overflow-hidden tw:rounded-lg tw:border tw:border-[#e6e7e8] tw:bg-[#f7f7f7]" role="tablist" [attr.aria-label]="section.script.name + ' feeder categories'">
                 @for (item of section.tabs; track item.key) {
-                  <button class="tw:min-h-8 tw:cursor-pointer tw:border-0 tw:border-r tw:border-[#e6e7e8] tw:bg-transparent tw:px-2.75 tw:text-[12px] tw:font-medium tw:text-[#687790] tw:[transition:background-color_140ms_ease,_color_140ms_ease] tw:[&.active]:bg-[#1176d4] tw:[&.active]:text-white tw:last:border-0" type="button" role="tab" [class.active]="item.key === tab?.key" [attr.aria-selected]="item.key === tab?.key" (click)="selectTab(section.script.id, item.key)">{{ item.label }} ({{ item.feeders.length }})</button>
+                  <button class="tw:min-h-8 tw:shrink-0 tw:cursor-pointer tw:border-0 tw:border-r tw:border-[#e6e7e8] tw:bg-transparent tw:px-2.75 tw:text-[12px] tw:font-medium tw:whitespace-nowrap tw:text-[#687790] tw:[transition:background-color_140ms_ease,_color_140ms_ease] tw:[&.active]:bg-[#1176d4] tw:[&.active]:text-white tw:last:border-0" type="button" role="tab" [class.active]="item.key === tab?.key" [attr.aria-selected]="item.key === tab?.key" (click)="selectTab(section.script.id, item.key)">{{ item.label }} ({{ item.feeders.length }})</button>
                 }
               </div>
             }
 
+            <div class="tw:max-h-[520px] tw:overflow-y-auto">
             @for (feeder of tab?.feeders ?? []; track feeder.key) {
               <article animate.enter="list-item-enter" class="tw:mb-[15px] tw:border-b tw:border-[#e6e7e8] tw:pb-[15px] tw:last:mb-0 tw:last:border-b-0 tw:last:pb-0">
                 <div class="tw:grid tw:grid-cols-[280px_530px_70px] tw:items-center tw:justify-between tw:max-[640px]:grid-cols-[minmax(0,1fr)_auto] tw:max-[640px]:gap-x-[15px]">
@@ -158,6 +159,7 @@
             } @empty {
               <p class="tw:m-0 tw:py-4 tw:text-center tw:text-[14px] tw:text-[#687790]">No feeder statuses have been fetched yet.</p>
             }
+            </div>
           </section>
         }
       </section>

@@ -191,6 +191,7 @@ export interface PublicOrionFeeder {
   key: string;
   name: string;
   rule_key: string | null;
+  section: string | null;
   status: 'up' | 'down' | 'unknown';
   is_active: boolean;
   last_checked_at: string | null;

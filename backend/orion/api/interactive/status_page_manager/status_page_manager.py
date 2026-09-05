@@ -203,7 +203,7 @@ class StatusPageManager(IntegrationCollectionMixin):
                 status=overview.status,
                 is_active=overview.is_active,
                 last_checked_at=overview.last_checked_at,
-                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at, **self._uptime_fields(feeder_result_id(overview.id, feeder.key), lookup)) for feeder in monitor.feeders],
+                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, section=feeder.section, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at, **self._uptime_fields(feeder_result_id(overview.id, feeder.key), lookup)) for feeder in monitor.feeders],
             )
             for overview, monitor in monitors
         ]
