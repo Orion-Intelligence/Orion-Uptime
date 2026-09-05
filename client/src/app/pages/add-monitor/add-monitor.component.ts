@@ -4,9 +4,27 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
-import { AuthProfileOption } from '../../shared/model/models';
+import { AuthProfileOption, EditableResource } from '../../shared/model/models';
 
 type ResourceKind = 'http' | 'api' | 'ping' | 'heartbeat' | 'orion-script' | 'auth-profile';
+
+const RESOURCE_LABELS: Record<ResourceKind, string> = {
+  'http': 'HTTP monitor',
+  'api': 'API monitor',
+  'ping': 'Ping monitor',
+  'heartbeat': 'Heartbeat monitor',
+  'orion-script': 'Orion script monitor',
+  'auth-profile': 'Auth profile',
+};
+
+const RESOURCE_PATHS: Record<ResourceKind, { create: string; read: string; update: string }> = {
+  'http': { create: '/HTTP_monitors/create', read: '/HTTP_monitors/:id/get_one', update: '/HTTP_monitors/:id/update' },
+  'api': { create: '/API_monitors/create', read: '/API_monitors/:id', update: '/API_monitors/:id' },
+  'ping': { create: '/ping-monitors/create', read: '/ping-monitors/:id/get_one', update: '/ping-monitors/:id/update' },
+  'heartbeat': { create: '/heartbeat-monitors/create', read: '/heartbeat-monitors/:id/get_one', update: '/heartbeat-monitors/:id/update' },
+  'orion-script': { create: '/orion-script-monitors/create', read: '/orion-script-monitors/:id/get_one', update: '/orion-script-monitors/:id/update' },
+  'auth-profile': { create: '/auth-profiles/create', read: '/auth-profiles/:id', update: '/auth-profiles/:id' },
+};
 
 interface CreatedResource {
   heartbeat_token?: string;
@@ -27,6 +45,8 @@ export class AddMonitorComponent {
   readonly kind = this.route.snapshot.data['kind'] as ResourceKind;
   readonly title = String(this.route.snapshot.data['title']);
   readonly backUrl = String(this.route.snapshot.data['backUrl']);
+  readonly editId = this.route.snapshot.paramMap.get('id') ?? '';
+  readonly editing = Boolean(this.editId);
   readonly loading = signal(false);
   readonly error = signal('');
   readonly authProfiles = signal<AuthProfileOption[]>([]);
@@ -59,6 +79,53 @@ export class AddMonitorComponent {
         },
       });
     }
+    if (this.editing) {
+      this.loading.set(true);
+      this.api.get<EditableResource>(this.path('read'))
+        .pipe(finalize(() => {
+          this.loading.set(false);
+        }))
+        .subscribe({
+          next: (response) => {
+            this.populate(response.data);
+          },
+          error: (error: unknown) => {
+            this.error.set(ApiService.errorMessage(error));
+          },
+        });
+    }
+  }
+
+  private populate(resource: EditableResource): void {
+    const defaults = this.form.getRawValue();
+    this.form.patchValue({
+      name: resource.name,
+      url: resource.url ?? '',
+      host: resource.host ?? '',
+      method: resource.method ?? defaults.method,
+      check_interval: resource.check_interval ?? defaults.check_interval,
+      timeout: resource.timeout ?? defaults.timeout,
+      expected_status_code: resource.expected_status_code ?? defaults.expected_status_code,
+      expected_response_time_ms: resource.expected_response_time_ms == null ? '' : String(resource.expected_response_time_ms),
+      expected_heartbeat_interval: resource.expected_heartbeat_interval ?? defaults.expected_heartbeat_interval,
+      grace_period: resource.grace_period ?? defaults.grace_period,
+      headers: this.jsonText(resource.headers, defaults.headers),
+      request_body: this.jsonText(resource.request_body, ''),
+      expected_json: this.jsonText(resource.expected_json, ''),
+      expected_headers: this.jsonText(resource.expected_headers, ''),
+      expected_content_type: resource.expected_content_type ?? '',
+      auth_profile_id: resource.auth_profile_id ?? '',
+      login_url: resource.login_url ?? '',
+      credentials: this.jsonText(resource.credentials, defaults.credentials),
+    });
+  }
+
+  private jsonText(value: Record<string, unknown> | null | undefined, fallback: string): string {
+    return value ? JSON.stringify(value, null, 2) : fallback;
+  }
+
+  private path(action: 'create' | 'read' | 'update'): string {
+    return RESOURCE_PATHS[this.kind][action].replace(':id', this.editId);
   }
 
   submit(): void {
@@ -80,8 +147,10 @@ export class AddMonitorComponent {
     }
 
     this.loading.set(true);
-    this.api
-      .post<CreatedResource, Record<string, unknown>>(request.endpoint, request.body)
+    const submission = this.editing
+      ? this.api.put<CreatedResource, Record<string, unknown>>(request.endpoint, request.body)
+      : this.api.post<CreatedResource, Record<string, unknown>>(request.endpoint, request.body);
+    submission
       .pipe(finalize(() => {
         this.loading.set(false); 
       }))
@@ -106,22 +175,8 @@ export class AddMonitorComponent {
   }
 
   private creationMessage(name: string, data: CreatedResource): string {
-    switch (this.kind) {
-      case 'http':
-        return `HTTP monitor “${name}” created.`;
-      case 'api':
-        return `API monitor “${name}” created.`;
-      case 'ping':
-        return `Ping monitor “${name}” created.`;
-      case 'heartbeat':
-        return `Heartbeat monitor “${name}” created.`;
-      case 'orion-script':
-        return `Orion script monitor “${name}” created.`;
-      case 'auth-profile':
-        return data.login_status_code
-          ? `Auth profile “${name}” created · Login HTTP ${data.login_status_code}.`
-          : `Auth profile “${name}” created.`;
-    }
+    const loginStatus = this.kind === 'auth-profile' && data.login_status_code ? ` · Login HTTP ${data.login_status_code}` : '';
+    return `${RESOURCE_LABELS[this.kind]} “${name}” ${this.editing ? 'updated' : 'created'}${loginStatus}.`;
   }
 
   private invalidFieldMessage(): string {
@@ -144,7 +199,7 @@ export class AddMonitorComponent {
     switch (this.kind) {
       case 'http':
         return {
-          endpoint: '/HTTP_monitors/create',
+          endpoint: this.path(this.editing ? 'update' : 'create'),
           body: {
             name,
             url: this.required(value.url, 'URL'),
@@ -156,7 +211,7 @@ export class AddMonitorComponent {
         };
       case 'ping':
         return {
-          endpoint: '/ping-monitors/create',
+          endpoint: this.path(this.editing ? 'update' : 'create'),
           body: {
             name,
             host: this.required(value.host, 'Host'),
@@ -167,7 +222,7 @@ export class AddMonitorComponent {
         };
       case 'orion-script':
         return {
-          endpoint: '/orion-script-monitors/create',
+          endpoint: this.path(this.editing ? 'update' : 'create'),
           body: {
             name,
             url: this.required(value.url, 'Orion URL'),
@@ -178,7 +233,7 @@ export class AddMonitorComponent {
         };
       case 'heartbeat':
         return {
-          endpoint: '/heartbeat-monitors/create',
+          endpoint: this.path(this.editing ? 'update' : 'create'),
           body: {
             name,
             expected_heartbeat_interval: value.expected_heartbeat_interval,
@@ -187,7 +242,7 @@ export class AddMonitorComponent {
         };
       case 'auth-profile':
         return {
-          endpoint: '/auth-profiles/create',
+          endpoint: this.path(this.editing ? 'update' : 'create'),
           body: {
             name,
             login_url: this.required(value.login_url, 'Login URL'),
@@ -197,7 +252,7 @@ export class AddMonitorComponent {
         };
       case 'api':
         return {
-          endpoint: '/API_monitors/create',
+          endpoint: this.path(this.editing ? 'update' : 'create'),
           body: {
             name,
             url: this.required(value.url, 'URL'),

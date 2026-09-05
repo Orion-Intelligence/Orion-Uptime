@@ -138,46 +138,15 @@
           } @else {
             <span class="tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">Created {{ record.created_at | date: 'MMM d, y' }}</span>
           }
-          @if (canManage() && editingId() === record.id) {
-            <form animate.enter="fade-in" class="tw:grid tw:w-full tw:grid-cols-2 tw:gap-3 tw:max-[520px]:grid-cols-1" (submit)="onEditSubmit($event, record)" aria-label="Edit {{ record.name }}">
-              <label class="tw:col-span-full tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
-                Name
-                <input class="tw:h-9 tw:min-w-0 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="text" name="name" maxlength="100" autocomplete="off" [value]="editName()" (input)="onEditInput('name', $event)" />
-              </label>
-              @if (hasTimingSettings(record)) {
-                <label class="tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
-                  Check interval (seconds)
-                  <input class="tw:h-9 tw:min-w-0 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="number" name="check_interval" min="10" max="86400" step="1" required [value]="editCheckInterval()" (input)="onEditInput('checkInterval', $event)" />
-                </label>
-                <label class="tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
-                  Timeout (seconds)
-                  <input class="tw:h-9 tw:min-w-0 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="number" name="timeout" min="1" [attr.max]="isPingMonitor(record) ? 300 : null" step="1" required [value]="editTimeout()" (input)="onEditInput('timeout', $event)" />
-                </label>
-                <label class="tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
-                  Expected response time (ms, optional)
-                  <input class="tw:h-9 tw:min-w-0 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:text-[12px] tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" type="number" name="expected_response_time_ms" min="0" step="1" placeholder="No threshold" [value]="editExpectedResponseTime()" (input)="onEditInput('expectedResponseTime', $event)" />
-                </label>
-              }
-              @if (isApiMonitor(record)) {
-                <label class="tw:col-span-full tw:grid tw:gap-1 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">
-                  Expected JSON and assertions (optional)
-                  <textarea class="tw:min-h-48 tw:w-full tw:resize-y tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-white tw:px-3 tw:py-2.5 tw:font-mono tw:text-[11px] tw:leading-relaxed tw:font-normal tw:text-[#172235] tw:outline-none tw:focus:border-[#2b90ee] tw:focus:shadow-[0_0_0_3px_rgb(87_165_235_/_18%)] tw:dark:border-white/15 tw:dark:bg-[#0e1626] tw:dark:text-white" name="expected_json" spellcheck="false" [value]="editExpectedJson()" (input)="onEditExpectedJsonInput($event)"></textarea>
-                </label>
-              }
-              <div class="tw:col-span-full tw:flex tw:justify-end tw:gap-2">
-                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#1176d4] tw:bg-[#1176d4] tw:px-3 tw:text-[11px] tw:font-semibold tw:text-white tw:transition-colors tw:hover:border-[#0f5fa8] tw:hover:bg-[#0f5fa8] tw:disabled:cursor-wait tw:disabled:opacity-50" type="submit" [disabled]="savingId() === record.id">{{ savingId() === record.id ? 'Saving…' : 'Save changes' }}</button>
-                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="cancelEdit()" [disabled]="savingId() === record.id">Cancel</button>
-              </div>
-            </form>
-          } @else if (canManage()) {
+          @if (canManage()) {
             <div animate.enter="fade-in" class="tw:flex tw:items-center tw:gap-2">
               @if (supportsConfigFiles()) {
                 <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
                   {{ exportingId() === record.id ? 'Exporting…' : 'Export' }}
                 </button>
               }
-              @if (updatePath()) {
-                <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="startEdit(record)" [attr.aria-label]="'Edit ' + record.name">Edit</button>
+              @if (editBase()) {
+                <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" [routerLink]="[editBase(), record.id, 'edit']" [attr.aria-label]="'Edit ' + record.name">Edit</a>
               }
               @if (stats) {
                 <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:border-[#57a5eb]/45 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(record)" [disabled]="updatingId() === record.id" [attr.aria-label]="(stats.is_active ? 'Pause ' : 'Start ') + record.name">

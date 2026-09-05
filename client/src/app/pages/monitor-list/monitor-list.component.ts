@@ -28,6 +28,7 @@ export class MonitorListComponent extends NoticePageBase {
   readonly description = signal('');
   readonly newUrl = signal('');
   readonly detailBase = signal('');
+  readonly editBase = signal('');
   readonly deletePath = signal('');
   readonly updatePath = signal('');
   readonly records = signal<ResourceRecord[]>([]);
@@ -35,13 +36,6 @@ export class MonitorListComponent extends NoticePageBase {
   readonly loading = signal(true);
   readonly deletingId = signal('');
   readonly updatingId = signal('');
-  readonly editingId = signal('');
-  readonly editName = signal('');
-  readonly editCheckInterval = signal('');
-  readonly editTimeout = signal('');
-  readonly editExpectedResponseTime = signal('');
-  readonly editExpectedJson = signal('');
-  readonly savingId = signal('');
   readonly error = signal('');
   readonly heartbeatToken = signal('');
   readonly importingConfig = signal(false);
@@ -91,6 +85,7 @@ export class MonitorListComponent extends NoticePageBase {
       this.description.set(String(data['description'] ?? ''));
       this.newUrl.set(String(data['newUrl'] ?? ''));
       this.detailBase.set(String(data['detailBase'] ?? ''));
+      this.editBase.set(String(data['editBase'] ?? ''));
       this.deletePath.set(String(data['deletePath'] ?? ''));
       this.updatePath.set(String(data['updatePath'] ?? ''));
       this.resourceType.set(data['resourceType'] as keyof RealtimeResources);
@@ -321,162 +316,6 @@ export class MonitorListComponent extends NoticePageBase {
     catch (error) {
       this.error.set(error instanceof Error ? error.message : 'The monitor configuration file could not be read.');
     }
-  }
-
-  startEdit(record: ResourceRecord): void {
-    this.editingId.set(record.id);
-    this.editName.set(record.name);
-    this.editCheckInterval.set(String(record.check_interval ?? ''));
-    this.editTimeout.set(String(record.timeout ?? ''));
-    this.editExpectedResponseTime.set(String(record.expected_response_time_ms ?? ''));
-    this.editExpectedJson.set(record.expected_json ? JSON.stringify(record.expected_json, null, 2) : '');
-    this.error.set('');
-  }
-
-  cancelEdit(): void {
-    this.editingId.set('');
-    this.editName.set('');
-    this.editCheckInterval.set('');
-    this.editTimeout.set('');
-    this.editExpectedResponseTime.set('');
-    this.editExpectedJson.set('');
-  }
-
-  onEditInput(field: 'name' | 'checkInterval' | 'timeout' | 'expectedResponseTime', event: Event): void {
-    const target = event.target;
-    if (target instanceof HTMLInputElement) {
-      switch (field) {
-        case 'name':
-          this.editName.set(target.value);
-          break;
-        case 'checkInterval':
-          this.editCheckInterval.set(target.value);
-          break;
-        case 'timeout':
-          this.editTimeout.set(target.value);
-          break;
-        case 'expectedResponseTime':
-          this.editExpectedResponseTime.set(target.value);
-          break;
-      }
-    }
-  }
-
-  onEditSubmit(event: Event, record: ResourceRecord): void {
-    event.preventDefault();
-    this.saveEdit(record);
-  }
-
-  onEditExpectedJsonInput(event: Event): void {
-    const target = event.target;
-    if (target instanceof HTMLTextAreaElement) {
-      this.editExpectedJson.set(target.value);
-    }
-  }
-
-  saveEdit(record: ResourceRecord): void {
-    const name = this.editName().trim();
-    if (!name) {
-      this.error.set('Name is required.');
-      return;
-    }
-
-    const body: {
-      name: string;
-      check_interval?: number;
-      timeout?: number;
-      expected_response_time_ms?: number | null;
-      expected_json?: Record<string, unknown> | null;
-    } = { name };
-
-    if (this.hasTimingSettings(record)) {
-      const checkInterval = Number(this.editCheckInterval());
-      const timeout = Number(this.editTimeout());
-      const expectedResponseTimeText = this.editExpectedResponseTime().trim();
-      const expectedResponseTime = expectedResponseTimeText ? Number(expectedResponseTimeText) : null;
-
-      if (!Number.isInteger(checkInterval) || checkInterval < 10 || checkInterval > 86400) {
-        this.error.set('Check interval must be a whole number between 10 and 86400 seconds.');
-        return;
-      }
-      if (!Number.isInteger(timeout) || timeout < 1 || (this.monitorType(record) === 'ping' && timeout > 300)) {
-        this.error.set(this.monitorType(record) === 'ping'
-          ? 'Timeout must be a whole number between 1 and 300 seconds.'
-          : 'Timeout must be a whole number of at least 1 second.');
-        return;
-      }
-      if (expectedResponseTime !== null && (!Number.isInteger(expectedResponseTime) || expectedResponseTime < 0)) {
-        this.error.set('Expected response time must be a non-negative whole number of milliseconds.');
-        return;
-      }
-
-      body.check_interval = checkInterval;
-      body.timeout = timeout;
-      body.expected_response_time_ms = expectedResponseTime;
-    }
-
-    if (this.isApiMonitor(record)) {
-      try {
-        body.expected_json = this.expectedJsonValue();
-      }
-      catch (error) {
-        this.error.set(error instanceof Error ? error.message : 'Expected JSON must be a valid JSON object.');
-        return;
-      }
-    }
-    this.error.set('');
-    this.savingId.set(record.id);
-    const endpoint = this.updatePath().replace(':id', record.id);
-    this.api.put<unknown, typeof body>(endpoint, body).subscribe({
-      next: () => {
-        this.records.update((records) => records.map((item) => (item.id === record.id ? { ...item, ...body } : item)));
-        this.overviews.update((overviews) => {
-          const current = overviews[record.id];
-          return current ? { ...overviews, [record.id]: { ...current, name } } : overviews;
-        });
-        this.showNotice(`“${name}” updated.`);
-        this.savingId.set('');
-        this.cancelEdit();
-      },
-      error: (error: unknown) => {
-        this.error.set(ApiService.errorMessage(error));
-        this.savingId.set('');
-      },
-    });
-  }
-
-  hasTimingSettings(record: ResourceRecord): boolean {
-    return ['HTTP', 'API', 'ping', 'orion_script'].includes(this.monitorType(record));
-  }
-
-  isPingMonitor(record: ResourceRecord): boolean {
-    return this.monitorType(record) === 'ping';
-  }
-
-  private monitorType(record: ResourceRecord): string {
-    return record.monitor_type ?? this.resourceType() ?? '';
-  }
-
-  isApiMonitor(record: ResourceRecord): boolean {
-    return (record.monitor_type ?? this.resourceType()) === 'API';
-  }
-
-  private expectedJsonValue(): Record<string, unknown> | null {
-    const value = this.editExpectedJson().trim();
-    if (!value) {
-      return null;
-    }
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(value);
-    }
-    catch {
-      throw new Error('Expected JSON must contain valid JSON.');
-    }
-    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
-      throw new Error('Expected JSON must be a JSON object.');
-    }
-    return parsed as Record<string, unknown>;
   }
 
   private showHeartbeatNotice(message: string, heartbeatToken = ''): void {

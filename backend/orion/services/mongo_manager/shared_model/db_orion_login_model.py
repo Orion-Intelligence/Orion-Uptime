@@ -36,6 +36,8 @@ class AuthProfileResponse(BaseModel):
     login_url: str
     method: str
     credential_fields: list[str]
+    headers: dict[str, str] = Field(default_factory=dict)
+    credentials: dict[str, str] | None = None
     created_at: datetime
     updated_at: datetime
     login_status_code: int | None = None

@@ -46,7 +46,7 @@ class AuthProfileManager:
         profile.id = str(result.inserted_id)
         token_manager.cache_token(profile.id, token)
         realtime_broker.notify("auth_profile", profile.id)
-        return AuthProfileResponse(id=profile.id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), created_at=profile.created_at, updated_at=profile.updated_at, login_status_code=login_status_code)
+        return AuthProfileResponse(id=profile.id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, created_at=profile.created_at, updated_at=profile.updated_at, login_status_code=login_status_code)
 
     async def get_profile_model(self, profile_id: str) -> AuthProfileModel | None:
         try:
@@ -75,11 +75,11 @@ class AuthProfileManager:
         profile = await self.get_profile_model(profile_id)
         if profile is None:
             raise NotFoundError("Auth profile not found.")
-        return AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), created_at=profile.created_at, updated_at=profile.updated_at)
+        return AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, credentials=profile.credentials, created_at=profile.created_at, updated_at=profile.updated_at)
 
     async def list_profiles(self) -> list[AuthProfileResponse]:
         profiles = await self.list_profile_models()
-        return [AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), created_at=profile.created_at, updated_at=profile.updated_at) for profile in profiles]
+        return [AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, created_at=profile.created_at, updated_at=profile.updated_at) for profile in profiles]
 
     async def update_profile(self, profile_id: str, request: UpdateAuthProfileRequest) -> AuthProfileResponse:
         profile = await self.get_profile_model(profile_id)
@@ -105,7 +105,7 @@ class AuthProfileManager:
         if updated is None:
             raise NotFoundError("Auth profile not found.")
         realtime_broker.notify("auth_profile", updated.id)
-        return AuthProfileResponse(id=updated.persisted_id, name=updated.name, login_url=updated.login_url, method=updated.method, credential_fields=sorted(updated.credentials), created_at=updated.created_at, updated_at=updated.updated_at)
+        return AuthProfileResponse(id=updated.persisted_id, name=updated.name, login_url=updated.login_url, method=updated.method, credential_fields=sorted(updated.credentials), headers=updated.headers, created_at=updated.created_at, updated_at=updated.updated_at)
 
     async def delete_profile(self, profile_id: str) -> None:
         try:

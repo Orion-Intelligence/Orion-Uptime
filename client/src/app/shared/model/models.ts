@@ -47,6 +47,28 @@ export interface AuthProfileOption {
   name: string;
 }
 
+export interface EditableResource {
+  id: string;
+  name: string;
+  url?: string;
+  host?: string;
+  method?: string;
+  check_interval?: number;
+  timeout?: number;
+  expected_status_code?: number;
+  expected_response_time_ms?: number | null;
+  expected_heartbeat_interval?: number;
+  grace_period?: number;
+  headers?: Record<string, string>;
+  request_body?: Record<string, unknown> | null;
+  expected_json?: Record<string, unknown> | null;
+  expected_headers?: Record<string, string> | null;
+  expected_content_type?: string | null;
+  auth_profile_id?: string | null;
+  login_url?: string;
+  credentials?: Record<string, string>;
+}
+
 export interface DashboardIncident {
   id: string;
   monitor_id: string;

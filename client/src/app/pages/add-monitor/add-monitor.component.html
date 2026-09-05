@@ -3,7 +3,7 @@
     <div>
       <p class="eyebrow">Configuration</p>
       <h1 class="page-title">{{ title }}</h1>
-      <p class="page-description">Complete the settings below, then create the resource.</p>
+      <p class="page-description">{{ editing ? 'Update the settings below, then save your changes.' : 'Complete the settings below, then create the resource.' }}</p>
     </div>
     <a class="header-action header-action--secondary tw:max-[700px]:self-end" [routerLink]="backUrl">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m12.5 5-5 5 5 5" /></svg>
@@ -129,7 +129,7 @@
     <div class="tw:col-span-full tw:-mx-6.5 tw:mt-1 tw:-mb-6.5 tw:flex tw:items-center tw:justify-end tw:gap-5.5 tw:border-t tw:px-6.5 tw:py-5 tw:max-[700px]:col-auto tw:max-[700px]:-mx-5 tw:max-[700px]:-mb-5 tw:max-[700px]:px-5 tw:max-[700px]:py-4.5 tw:border-[#d7e2ef] tw:dark:border-[rgb(255_255_255_/_9%)]">
       <a class="tw:text-[11px] tw:font-bold tw:no-underline tw:text-[#5f738f] tw:dark:text-[#9fb3c8]" [routerLink]="backUrl">Cancel</a
       ><button class="button" type="submit" [disabled]="loading()">
-        {{ loading() ? 'Creating…' : 'Create' }}
+        {{ editing ? (loading() ? 'Saving…' : 'Save changes') : (loading() ? 'Creating…' : 'Create') }}
       </button>
     </div>
     <ng-template #timingFields>

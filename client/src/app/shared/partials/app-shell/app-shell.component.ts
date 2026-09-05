@@ -65,6 +65,21 @@ export class AppShellComponent {
     if (path.startsWith('/monitors/orion-script/new')) {
       return 'New Orion script monitor';
     }
+    if (path.startsWith('/monitors/http/') && path.endsWith('/edit')) {
+      return 'Edit HTTP monitor';
+    }
+    if (path.startsWith('/monitors/api/') && path.endsWith('/edit')) {
+      return 'Edit API monitor';
+    }
+    if (path.startsWith('/monitors/ping/') && path.endsWith('/edit')) {
+      return 'Edit Ping monitor';
+    }
+    if (path.startsWith('/monitors/heartbeat/') && path.endsWith('/edit')) {
+      return 'Edit Heartbeat monitor';
+    }
+    if (path.startsWith('/monitors/orion-script/') && path.endsWith('/edit')) {
+      return 'Edit Orion script monitor';
+    }
     if (/^\/monitors\/[^/]+\/[^/]+$/.test(path)) {
       return 'Monitor details';
     }
@@ -115,6 +130,9 @@ export class AppShellComponent {
     }
     if (path === '/auth-profiles/new') {
       return 'New auth profile';
+    }
+    if (path.startsWith('/auth-profiles/') && path.endsWith('/edit')) {
+      return 'Edit auth profile';
     }
     if (path.startsWith('/auth-profiles')) {
       return 'Auth profiles';
