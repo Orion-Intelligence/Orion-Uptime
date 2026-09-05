@@ -59,6 +59,7 @@ class AccessTokenCookieManager:
             return token
 
     async def authenticate_profile(self, profile: AuthProfileModel) -> tuple[str, int]:
+        self.client.cookies.clear()
         try:
             response = await self.client.post(url=profile.login_url, headers=profile.headers, data=profile.credentials)
         except httpx.RequestError as exc:

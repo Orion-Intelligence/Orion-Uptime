@@ -82,8 +82,8 @@ def test_checker_builds_feeder_statuses_from_scripts_and_values():
     assert result.success is True
     assert result.status == MonitorStatus.UP
     assert result.status_code == 200
-    assert [request.url.path for request in requests] == ["/api/profile/feeder/catalog", "/api/profile/feeder/scripts", "/api/profile/feeder/scripts"]
-    assert [request.url.params.get("entry_type") for request in requests] == [None, "scripts", "values"]
+    assert [request.url.path for request in requests] == ["/api/profile/feeder/catalog", "/api/profile/feeder/scripts"]
+    assert [request.url.params.get("entry_type") for request in requests] == [None, "scripts"]
     assert requests[0].headers["cookie"] == "access_token=token-1"
     by_key = {feeder.key: feeder for feeder in result.feeders}
     assert by_key["s1"].status == MonitorStatus.UP
@@ -96,11 +96,9 @@ def test_checker_builds_feeder_statuses_from_scripts_and_values():
     assert by_key["s3"].section is None
     assert by_key["s1"].section == "leak"
     assert by_key["s4"].section == "social"
-    assert [feeder.section for feeder in result.feeders if feeder.key.startswith("s4:")] == ["social"]
-    values = [feeder for feeder in result.feeders if feeder.key.startswith("v1:")]
-    assert {feeder.name: feeder.status for feeder in values} == {"https://a.example.com": MonitorStatus.DOWN, "https://b.example.com": MonitorStatus.UNKNOWN}
-    assert values[0].message == "timeout"
-    assert feeder_result_id("m1", values[0].key) == f"m1:{values[0].key}"
+    assert "v1" not in by_key
+    assert [feeder.key for feeder in result.feeders] == ["s1", "s4", "s2", "s3"]
+    assert feeder_result_id("m1", "s1") == "m1:s1"
 
 
 def test_checker_retries_once_after_unauthorized_response():
@@ -117,7 +115,7 @@ def test_checker_retries_once_after_unauthorized_response():
     checker = OrionScriptChecker(token_manager=token_manager, client=httpx.AsyncClient(transport=httpx.MockTransport(handler)))
     result = _run(checker, _monitor())
 
-    assert calls == 4
+    assert calls == 3
     assert token_manager.refreshes == 1
     assert result.success is True
     assert [feeder.key for feeder in result.feeders] == ["s1"]

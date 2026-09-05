@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import time
 from datetime import UTC, datetime
 from urllib.parse import urlsplit
@@ -14,7 +13,6 @@ from orion.services.mongo_manager.shared_model.db_orion_login_model import AuthP
 from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionFeederStatus, OrionScriptCheckResponse, OrionScriptMonitorModel
 
 MESSAGE_MAX_LENGTH = 500
-VALUE_STATUSES = {"success": MonitorStatus.UP, "failure": MonitorStatus.DOWN}
 
 
 class FeederFetchError(RuntimeError):
@@ -97,14 +95,13 @@ class OrionScriptChecker:
             raise FeederFetchError("Orion Intelligence returned a feeder catalog without a rules array.", status_code)
         rule_paths = {str(rule.get("key")): str(rule.get("path") or "") for rule in catalog["rules"] if isinstance(rule, dict) and rule.get("key")}
         scripts: list[dict] = []
-        for entry_type in OrionIntelligence.FEEDER_ENTRY_TYPES:
-            for page in range(1, OrionIntelligence.FEEDER_MAX_PAGES + 1):
-                payload, token, status_code = await self._get_json(monitor, profile_id, token, OrionIntelligence.FEEDER_SCRIPTS_PATH, {"page": page, "limit": OrionIntelligence.FEEDER_PAGE_LIMIT, "entry_type": entry_type})
-                if not isinstance(payload.get("scripts"), list):
-                    raise FeederFetchError("Orion Intelligence returned a feeder script list without a scripts array.", status_code)
-                scripts.extend(item for item in payload["scripts"] if isinstance(item, dict))
-                if not payload.get("has_more"):
-                    break
+        for page in range(1, OrionIntelligence.FEEDER_MAX_PAGES + 1):
+            payload, token, status_code = await self._get_json(monitor, profile_id, token, OrionIntelligence.FEEDER_SCRIPTS_PATH, {"page": page, "limit": OrionIntelligence.FEEDER_PAGE_LIMIT, "entry_type": OrionIntelligence.FEEDER_ENTRY_TYPE})
+            if not isinstance(payload.get("scripts"), list):
+                raise FeederFetchError("Orion Intelligence returned a feeder script list without a scripts array.", status_code)
+            scripts.extend(item for item in payload["scripts"] if isinstance(item, dict))
+            if not payload.get("has_more"):
+                break
         if not scripts:
             raise FeederFetchError("Orion Intelligence returned no feeder scripts for this auth profile. Only administrator accounts can see every feeder script; other accounts only see scripts they own.", status_code)
         return scripts, rule_paths, status_code
@@ -140,19 +137,10 @@ class OrionScriptChecker:
             rule_key = script.get("rule_key") or None
             section = cls._section(rule_key, rule_paths or {})
             enabled = script.get("enabled") is not False
-            if script.get("entry_kind") != "values":
-                status, checked_at, message = cls._script_status(script)
-                cls._append(feeders, seen, OrionFeederStatus(key=script_id, name=str(script.get("file_name") or script_id), rule_key=rule_key, section=section, status=status, enabled=enabled, last_checked_at=checked_at, message=message))
-            for value in script.get("values") or []:
-                if not isinstance(value, dict):
-                    continue
-                value_url = str(value.get("url") or "").strip()
-                if not value_url:
-                    continue
-                digest = hashlib.sha256(value_url.encode()).hexdigest()[:12]
-                status = VALUE_STATUSES.get(str(value.get("status") or "").lower(), MonitorStatus.UNKNOWN)
-                message = value.get("last_error") if status == MonitorStatus.DOWN else value.get("last_success_message")
-                cls._append(feeders, seen, OrionFeederStatus(key=f"{script_id}{OrionIntelligence.FEEDER_RESULT_SEPARATOR}{digest}", name=value_url, rule_key=rule_key, section=section, status=status, enabled=enabled, last_checked_at=cls._parse_datetime(value.get("last_checked_at")), message=cls._trim(message)))
+            if script.get("entry_kind") == "values":
+                continue
+            status, checked_at, message = cls._script_status(script)
+            cls._append(feeders, seen, OrionFeederStatus(key=script_id, name=str(script.get("file_name") or script_id), rule_key=rule_key, section=section, status=status, enabled=enabled, last_checked_at=checked_at, message=message))
         return feeders
 
     @staticmethod
