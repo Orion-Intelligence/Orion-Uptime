@@ -11,10 +11,11 @@ import { NoticePageBase } from '../../shared/base/notice-page.base';
 import { durationText } from '../../shared/utils/duration.util';
 import { parseJsonFile } from '../../shared/utils/json-file.util';
 import { HEARTBEAT_NOTICE_MS, NOTICE_VISIBLE_MS } from '../../shared/constants/ui.constants';
+import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 
 @Component({
   selector: 'app-resource-list-page',
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink, DeleteConfirmationDialogComponent],
   templateUrl: './monitor-list.component.html',
 })
 export class MonitorListComponent extends NoticePageBase {
@@ -35,6 +36,8 @@ export class MonitorListComponent extends NoticePageBase {
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
   readonly loading = signal(true);
   readonly deletingId = signal('');
+  readonly deleteTarget = signal<ResourceRecord | null>(null);
+  readonly deleteTargetLabel = computed(() => this.resourceLabel());
   readonly updatingId = signal('');
   readonly error = signal('');
   readonly heartbeatToken = signal('');
@@ -183,8 +186,24 @@ export class MonitorListComponent extends NoticePageBase {
     }
   }
 
-  deleteResource(record: ResourceRecord): void {
-    if (!window.confirm(`Delete “${record.name}”? This action cannot be undone.`)) {
+  requestDelete(record: ResourceRecord): void {
+    this.deleteTarget.set(record);
+  }
+
+  cancelDelete(): void {
+    if (this.deletingId()) {
+      return;
+    }
+    this.deleteTarget.set(null);
+  }
+
+  deleteConfirmationMessage(record: ResourceRecord): string {
+    return `Are you sure you want to delete ${this.deleteTargetLabel()} “${record.name}”? This action cannot be undone.`;
+  }
+
+  confirmDelete(): void {
+    const record = this.deleteTarget();
+    if (!record || this.deletingId()) {
       return;
     }
     this.deletingId.set(record.id);
@@ -194,6 +213,7 @@ export class MonitorListComponent extends NoticePageBase {
         this.records.update((records) => records.filter((item) => item.id !== record.id));
         this.showNotice(`${this.resourceLabel()} “${record.name}” deleted.`);
         this.deletingId.set('');
+        this.deleteTarget.set(null);
       },
       error: (error: unknown) => {
         this.error.set(ApiService.errorMessage(error));

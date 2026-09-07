@@ -29,7 +29,7 @@
     <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-5" role="alert">{{ error() }}</p>
   }
   @if (message() || heartbeatToken()) {
-    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.app-notification--wide]:w-[min(540px,calc(100vw-40px))] tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.app-notification--wide]="heartbeatToken()" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+    <div animate.enter="fade-in" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.app-notification--wide]:w-[min(540px,calc(100vw-40px))] tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.app-notification--wide]="heartbeatToken()" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
       @if (message()) {
         <strong class="tw:text-xs">{{ message() }}</strong>
       }
@@ -153,7 +153,7 @@
                   {{ updatingId() === record.id ? 'Updating…' : stats.is_active ? 'Pause' : 'Start' }}
                 </button>
               }
-              <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b] tw:dark:hover:bg-[#f97066]/12" type="button" (click)="deleteResource(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
+              <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b] tw:dark:hover:bg-[#f97066]/12" type="button" (click)="requestDelete(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
                 {{ deletingId() === record.id ? 'Deleting…' : 'Delete' }}
               </button>
             </div>
@@ -177,4 +177,8 @@
       }
     }
   </section>
+
+  @if (deleteTarget(); as target) {
+    <app-delete-confirmation-dialog [message]="deleteConfirmationMessage(target)" [deleting]="deletingId() === target.id" (cancelled)="cancelDelete()" (confirmed)="confirmDelete()" />
+  }
 </div>

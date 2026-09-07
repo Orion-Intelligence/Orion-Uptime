@@ -1,0 +1,12 @@
+{
+  "format": "orion-monitor-config",
+  "version": 1,
+  "monitor_type": "HTTP",
+  "name": "E2E HTTP import fixture",
+  "url": "https://example.com/e2e-http-import-fixture-04",
+  "check_interval": 60,
+  "timeout": 10,
+  "expected_status_code": 200,
+  "expected_response_time_ms": null,
+  "is_active": true
+}

@@ -6,10 +6,11 @@ import { ApiService } from '../../services/core/api.service';
 import { UserResponse } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { NoticePageBase } from '../../shared/base/notice-page.base';
+import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 
 @Component({
   selector: 'app-user-list-page',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent],
   templateUrl: './user-list.component.html',
 })
 export class UserListComponent extends NoticePageBase {
@@ -20,6 +21,7 @@ export class UserListComponent extends NoticePageBase {
   readonly loading = signal(true);
   readonly updatingId = signal('');
   readonly deletingId = signal('');
+  readonly deleteTarget = signal<UserResponse | null>(null);
   readonly error = signal('');
 
   constructor() {
@@ -68,11 +70,23 @@ export class UserListComponent extends NoticePageBase {
       });
   }
 
-  deleteUser(user: UserResponse): void {
+  requestDelete(user: UserResponse): void {
     if (user.role === 'admin') {
       return;
     }
-    if (!window.confirm(`Delete “${user.username}”? This action cannot be undone.`)) {
+    this.deleteTarget.set(user);
+  }
+
+  cancelDelete(): void {
+    if (this.deletingId()) {
+      return;
+    }
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete(): void {
+    const user = this.deleteTarget();
+    if (!user || user.role === 'admin' || this.deletingId()) {
       return;
     }
     this.deletingId.set(user.id);
@@ -80,6 +94,7 @@ export class UserListComponent extends NoticePageBase {
       next: () => {
         this.users.update((users) => users.filter((item) => item.id !== user.id));
         this.deletingId.set('');
+        this.deleteTarget.set(null);
         this.showNotice(`Viewer “${user.username}” deleted.`);
       },
       error: (error: unknown) => {
@@ -87,6 +102,10 @@ export class UserListComponent extends NoticePageBase {
         this.deletingId.set('');
       },
     });
+  }
+
+  deleteConfirmationMessage(user: UserResponse): string {
+    return `Are you sure you want to delete viewer “${user.username}”? This action cannot be undone.`;
   }
 
 }

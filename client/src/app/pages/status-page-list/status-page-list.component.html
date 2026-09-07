@@ -20,7 +20,7 @@
     <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
   }
   @if (message()) {
-    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+    <div animate.enter="fade-in" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
       <strong class="tw:text-xs">{{ message() }}</strong>
     </div>
   }
@@ -51,7 +51,7 @@
           <a class="tw:inline-flex tw:min-h-8 tw:items-center tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#2b90ee] tw:dark:text-[#87c4f5]" [href]="page.public_path" target="_blank" rel="noopener">Open public page ↗</a>
           <div class="tw:flex tw:items-center tw:gap-2">
             <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:text-[#87c4f5]" [routerLink]="['/status-pages', page.id, 'edit']">Edit</a>
-            <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deletePage(page)" [disabled]="deletingId() === page.id">
+            <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="requestDelete(page)" [disabled]="deletingId() === page.id">
               {{ deletingId() === page.id ? 'Deleting…' : 'Delete' }}
             </button>
           </div>
@@ -63,4 +63,7 @@
       }
     }
   </section>
+  @if (deleteTarget(); as target) {
+    <app-delete-confirmation-dialog [message]="deleteConfirmationMessage(target)" [deleting]="deletingId() === target.id" (cancelled)="cancelDelete()" (confirmed)="confirmDelete()" />
+  }
 </div>
