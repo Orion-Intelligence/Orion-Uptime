@@ -6,8 +6,9 @@ interface MonitorScenario {
   listTitle: string;
   newTitle: string;
   editTitle: string;
-  configType: string;
-  fixture: string;
+  configType?: string;
+  fixture?: string;
+  pending?: boolean;
   listApi: string;
   createApi: string;
   updateApi: string;
@@ -138,12 +139,16 @@ const editMonitor = (scenario: MonitorScenario, id: string, name: string, edited
 };
 
 const exportMonitor = (scenario: MonitorScenario, id: string) => {
-  cy.intercept('GET', `**/api/monitor-configs/${scenario.configType}/${id}`).as('exportMonitor');
+  const configType = scenario.configType;
+  if (!configType) {
+    return;
+  }
+  cy.intercept('GET', `**/api/monitor-configs/${configType}/${id}`).as('exportMonitor');
   cardById(scenario, id).find(testId('monitor-export-button')).click();
   cy.wait('@exportMonitor').then(({ response }) => {
     expect(response?.statusCode, `${scenario.label} export status`).to.eq(200);
     expect(response?.body?.data?.monitor_id, `${scenario.label} exported ID`).to.eq(id);
-    expect(response?.body?.data?.monitor_type, `${scenario.label} exported type`).to.eq(scenario.configType);
+    expect(response?.body?.data?.monitor_type, `${scenario.label} exported type`).to.eq(configType);
   });
   cardById(scenario, id).find(testId('monitor-export-button')).should('contain.text', 'Export');
 };
@@ -167,8 +172,9 @@ const confirmDelete = (scenario: MonitorScenario, id: string, name: string) => {
 };
 
 const importMonitor = (scenario: MonitorScenario): Cypress.Chainable<string> => {
+  const fixture = String(scenario.fixture);
   cy.intercept('POST', '**/api/monitor-configs/import*').as('importMonitor');
-  cy.get(testId('monitor-config-import-input')).selectFile(scenario.fixture, { force: true });
+  cy.get(testId('monitor-config-import-input')).selectFile(fixture, { force: true });
 
   return cy.wait('@importMonitor').then(({ response }) => {
     expect(response?.statusCode, `${scenario.label} import status`).to.be.oneOf([200, 201]);
@@ -195,6 +201,10 @@ const runMonitorLifecycle = (scenario: MonitorScenario) => {
     cancelDelete(scenario, monitorId, editedName);
     confirmDelete(scenario, monitorId, editedName);
   });
+
+  if (!scenario.fixture) {
+    return;
+  }
 
   importMonitor(scenario).then((importedId) => {
     cardById(scenario, importedId).find(testId('monitor-name')).invoke('text').then((importedName) => {
@@ -331,6 +341,31 @@ const scenarios: MonitorScenario[] = [
       cy.get(testId('heartbeat-grace')).should('have.value', '120');
     },
   },
+  {
+    label: 'Orion Script',
+    pending: true,
+    listPath: '/monitors/orion-script',
+    listTitle: 'Orion script monitors',
+    newTitle: 'New Orion script monitor',
+    editTitle: 'Edit Orion script monitor',
+    listApi: '/api/orion-script-monitors/list_all',
+    createApi: '**/api/orion-script-monitors/create',
+    updateApi: '**/api/orion-script-monitors/*/update',
+    deleteApi: '**/api/orion-script-monitors/*/delete',
+    deleteUrl: id => `/api/orion-script-monitors/${id}/delete`,
+    fillCreate: (name) => {
+      cy.get(testId('monitor-url')).clear().type(`https://example.com/e2e-${slugFor(name)}`);
+      timingFields('60', '10', '1000');
+    },
+    applyEdits: (name) => {
+      cy.get(testId('monitor-url')).clear().type(`https://example.com/e2e-${slugFor(name)}-edited`);
+      timingFields('120', '15', '1500');
+    },
+    assertEditedForm: (name) => {
+      cy.get(testId('monitor-url')).should('have.value', `https://example.com/e2e-${slugFor(name)}-edited`);
+      assertTimingFields('120', '15', '1500');
+    },
+  },
 ];
 
 describe('Monitor lifecycle', () => {
@@ -352,8 +387,11 @@ describe('Monitor lifecycle', () => {
   });
 
   scenarios.forEach((scenario) => {
-    it(`manages a ${scenario.label} monitor end to end`, () => {
+    const runner = scenario.pending ? it.skip : it;
+    runner(`manages a ${scenario.label} monitor end to end`, () => {
       runMonitorLifecycle(scenario);
     });
   });
 });
+
+export {};
