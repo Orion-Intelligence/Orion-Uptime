@@ -1,4 +1,4 @@
-<div animate.enter="page-enter" id="resource-list-page">
+<div animate.enter="page-enter" id="resource-list-page" data-testid="resource-list-page">
   <header class="tw:mb-8 tw:flex tw:items-end tw:justify-between tw:gap-8 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
     <div>
       <p class="eyebrow">Configuration</p>
@@ -8,13 +8,13 @@
     @if (canManage()) {
       <div class="tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2.5 tw:max-[700px]:self-end">
         @if (supportsConfigFiles()) {
-          <input #monitorConfigInput class="tw:hidden" type="file" accept="application/json,text/plain,.json,.txt" (change)="importMonitorConfig($event)" />
-          <button class="header-action header-action--secondary tw:cursor-pointer" type="button" (click)="monitorConfigInput.click()" [disabled]="importingConfig()">
+          <input #monitorConfigInput class="tw:hidden" type="file" data-testid="monitor-config-import-input" accept="application/json,text/plain,.json,.txt" (change)="importMonitorConfig($event)" />
+          <button data-testid="monitor-config-import-button" class="header-action header-action--secondary tw:cursor-pointer" type="button" (click)="monitorConfigInput.click()" [disabled]="importingConfig()">
             <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 3v10m0 0 4-4m-4 4L6 9M4 16h12" /></svg>
             {{ importingConfig() ? 'Importing…' : 'Import file' }}
           </button>
         }
-        <a class="header-action header-action--primary" [routerLink]="newUrl()">
+        <a data-testid="new-monitor-button" class="header-action header-action--primary" [routerLink]="newUrl()">
           <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
           {{ isMonitorList() ? 'New monitor' : 'New profile' }}
         </a>
@@ -26,16 +26,16 @@
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   }
   @if (error()) {
-    <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-5" role="alert">{{ error() }}</p>
+    <p data-testid="monitor-list-error" animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-5" role="alert">{{ error() }}</p>
   }
   @if (message() || heartbeatToken()) {
-    <div animate.enter="fade-in" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.app-notification--wide]:w-[min(540px,calc(100vw-40px))] tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.app-notification--wide]="heartbeatToken()" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+    <div data-testid="app-notification" animate.enter="fade-in" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.app-notification--wide]:w-[min(540px,calc(100vw-40px))] tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.app-notification--wide]="heartbeatToken()" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
       @if (message()) {
         <strong class="tw:text-xs">{{ message() }}</strong>
       }
       @if (heartbeatToken()) {
         <span class="tw:text-xs">Save this heartbeat token now</span>
-        <code class="tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#101a2b] tw:p-3 tw:font-mono tw:text-[11px] tw:leading-relaxed tw:text-white tw:wrap-anywhere">{{ heartbeatToken() }}</code>
+        <code data-testid="heartbeat-token-value" class="tw:rounded-lg tw:border tw:border-white/9 tw:bg-[#101a2b] tw:p-3 tw:font-mono tw:text-[11px] tw:leading-relaxed tw:text-white tw:wrap-anywhere">{{ heartbeatToken() }}</code>
         <small class="tw:text-[11px] tw:text-[#a7bdd5]">It is only shown after creation or regeneration.</small>
       }
     </div>
@@ -43,7 +43,7 @@
 
   @if (isMonitorList() && records().length) {
     @let summary = monitorSummary();
-    <section animate.enter="fade-in" animate.leave="fade-out" class="tw:mb-6 tw:grid tw:grid-cols-4 tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:max-[900px]:grid-cols-2 tw:max-[520px]:grid-cols-1 tw:bg-[#f9fbff] tw:dark:bg-[#172235]" aria-label="Monitor health summary">
+    <section data-testid="monitor-summary" animate.enter="fade-in" animate.leave="fade-out" class="tw:mb-6 tw:grid tw:grid-cols-4 tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:max-[900px]:grid-cols-2 tw:max-[520px]:grid-cols-1 tw:bg-[#f9fbff] tw:dark:bg-[#172235]" aria-label="Monitor health summary">
       <article class="tw:grid tw:min-h-25 tw:content-between tw:border-r tw:border-[#d7e2ef] tw:p-4.5 tw:dark:border-white/9 tw:max-[900px]:border-b tw:max-[520px]:border-r-0">
         <span class="tw:text-[11px] tw:font-medium tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Total monitors</span>
         <div class="tw:flex tw:items-end tw:justify-between tw:gap-3"><strong class="tw:text-[27px] tw:leading-none tw:tracking-[-0.04em]">{{ summary.total }}</strong>@if (summary.unknown) { <small class="tw:text-[11px] tw:text-[#7b91a8] tw:dark:text-[#8fa5bb]">{{ summary.unknown }} unknown</small> }</div>
@@ -63,18 +63,18 @@
     </section>
   }
 
-  <section class="tw:grid tw:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="{{ title() }} list">
+  <section data-testid="monitor-list" class="tw:grid tw:grid-cols-[repeat(auto-fill,minmax(380px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="{{ title() }} list">
     @for (record of records(); track record.id) {
       @let stats = overview(record);
-      <article animate.enter="list-item-enter" class="panel resource-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:bg-white! tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:bg-[#172235]! tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]" [class.is-up]="stats?.status === 'up' && stats?.is_active" [class.is-down]="stats?.status === 'down' && stats?.is_active" [class.is-paused]="stats && !stats.is_active">
+      <article data-testid="monitor-card" animate.enter="list-item-enter" class="panel resource-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:bg-white! tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:bg-[#172235]! tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]" [class.is-up]="stats?.status === 'up' && stats?.is_active" [class.is-down]="stats?.status === 'down' && stats?.is_active" [class.is-paused]="stats && !stats.is_active">
         <header class="tw:flex tw:min-w-0 tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
           @if (detailBase()) {
-            <a class="tw:flex tw:min-w-0 tw:flex-1 tw:items-start tw:gap-3.5 tw:text-inherit tw:no-underline" [routerLink]="[detailBase(), record.id]" [attr.title]="record.name">
+            <a data-testid="monitor-detail-link" class="tw:flex tw:min-w-0 tw:flex-1 tw:items-start tw:gap-3.5 tw:text-inherit tw:no-underline" [routerLink]="[detailBase(), record.id]" [attr.title]="record.name">
               <span class="tw:grid tw:size-10 tw:flex-none tw:place-items-center tw:rounded-[10px] tw:border tw:border-[#c5dcee] tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:border-[#57a5eb]/20 tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">
                 <svg viewBox="0 0 24 24" class="tw:size-4.5 tw:fill-none tw:stroke-current tw:stroke-[1.7]" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.4 2.5 3.7 5.5 3.7 9S14.4 18.5 12 21M12 3c-2.4 2.5-3.7 5.5-3.7 9S9.6 18.5 12 21" /></svg>
               </span>
               <span class="tw:min-w-0 tw:flex-1">
-                <strong class="tw:line-clamp-2 tw:text-[14px] tw:leading-[1.45] tw:font-semibold tw:tracking-[-0.01em] tw:wrap-anywhere">{{ record.name }}</strong>
+                <strong data-testid="monitor-name" class="tw:line-clamp-2 tw:text-[14px] tw:leading-[1.45] tw:font-semibold tw:tracking-[-0.01em] tw:wrap-anywhere">{{ record.name }}</strong>
                 <small class="tw:mt-1 tw:block tw:overflow-hidden tw:font-mono tw:text-[11px] tw:text-[#5f738f] tw:text-ellipsis tw:whitespace-nowrap tw:dark:text-[#9fb3c8]">{{ recordSubtitle(record) }}</small>
               </span>
             </a>
@@ -84,13 +84,13 @@
                 <svg viewBox="0 0 24 24" class="tw:size-4.5 tw:fill-none tw:stroke-current tw:stroke-[1.7]" aria-hidden="true"><rect x="5" y="10" width="14" height="10" rx="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" /></svg>
               </span>
               <span class="tw:min-w-0 tw:flex-1">
-                <strong class="tw:line-clamp-2 tw:text-[14px] tw:leading-[1.45] tw:font-semibold tw:tracking-[-0.01em] tw:wrap-anywhere">{{ record.name }}</strong>
+                <strong data-testid="monitor-name" class="tw:line-clamp-2 tw:text-[14px] tw:leading-[1.45] tw:font-semibold tw:tracking-[-0.01em] tw:wrap-anywhere">{{ record.name }}</strong>
                 <small class="tw:mt-1 tw:block tw:overflow-hidden tw:font-mono tw:text-[11px] tw:text-[#5f738f] tw:text-ellipsis tw:whitespace-nowrap tw:dark:text-[#9fb3c8]">{{ recordSubtitle(record) }}</small>
               </span>
             </div>
           }
           @if (stats) {
-            <span class="status-chip tw:inline-flex tw:flex-none tw:items-center tw:gap-1.75 tw:rounded-full tw:px-2.5 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:capitalize tw:[&.down]:bg-[#fff2f0] tw:[&.down]:text-[#b42318] tw:[&.paused]:bg-[#fff8e8] tw:[&.paused]:text-[#8a5d00] tw:[&.unknown]:bg-[#f1f5f9] tw:[&.unknown]:text-[#5f738f] tw:[&.up]:bg-[#effbf6] tw:[&.up]:text-[#16825f] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#9fb3c8] tw:before:content-[''] tw:[&.down]:before:bg-[#f97066] tw:[&.paused]:before:bg-[#f5b942] tw:[&.up]:before:bg-[#34d399] tw:dark:[&.down]:bg-[#f97066]/8 tw:dark:[&.down]:text-[#fda29b] tw:dark:[&.paused]:bg-[#f5b942]/8 tw:dark:[&.paused]:text-[#f7cd6b] tw:dark:[&.unknown]:bg-white/5 tw:dark:[&.unknown]:text-[#9fb3c8] tw:dark:[&.up]:bg-[#34d399]/8 tw:dark:[&.up]:text-[#70e0bd]" [class]="'status-chip ' + (stats.is_active ? stats.status : 'paused')">{{ stats.is_active ? stats.status : 'paused' }}</span>
+            <span data-testid="monitor-card-status" class="status-chip tw:inline-flex tw:flex-none tw:items-center tw:gap-1.75 tw:rounded-full tw:px-2.5 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:capitalize tw:[&.down]:bg-[#fff2f0] tw:[&.down]:text-[#b42318] tw:[&.paused]:bg-[#fff8e8] tw:[&.paused]:text-[#8a5d00] tw:[&.unknown]:bg-[#f1f5f9] tw:[&.unknown]:text-[#5f738f] tw:[&.up]:bg-[#effbf6] tw:[&.up]:text-[#16825f] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#9fb3c8] tw:before:content-[''] tw:[&.down]:before:bg-[#f97066] tw:[&.paused]:before:bg-[#f5b942] tw:[&.up]:before:bg-[#34d399] tw:dark:[&.down]:bg-[#f97066]/8 tw:dark:[&.down]:text-[#fda29b] tw:dark:[&.paused]:bg-[#f5b942]/8 tw:dark:[&.paused]:text-[#f7cd6b] tw:dark:[&.unknown]:bg-white/5 tw:dark:[&.unknown]:text-[#9fb3c8] tw:dark:[&.up]:bg-[#34d399]/8 tw:dark:[&.up]:text-[#70e0bd]" [class]="'status-chip ' + (stats.is_active ? stats.status : 'paused')">{{ stats.is_active ? stats.status : 'paused' }}</span>
           }
         </header>
 
@@ -132,7 +132,7 @@
 
         <footer class="tw:mt-auto tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
           @if (detailBase()) {
-            <a class="tw:inline-flex tw:min-h-8 tw:items-center tw:gap-1.5 tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#2b90ee] tw:dark:text-[#87c4f5]" [routerLink]="[detailBase(), record.id]">
+            <a data-testid="monitor-view-details-link" class="tw:inline-flex tw:min-h-8 tw:items-center tw:gap-1.5 tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#2b90ee] tw:dark:text-[#87c4f5]" [routerLink]="[detailBase(), record.id]">
               View details <span aria-hidden="true">→</span>
             </a>
           } @else {
@@ -141,19 +141,19 @@
           @if (canManage()) {
             <div animate.enter="fade-in" class="tw:inline-flex tw:items-stretch tw:overflow-hidden tw:rounded-[10px] tw:border tw:border-[#c4d5e7] tw:bg-white tw:transition-colors tw:*:relative tw:hover:border-[#a8c7e4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:hover:border-[#57a5eb]/45 tw:[&>*+*]:before:pointer-events-none tw:[&>*+*]:before:absolute tw:[&>*+*]:before:inset-y-2 tw:[&>*+*]:before:left-0 tw:[&>*+*]:before:w-px tw:[&>*+*]:before:bg-[#d7e2ef] tw:[&>*+*]:before:content-[''] tw:dark:[&>*+*]:before:bg-white/12">
               @if (supportsConfigFiles()) {
-                <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
+                <button data-testid="monitor-export-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
                   {{ exportingId() === record.id ? 'Exporting…' : 'Export' }}
                 </button>
               }
               @if (editBase()) {
-                <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" [routerLink]="[editBase(), record.id, 'edit']" [attr.aria-label]="'Edit ' + record.name">Edit</a>
+                <a data-testid="monitor-edit-link" class="tw:inline-flex tw:min-h-9 tw:items-center tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" [routerLink]="[editBase(), record.id, 'edit']" [attr.aria-label]="'Edit ' + record.name">Edit</a>
               }
               @if (stats) {
-                <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(record)" [disabled]="updatingId() === record.id" [attr.aria-label]="(stats.is_active ? 'Pause ' : 'Start ') + record.name">
+                <button data-testid="monitor-toggle-active-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleActive(record)" [disabled]="updatingId() === record.id" [attr.aria-label]="(stats.is_active ? 'Pause ' : 'Start ') + record.name">
                   {{ updatingId() === record.id ? 'Updating…' : stats.is_active ? 'Pause' : 'Start' }}
                 </button>
               }
-              <button class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b] tw:dark:hover:bg-[#f97066]/12" type="button" (click)="requestDelete(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
+              <button data-testid="monitor-delete-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b] tw:dark:hover:bg-[#f97066]/12" type="button" (click)="requestDelete(record)" [disabled]="deletingId() === record.id" [attr.aria-label]="'Delete ' + record.name">
                 {{ deletingId() === record.id ? 'Deleting…' : 'Delete' }}
               </button>
             </div>
@@ -162,7 +162,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div animate.enter="fade-in" animate.leave="fade-out" class="panel tw:col-span-full tw:grid tw:min-h-70 tw:place-items-center tw:rounded-xl tw:border-[#d7e2ef] tw:bg-white tw:px-6 tw:py-10 tw:text-center tw:dark:border-white/9 tw:dark:bg-[#172235]">
+        <div data-testid="monitor-list-empty" animate.enter="fade-in" animate.leave="fade-out" class="panel tw:col-span-full tw:grid tw:min-h-70 tw:place-items-center tw:rounded-xl tw:border-[#d7e2ef] tw:bg-white tw:px-6 tw:py-10 tw:text-center tw:dark:border-white/9 tw:dark:bg-[#172235]">
           <div class="tw:grid tw:max-w-95 tw:justify-items-center">
             <span class="tw:grid tw:size-13 tw:place-items-center tw:rounded-xl tw:border tw:border-[#bcd6ef] tw:bg-[#edf6ff] tw:text-[#1176d4] tw:dark:border-[#57a5eb]/20 tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">
               <svg viewBox="0 0 24 24" class="tw:size-6 tw:fill-none tw:stroke-current tw:stroke-[1.6]" aria-hidden="true"><path d="M4 15.5 9 10l3 3 7-8M14 5h5v5" /></svg>
@@ -170,7 +170,7 @@
             <h2 class="tw:mt-4 tw:mb-0 tw:text-[17px] tw:font-semibold">{{ isMonitorList() ? 'No monitors yet' : 'No authentication profiles yet' }}</h2>
             <p class="tw:mt-2 tw:mb-0 tw:text-[12px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ isMonitorList() ? 'Create your first monitor to start tracking availability and incidents.' : 'Create an authentication profile to monitor protected endpoints.' }}</p>
             @if (canManage()) {
-              <a class="tw:mt-5 tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:bg-[#1176d4] tw:px-4 tw:text-[11px] tw:font-semibold tw:text-white tw:no-underline tw:hover:bg-[#2b90ee]" [routerLink]="newUrl()">{{ isMonitorList() ? 'Create monitor' : 'Create profile' }}</a>
+              <a data-testid="monitor-list-empty-create" class="tw:mt-5 tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:bg-[#1176d4] tw:px-4 tw:text-[11px] tw:font-semibold tw:text-white tw:no-underline tw:hover:bg-[#2b90ee]" [routerLink]="newUrl()">{{ isMonitorList() ? 'Create monitor' : 'Create profile' }}</a>
             }
           </div>
         </div>
