@@ -1,0 +1,11 @@
+{
+  "format": "orion-monitor-config",
+  "version": 1,
+  "monitor_type": "ping",
+  "name": "E2E ping import fixture",
+  "host": "example.com",
+  "check_interval": 60,
+  "timeout": 10,
+  "expected_response_time_ms": null,
+  "is_active": true
+}

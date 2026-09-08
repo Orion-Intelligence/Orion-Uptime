@@ -2,7 +2,7 @@
   <header class="tw:mb-8 tw:flex tw:items-end tw:justify-between tw:gap-8 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
     <div>
       <p class="eyebrow">Configuration</p>
-      <h1 class="page-title">{{ title() }}</h1>
+      <h1 class="page-title" data-testid="page-title">{{ title() }}</h1>
       <p class="page-description">{{ description() }}</p>
     </div>
     @if (canManage()) {

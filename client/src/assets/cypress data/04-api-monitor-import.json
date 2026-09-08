@@ -1,0 +1,14 @@
+{
+  "format": "orion-monitor-config",
+  "version": 1,
+  "monitor_type": "API",
+  "name": "E2E API import fixture",
+  "url": "https://example.com/e2e-api-import-fixture-04",
+  "method": "GET",
+  "headers": {},
+  "expected_status_code": 200,
+  "check_interval": 60,
+  "timeout": 10,
+  "expected_response_time_ms": null,
+  "is_active": true
+}
