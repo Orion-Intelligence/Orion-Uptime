@@ -30,6 +30,8 @@ class AuthProfileManager:
         if await self.collection.find_one({"name": request.name}) is not None:
             raise ConflictError("An auth profile with this name already exists.")
 
+        await self._assert_unique_credentials(request.login_url, request.credentials)
+
         now = datetime.now(UTC)
         profile = AuthProfileModel(**request.model_dump(), method="POST", created_at=now, updated_at=now)
 
@@ -96,6 +98,10 @@ class AuthProfileManager:
 
         if "name" in update_data and await self.collection.find_one({"name": update_data["name"], "_id": {"$ne": ObjectId(profile_id)}}) is not None:
             raise ConflictError("An auth profile with this name already exists.")
+        if "login_url" in update_data or "credentials" in update_data:
+            effective_login_url = update_data["login_url"] if "login_url" in update_data else profile.login_url
+            effective_credentials = update_data["credentials"] if "credentials" in update_data else profile.credentials
+            await self._assert_unique_credentials(effective_login_url, effective_credentials, exclude_id=profile_id)
         if update_data.get("credentials") is not None:
             update_data["credentials_encrypted"] = secret_box.encrypt_mapping(update_data.pop("credentials"))
         update_data["updated_at"] = datetime.now(UTC)
@@ -128,6 +134,21 @@ class AuthProfileManager:
     async def _encrypt_plaintext_credentials(self) -> None:
         async for document in self.collection.find({"credentials": {"$exists": True}}, {"credentials": 1}):
             await self.collection.update_one({"_id": document["_id"]}, {"$set": {"credentials_encrypted": secret_box.encrypt_mapping(document["credentials"] or {})}, "$unset": {"credentials": ""}})
+
+    @staticmethod
+    def _comparable_login_url(login_url: str) -> str:
+        return login_url.strip().rstrip("/")
+
+    async def _assert_unique_credentials(self, login_url: str, credentials: dict[str, str], exclude_id: str | None = None) -> None:
+        target_login_url = self._comparable_login_url(login_url)
+        async for document in self.collection.find():
+            if exclude_id is not None and str(document.get("_id")) == exclude_id:
+                continue
+            existing = self._deserialize(document)
+            if self._comparable_login_url(existing.login_url) != target_login_url:
+                continue
+            if existing.credentials == credentials:
+                raise ConflictError(f"Auth profile '{existing.name}' already uses these credentials for this login URL. Change the credentials, or point this profile at a different login URL.")
 
     @staticmethod
     def _serialize(profile: AuthProfileModel) -> dict:

@@ -8,7 +8,6 @@ interface MonitorScenario {
   editTitle: string;
   configType?: string;
   fixture?: string;
-  pending?: boolean;
   listApi: string;
   createApi: string;
   updateApi: string;
@@ -16,6 +15,7 @@ interface MonitorScenario {
   deleteUrl: (id: string) => string;
   fillCreate: (name: string) => void;
   applyEdits: (name: string) => void;
+  assertImportedForm?: () => void;
   assertEditedForm: (name: string) => void;
 }
 
@@ -66,11 +66,25 @@ const openList = (scenario: MonitorScenario) => {
   disableNoticeOverlay();
 };
 
+const assertNameRequired = (scenario: MonitorScenario) => {
+  const attempts = { count: 0 };
+  cy.intercept('POST', scenario.createApi, () => { attempts.count += 1; });
+  cy.get(testId('monitor-name')).clear();
+  cy.get(testId('save-button')).click();
+  cy.get(testId('resource-editor-error')).should('be.visible').and('contain.text', 'Name is required');
+  cy.location('pathname').should('eq', `${scenario.listPath}/new`);
+  cy.then(() => {
+    expect(attempts.count, `${scenario.label} create requests while name is empty`).to.eq(0);
+  });
+};
+
 const createMonitor = (scenario: MonitorScenario, name: string): Cypress.Chainable<string> => {
   cy.get(testId('new-monitor-button')).click();
   cy.location('pathname').should('eq', `${scenario.listPath}/new`);
   cy.get(testId('page-title')).should('contain.text', scenario.newTitle);
   cy.get(testId('resource-editor-form')).should('be.visible');
+
+  assertNameRequired(scenario);
 
   cy.get(testId('monitor-name')).clear().type(name);
   scenario.fillCreate(name);
@@ -208,6 +222,14 @@ const runMonitorLifecycle = (scenario: MonitorScenario) => {
 
   importMonitor(scenario).then((importedId) => {
     cardById(scenario, importedId).find(testId('monitor-name')).invoke('text').then((importedName) => {
+      const assertImportedForm = scenario.assertImportedForm;
+      if (assertImportedForm) {
+        cardById(scenario, importedId).find(testId('monitor-edit-link')).click();
+        cy.location('pathname').should('eq', `${scenario.listPath}/${importedId}/edit`);
+        assertImportedForm();
+        cy.get(testId('cancel-button')).click();
+        cy.location('pathname').should('eq', scenario.listPath);
+      }
       confirmDelete(scenario, importedId, importedName);
     });
   });
@@ -249,6 +271,12 @@ const scenarios: MonitorScenario[] = [
       cy.get(testId('monitor-expected-status')).clear().type('204');
       timingFields('120', '15', '1500');
     },
+    assertImportedForm: () => {
+      cy.get(testId('monitor-name')).should('have.value', 'E2E HTTP import fixture');
+      cy.get(testId('monitor-url')).should('have.value', 'https://example.com/e2e-http-import-fixture-04');
+      cy.get(testId('monitor-expected-status')).should('have.value', '200');
+      assertTimingFields('60', '10', '');
+    },
     assertEditedForm: (name) => {
       cy.get(testId('monitor-url')).should('have.value', `https://example.com/e2e-${slugFor(name)}`);
       cy.get(testId('monitor-expected-status')).should('have.value', '204');
@@ -281,6 +309,13 @@ const scenarios: MonitorScenario[] = [
       cy.get(testId('api-expected-content-type')).clear().type('application/json');
       timingFields('120', '15', '1500');
     },
+    assertImportedForm: () => {
+      cy.get(testId('monitor-name')).should('have.value', 'E2E API import fixture');
+      cy.get(testId('monitor-url')).should('have.value', 'https://example.com/e2e-api-import-fixture-04');
+      cy.get(testId('api-method')).should('have.value', 'GET');
+      cy.get(testId('monitor-expected-status')).should('have.value', '200');
+      assertTimingFields('60', '10', '');
+    },
     assertEditedForm: (name) => {
       cy.get(testId('monitor-url')).should('have.value', `https://example.com/e2e-${slugFor(name)}`);
       cy.get(testId('api-method')).should('have.value', 'POST');
@@ -310,6 +345,11 @@ const scenarios: MonitorScenario[] = [
       cy.get(testId('monitor-host')).clear().type('example.org');
       timingFields('120', '15', '1500');
     },
+    assertImportedForm: () => {
+      cy.get(testId('monitor-name')).should('have.value', 'E2E ping import fixture');
+      cy.get(testId('monitor-host')).should('have.value', 'example.com');
+      assertTimingFields('60', '10', '');
+    },
     assertEditedForm: () => {
       cy.get(testId('monitor-host')).should('have.value', 'example.org');
       assertTimingFields('120', '15', '1500');
@@ -336,34 +376,14 @@ const scenarios: MonitorScenario[] = [
       cy.get(testId('heartbeat-interval')).clear().type('600');
       cy.get(testId('heartbeat-grace')).clear().type('120');
     },
+    assertImportedForm: () => {
+      cy.get(testId('monitor-name')).should('have.value', 'E2E heartbeat import fixture');
+      cy.get(testId('heartbeat-interval')).should('have.value', '300');
+      cy.get(testId('heartbeat-grace')).should('have.value', '60');
+    },
     assertEditedForm: () => {
       cy.get(testId('heartbeat-interval')).should('have.value', '600');
       cy.get(testId('heartbeat-grace')).should('have.value', '120');
-    },
-  },
-  {
-    label: 'Orion Script',
-    pending: true,
-    listPath: '/monitors/orion-script',
-    listTitle: 'Orion script monitors',
-    newTitle: 'New Orion script monitor',
-    editTitle: 'Edit Orion script monitor',
-    listApi: '/api/orion-script-monitors/list_all',
-    createApi: '**/api/orion-script-monitors/create',
-    updateApi: '**/api/orion-script-monitors/*/update',
-    deleteApi: '**/api/orion-script-monitors/*/delete',
-    deleteUrl: id => `/api/orion-script-monitors/${id}/delete`,
-    fillCreate: (name) => {
-      cy.get(testId('monitor-url')).clear().type(`https://example.com/e2e-${slugFor(name)}`);
-      timingFields('60', '10', '1000');
-    },
-    applyEdits: (name) => {
-      cy.get(testId('monitor-url')).clear().type(`https://example.com/e2e-${slugFor(name)}-edited`);
-      timingFields('120', '15', '1500');
-    },
-    assertEditedForm: (name) => {
-      cy.get(testId('monitor-url')).should('have.value', `https://example.com/e2e-${slugFor(name)}-edited`);
-      assertTimingFields('120', '15', '1500');
     },
   },
 ];
@@ -387,8 +407,7 @@ describe('Monitor lifecycle', () => {
   });
 
   scenarios.forEach((scenario) => {
-    const runner = scenario.pending ? it.skip : it;
-    runner(`manages a ${scenario.label} monitor end to end`, () => {
+    it(`manages a ${scenario.label} monitor end to end`, () => {
       runMonitorLifecycle(scenario);
     });
   });

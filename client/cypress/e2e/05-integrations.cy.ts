@@ -2,6 +2,8 @@ const testId = (id: string) => `[data-testid="${id}"]`;
 
 const E2E_NAME_PREFIX = 'E2E ';
 const HTTP_MONITORS_PATH = '/monitors/http';
+const SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/T00000000/B00000000/e2eSlackWebhookToken';
+const RECIPIENT_EMAIL = 'e2e-on-call@example.com';
 
 const uniqueSuffix = () => `${Date.now()} ${Math.floor(Math.random() * 1_000_000)}`;
 
@@ -75,6 +77,17 @@ const selectMonitorOption = (monitorName: string) => {
     .should('have.class', 'selected');
 };
 
+const assertIntegrationNameRequired = (createApi: string) => {
+  const attempts = { count: 0 };
+  cy.intercept('POST', createApi, () => { attempts.count += 1; });
+  cy.get(testId('integration-name')).clear();
+  cy.get(testId('save-button')).click();
+  cy.get(testId('integration-editor-error')).should('be.visible').and('contain.text', 'Integration name is required');
+  cy.then(() => {
+    expect(attempts.count, 'integration create requests while the name is blank').to.eq(0);
+  });
+};
+
 const openIntegrationsHub = () => {
   cy.get(testId('nav-integrations')).click();
   cy.location('pathname').should('eq', '/integrations');
@@ -90,8 +103,10 @@ const createSlackIntegration = (name: string, monitorName: string, monitorId: st
   cy.location('pathname').should('eq', '/integrations/slack/new');
   cy.get(testId('integration-editor-form')).should('be.visible');
 
+  cy.get(testId('slack-webhook-url')).clear().type(SLACK_WEBHOOK_URL);
+  assertIntegrationNameRequired('**/api/integrations/slack');
+
   cy.get(testId('integration-name')).clear().type(name);
-  cy.get(testId('slack-webhook-url')).clear().type('https://hooks.slack.com/services/T00000000/B00000000/e2eSlackWebhookToken');
   selectMonitorOption(monitorName);
 
   cy.intercept('POST', '**/api/integrations/slack').as('createSlackIntegration');
@@ -106,6 +121,8 @@ const createSlackIntegration = (name: string, monitorName: string, monitorId: st
     expect(id, 'slack integration ID').to.not.equal('');
     cy.location('pathname').should('eq', '/integrations/slack');
     slackCardById(id).should('be.visible');
+    slackCardById(id).find(testId('slack-integration-name')).should('have.text', name);
+    slackCardById(id).should('contain.text', 'Assigned monitors · 1').and('contain.text', monitorName);
     return cy.wrap({ id, name: String(response?.body?.data?.name ?? name) });
   });
 };
@@ -134,8 +151,10 @@ const createEmailIntegration = (name: string, monitorName: string, monitorId: st
   cy.location('pathname').should('eq', '/integrations/email/new');
   cy.get(testId('integration-editor-form')).should('be.visible');
 
+  cy.get(testId('recipient-email')).clear().type(RECIPIENT_EMAIL);
+  assertIntegrationNameRequired('**/api/integrations/email');
+
   cy.get(testId('integration-name')).clear().type(name);
-  cy.get(testId('recipient-email')).clear().type('e2e-on-call@example.com');
   selectMonitorOption(monitorName);
 
   cy.intercept('POST', '**/api/integrations/email').as('createEmailIntegration');
@@ -144,13 +163,15 @@ const createEmailIntegration = (name: string, monitorName: string, monitorId: st
   return cy.wait('@createEmailIntegration').then(({ request, response }) => {
     expect(response?.statusCode, 'email create status').to.be.oneOf([200, 201]);
     expect(request.body.name, 'email name sent').to.eq(name);
-    expect(request.body.email, 'email recipient sent').to.eq('e2e-on-call@example.com');
+    expect(request.body.email, 'email recipient sent').to.eq(RECIPIENT_EMAIL);
     expect(request.body.monitor_ids, 'email monitor_ids sent').to.include(monitorId);
 
     const id = String(response?.body?.data?.id ?? '');
     expect(id, 'email integration ID').to.not.equal('');
     cy.location('pathname').should('eq', '/integrations/email');
     emailRowById(id).should('be.visible');
+    emailRowById(id).find(testId('email-integration-name')).should('have.text', name);
+    emailRowById(id).should('contain.text', '1 monitor').and('contain.text', monitorName);
     return cy.wrap({ id, name: String(response?.body?.data?.name ?? name) });
   });
 };
