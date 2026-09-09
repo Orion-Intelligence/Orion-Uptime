@@ -69,8 +69,8 @@ const openList = (scenario: MonitorScenario) => {
 const assertNameRequired = (scenario: MonitorScenario) => {
   const attempts = { count: 0 };
   cy.intercept('POST', scenario.createApi, () => { attempts.count += 1; });
-  cy.get(testId('monitor-name')).clear();
   cy.get(testId('save-button')).click();
+  cy.scrollTo('top', { ensureScrollable: false });
   cy.get(testId('resource-editor-error')).should('be.visible').and('contain.text', 'Name is required');
   cy.location('pathname').should('eq', `${scenario.listPath}/new`);
   cy.then(() => {

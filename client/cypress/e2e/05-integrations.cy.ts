@@ -80,8 +80,8 @@ const selectMonitorOption = (monitorName: string) => {
 const assertIntegrationNameRequired = (createApi: string) => {
   const attempts = { count: 0 };
   cy.intercept('POST', createApi, () => { attempts.count += 1; });
-  cy.get(testId('integration-name')).clear();
   cy.get(testId('save-button')).click();
+  cy.scrollTo('top', { ensureScrollable: false });
   cy.get(testId('integration-editor-error')).should('be.visible').and('contain.text', 'Integration name is required');
   cy.then(() => {
     expect(attempts.count, 'integration create requests while the name is blank').to.eq(0);
