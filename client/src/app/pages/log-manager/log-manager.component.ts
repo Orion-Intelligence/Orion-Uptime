@@ -33,26 +33,19 @@ export class LogManagerComponent {
   readonly hasMore = signal(false);
   readonly sourceProfileName = signal<string | null>(null);
   readonly loaded = signal(false);
-
   readonly calendarOpen = signal(false);
   readonly rangeFrom = signal('');
   readonly rangeTo = signal('');
   readonly calendarMonth = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-
   readonly todayIso = this.toIso(new Date());
-
   logType = 'All';
-
   readonly hasRange = computed(() => Boolean(this.rangeFrom() && this.rangeTo()));
-
   readonly monthLabel = computed(() => this.calendarMonth().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }));
-
   readonly canGoNextMonth = computed(() => {
     const month = this.calendarMonth();
     const now = new Date();
     return month.getFullYear() < now.getFullYear() || (month.getFullYear() === now.getFullYear() && month.getMonth() < now.getMonth());
   });
-
   readonly rangeLabel = computed(() => {
     const from = this.rangeFrom();
     const to = this.rangeTo();
@@ -64,7 +57,6 @@ export class LogManagerComponent {
     }
     return `${this.formatDay(from)} — ${this.formatDay(to)}`;
   });
-
   readonly calendarDays = computed<CalendarDay[]>(() => {
     const month = this.calendarMonth();
     const first = new Date(month.getFullYear(), month.getMonth(), 1);

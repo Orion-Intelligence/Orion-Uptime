@@ -224,21 +224,24 @@ export class MonitorListComponent extends NoticePageBase {
     });
   }
 
-  selectLogSource(record: ResourceRecord): void {
-    if (record.is_log_source) {
-      return;
-    }
+  toggleLogSource(record: ResourceRecord): void {
     this.selectingLogSourceId.set(record.id);
+    const endpoint = record.is_log_source
+      ? '/auth-profiles/clear-log-source'
+      : `/auth-profiles/${record.id}/select-log-source`;
     this.api
-      .post<ResourceRecord, Record<string, never>>(`/auth-profiles/${record.id}/select-log-source`, {})
+      .post<unknown, Record<string, string>>(endpoint, {})
       .pipe(finalize(() => {
         this.selectingLogSourceId.set('');
       }))
       .subscribe({
         next: () => {
+          const selected = !record.is_log_source;
           this.records.update((records) =>
-            records.map((item) => ({ ...item, is_log_source: item.id === record.id })),);
-          this.showNotice(`Log Manager will read system logs using “${record.name}”.`);
+            records.map((item) => ({ ...item, is_log_source: selected && item.id === record.id })),);
+          this.showNotice(selected
+            ? `Log Manager will read system logs using “${record.name}”.`
+            : `“${record.name}” is no longer the Log Manager source.`,);
         },
         error: (error: unknown) => {
           this.error.set(ApiService.errorMessage(error));

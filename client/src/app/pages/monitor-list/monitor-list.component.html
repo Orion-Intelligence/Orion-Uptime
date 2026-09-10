@@ -149,8 +149,8 @@
                 </button>
               }
               @if (isAuthProfileList()) {
-                <button data-testid="auth-profile-log-source-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="selectLogSource(record)" [disabled]="selectingLogSourceId() === record.id || !!record.is_log_source" [attr.aria-label]="'Use ' + record.name + ' for Log Manager'">
-                  {{ selectingLogSourceId() === record.id ? 'Selecting…' : record.is_log_source ? 'Log source' : 'Use for logs' }}
+                <button data-testid="auth-profile-log-source-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="toggleLogSource(record)" [disabled]="selectingLogSourceId() === record.id" [attr.aria-label]="(record.is_log_source ? 'Stop using ' : 'Use ') + record.name + ' for Log Manager'">
+                  {{ selectingLogSourceId() === record.id ? 'Saving…' : record.is_log_source ? 'Unset log source' : 'Use for logs' }}
                 </button>
               }
               @if (editBase()) {

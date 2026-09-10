@@ -8,21 +8,17 @@ export class ThemeService {
   private readonly document = inject(DOCUMENT);
   private readonly platformId = inject(PLATFORM_ID);
 
-  readonly theme = signal<AppTheme>('dark');
+  readonly theme = signal<AppTheme>('light');
 
   constructor() {
     if (isPlatformBrowser(this.platformId)) {
-      const stored = window.localStorage.getItem('orion-uptime-theme');
-      this.theme.set(stored === 'light' ? 'light' : 'dark');
+      window.localStorage.removeItem('orion-uptime-theme');
     }
     this.applyTheme();
   }
 
   toggle(): void {
     this.theme.update((theme) => (theme === 'dark' ? 'light' : 'dark'));
-    if (isPlatformBrowser(this.platformId)) {
-      window.localStorage.setItem('orion-uptime-theme', this.theme());
-    }
     this.applyTheme();
   }
 
