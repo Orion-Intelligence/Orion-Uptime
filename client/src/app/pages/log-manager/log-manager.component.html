@@ -1,0 +1,119 @@
+<div animate.enter="page-enter" id="log-manager-page" data-testid="log-manager-page" class="tw:mx-auto tw:max-w-[1600px]">
+  <header class="tw:mb-6 tw:flex tw:items-end tw:justify-between tw:gap-6 tw:max-[900px]:flex-col tw:max-[900px]:items-start">
+    <div class="tw:min-w-0">
+      <p class="eyebrow">Management</p>
+      <h1 class="page-title" data-testid="page-title">Log Manager</h1>
+      <p class="page-description">
+        System logs read from the Orion Intelligence instance of the auth profile selected on the Auth profiles page.
+      </p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading system logs"></div>
+  }
+
+  <section data-testid="log-manager-toolbar" class="tw:mb-4 tw:flex tw:flex-wrap tw:items-end tw:justify-end tw:gap-3" aria-label="Log filters">
+    <div class="field tw:m-0 tw:min-w-40">
+      <label for="log-type">Type</label>
+      <select id="log-type" data-testid="log-type-filter" [(ngModel)]="logType" (ngModelChange)="applyFilters()">
+        @for (option of logTypes; track option) {
+          <option [value]="option">{{ option }}</option>
+        }
+      </select>
+    </div>
+    <div class="field log-date-range tw:relative tw:m-0 tw:min-w-64">
+      <label for="log-date-range">Date Range</label>
+      <button id="log-date-range" data-testid="log-date-range" class="tw:flex tw:h-9.5 tw:w-full tw:cursor-pointer tw:items-center tw:justify-between tw:gap-3 tw:rounded-lg tw:border tw:border-[#c7d5e6] tw:bg-[#f8fbff] tw:px-3 tw:text-left tw:text-[13px] tw:text-[#172235] tw:transition-colors tw:hover:border-[#57a5eb] tw:dark:border-white/15 tw:dark:bg-[#131e30] tw:dark:text-[#d9e4ef]" type="button" (click)="toggleCalendar()" [attr.aria-expanded]="calendarOpen()">
+        <span class="tw:overflow-hidden tw:text-ellipsis tw:whitespace-nowrap">{{ rangeLabel() }}</span>
+        <svg class="tw:size-4 tw:flex-none tw:fill-none tw:stroke-current tw:stroke-[1.7]" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M8 3v4m8-4v4M4 10h16" /></svg>
+      </button>
+      @if (calendarOpen()) {
+        <div animate.enter="popup-in" data-testid="log-calendar" class="tw:absolute tw:top-[calc(100%+6px)] tw:left-0 tw:z-1320 tw:w-72 tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:p-3 tw:shadow-[0_16px_34px_rgb(15_23_42_/_16%)] tw:dark:border-white/12 tw:dark:bg-[#172235]" role="dialog" aria-label="Select date range">
+          <div class="tw:mb-2 tw:flex tw:items-center tw:justify-between tw:gap-2">
+            <button data-testid="log-calendar-previous" class="tw:grid tw:size-7 tw:cursor-pointer tw:place-items-center tw:rounded-md tw:border tw:border-[#c4d5e7] tw:bg-white tw:text-[12px] tw:font-semibold tw:text-[#5f738f] tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#131e30] tw:dark:text-[#b9cee3]" type="button" (click)="previousMonth()" aria-label="Previous month">&lt;</button>
+            <strong data-testid="log-calendar-month" class="tw:text-[12px] tw:font-semibold tw:text-[#425b76] tw:dark:text-[#d9e4ef]">{{ monthLabel() }}</strong>
+            @if (canGoNextMonth()) {
+              <button data-testid="log-calendar-next" class="tw:grid tw:size-7 tw:cursor-pointer tw:place-items-center tw:rounded-md tw:border tw:border-[#c4d5e7] tw:bg-white tw:text-[12px] tw:font-semibold tw:text-[#5f738f] tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#131e30] tw:dark:text-[#b9cee3]" type="button" (click)="nextMonth()" aria-label="Next month">&gt;</button>
+            } @else {
+              <span class="tw:size-7"></span>
+            }
+          </div>
+          <div class="tw:grid tw:grid-cols-7 tw:gap-1">
+            @for (weekday of weekdays; track weekday) {
+              <span class="tw:grid tw:h-7 tw:place-items-center tw:text-[10px] tw:font-semibold tw:text-[#8ca0b5] tw:uppercase tw:dark:text-[#71869c]">{{ weekday }}</span>
+            }
+            @for (day of calendarDays(); track day.iso) {
+              <button data-testid="log-calendar-day" class="calendar-day tw:grid tw:h-8 tw:cursor-pointer tw:place-items-center tw:rounded-md tw:border-0 tw:bg-transparent tw:text-[12px] tw:tabular-nums tw:text-[#425b76] tw:transition-colors tw:hover:bg-[#edf6ff] tw:disabled:cursor-not-allowed tw:disabled:opacity-30 tw:disabled:hover:bg-transparent tw:dark:text-[#c9d9e9] tw:dark:hover:bg-[#57a5eb]/12 tw:[&.faded]:opacity-45 tw:[&.range]:bg-[#edf6ff] tw:dark:[&.range]:bg-[#57a5eb]/12 tw:[&.edge]:bg-[#1176d4]! tw:[&.edge]:text-white! tw:[&.edge]:font-semibold" type="button" [class.faded]="!day.inMonth" [class.range]="day.inRange" [class.edge]="day.isFrom || day.isTo" [disabled]="day.disabled" (click)="selectDate(day)" [attr.aria-label]="day.iso">{{ day.label }}</button>
+            }
+          </div>
+          <div class="tw:mt-2.5 tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-[#e3ebf3] tw:pt-2.5 tw:dark:border-white/9">
+            <small class="tw:text-[10px] tw:text-[#8ca0b5] tw:dark:text-[#71869c]">Pick a start date, then an end date.</small>
+            <button data-testid="log-calendar-clear" class="tw:cursor-pointer tw:border-0 tw:bg-transparent tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:hover:text-[#1176d4] tw:dark:text-[#9fb3c8]" type="button" (click)="clearRange()">Clear</button>
+          </div>
+        </div>
+      }
+    </div>
+    <button data-testid="log-refresh-button" class="header-action header-action--secondary tw:cursor-pointer" type="button" (click)="loadLogs()" [disabled]="loading()">
+      <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M16 6.5V2.8m0 0h-3.7M16 2.8l-2.2 2.1a6.3 6.3 0 1 0 1.6 6.6" /></svg>
+      {{ loading() ? 'Refreshing…' : 'Refresh' }}
+    </button>
+  </section>
+
+  @if (error()) {
+    <p data-testid="log-manager-error" animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4" role="alert">{{ error() }}</p>
+  }
+
+  <section class="tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235]" aria-label="System logs">
+    <div class="tw:flex tw:min-h-15 tw:flex-wrap tw:items-center tw:justify-between tw:gap-4 tw:border-b tw:border-[#d7e2ef] tw:px-5 tw:py-3 tw:dark:border-white/9">
+      <div class="tw:min-w-0">
+        <p class="tw:m-0 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#7b91a8] tw:uppercase tw:dark:text-[#8fa5bb]">Logs</p>
+        @if (sourceProfileName()) {
+          <small data-testid="log-source-profile" class="tw:mt-0.5 tw:block tw:text-[11px] tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">Source profile · {{ sourceProfileName() }}</small>
+        }
+      </div>
+      <div data-testid="log-pagination" class="tw:inline-flex tw:items-center tw:gap-1.5">
+        @if (page() > 1) {
+          <button data-testid="log-page-previous" class="tw:grid tw:size-8 tw:cursor-pointer tw:place-items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:text-[13px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3]" type="button" (click)="previousPage()" [disabled]="loading()" aria-label="Previous page">&lt;</button>
+        }
+        <span data-testid="log-page-number" class="tw:min-w-20 tw:text-center tw:text-[12px] tw:font-semibold tw:tabular-nums tw:text-[#425b76] tw:dark:text-[#d9e4ef]">Page {{ page() }}</span>
+        @if (hasMore()) {
+          <button data-testid="log-page-next" class="tw:grid tw:size-8 tw:cursor-pointer tw:place-items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:text-[13px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3]" type="button" (click)="nextPage()" [disabled]="loading()" aria-label="Next page">&gt;</button>
+        }
+      </div>
+    </div>
+
+    <div data-testid="log-table-scroll" class="tw:overflow-x-auto tw:[scrollbar-color:#b8cde1_transparent] tw:[scrollbar-width:thin]">
+      <table data-testid="log-table" class="tw:w-full tw:min-w-[1180px] tw:border-collapse tw:text-left tw:text-[#2d3d55] tw:dark:text-[#d8e2ed]">
+        <thead>
+          <tr>
+            <th class="tw:w-30 tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">Type</th>
+            <th class="tw:w-52 tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">Time</th>
+            <th class="tw:w-56 tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">File</th>
+            <th class="tw:w-64 tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">Source</th>
+            <th class="tw:border-b tw:border-[#d7e2ef] tw:bg-[#f7faff] tw:px-4.5 tw:py-3.5 tw:text-[11px] tw:font-semibold tw:tracking-[0.1em] tw:text-[#71869c] tw:uppercase tw:dark:border-white/9 tw:dark:bg-[#131f31] tw:dark:text-[#8fa5bb]">Message</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (entry of logs(); track $index) {
+            <tr data-testid="log-row" class="tw:[transition:background-color_140ms_ease] tw:hover:bg-[#f7fbff] tw:dark:hover:bg-[#1a283d]">
+              <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:align-top tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">
+                <span data-testid="log-type-pill" class="log-type tw:inline-flex tw:items-center tw:rounded-md tw:bg-[#f1f5f9] tw:px-2 tw:py-1 tw:text-[11px] tw:font-semibold tw:capitalize tw:text-[#5f738f] tw:[&.error]:bg-[#fff2f0] tw:[&.error]:text-[#b42318] tw:[&.info]:bg-[#edf6ff] tw:[&.info]:text-[#1176d4] tw:[&.warning]:bg-[#fff8e8] tw:[&.warning]:text-[#8a5d00] tw:dark:bg-white/5 tw:dark:text-[#9fb3c8] tw:dark:[&.error]:bg-[#f97066]/12 tw:dark:[&.error]:text-[#fda29b] tw:dark:[&.info]:bg-[#57a5eb]/12 tw:dark:[&.info]:text-[#87c4f5] tw:dark:[&.warning]:bg-[#f5b942]/12 tw:dark:[&.warning]:text-[#f7cd6b]" [class]="'log-type ' + typeClass(entry.type)">{{ typeLabel(entry.type) }}</span>
+              </td>
+              <td data-testid="log-time" class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:align-top tw:font-mono tw:text-[12px] tw:whitespace-nowrap tw:tabular-nums tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">{{ entry.time || '—' }}</td>
+              <td data-testid="log-file" class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:align-top tw:font-mono tw:text-[12px] tw:whitespace-nowrap tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">{{ entry.file || '—' }}</td>
+              <td data-testid="log-source" class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:align-top tw:font-mono tw:text-[12px] tw:whitespace-nowrap tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">{{ entry.source || '—' }}</td>
+              <td data-testid="log-message" class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:align-top tw:text-[12px] tw:leading-relaxed tw:whitespace-pre tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">{{ entry.message || '—' }}</td>
+            </tr>
+          } @empty {
+            @if (loaded() && !loading() && !error()) {
+              <tr>
+                <td colspan="5" data-testid="log-empty" class="tw:px-5 tw:py-14 tw:text-center tw:text-[13px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">{{ hasRange() ? 'No records found for this date range.' : 'No system logs were returned for these filters.' }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>

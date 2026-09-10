@@ -56,6 +56,9 @@ class Collections:
 
 
 class OrionIntelligence:
+    SYSTEM_LOGS_PATH = "/api/profile/system-logs"
+    SYSTEM_LOGS_DEFAULT_LIMIT = 200
+    SYSTEM_LOGS_MAX_LIMIT = 200
     FEEDER_CATALOG_PATH = "/api/profile/feeder/catalog"
     FEEDER_SCRIPTS_PATH = "/api/profile/feeder/scripts"
     FEEDER_SOCIAL_PATH = "social/platform"

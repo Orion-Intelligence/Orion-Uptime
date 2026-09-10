@@ -49,6 +49,8 @@ export class MonitorListComponent extends NoticePageBase {
     return resourceType !== null && this.isMonitorResource(resourceType);
   });
   readonly supportsConfigFiles = computed(() => this.isMonitorList() && this.resourceType() !== 'orion_script');
+  readonly isAuthProfileList = computed(() => this.resourceType() === 'auth_profiles');
+  readonly selectingLogSourceId = signal('');
   readonly monitorSummary = computed(() => {
     const summary = { total: this.records().length, up: 0, down: 0, paused: 0, unknown: 0 };
     const overviews = this.overviews();
@@ -220,6 +222,28 @@ export class MonitorListComponent extends NoticePageBase {
         this.deletingId.set('');
       },
     });
+  }
+
+  selectLogSource(record: ResourceRecord): void {
+    if (record.is_log_source) {
+      return;
+    }
+    this.selectingLogSourceId.set(record.id);
+    this.api
+      .post<ResourceRecord, Record<string, never>>(`/auth-profiles/${record.id}/select-log-source`, {})
+      .pipe(finalize(() => {
+        this.selectingLogSourceId.set('');
+      }))
+      .subscribe({
+        next: () => {
+          this.records.update((records) =>
+            records.map((item) => ({ ...item, is_log_source: item.id === record.id })),);
+          this.showNotice(`Log Manager will read system logs using “${record.name}”.`);
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
   }
 
   toggleActive(record: ResourceRecord): void {

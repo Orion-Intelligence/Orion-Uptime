@@ -92,6 +92,9 @@
           @if (stats) {
             <span data-testid="monitor-card-status" class="status-chip tw:inline-flex tw:flex-none tw:items-center tw:gap-1.75 tw:rounded-full tw:px-2.5 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:capitalize tw:[&.down]:bg-[#fff2f0] tw:[&.down]:text-[#b42318] tw:[&.paused]:bg-[#fff8e8] tw:[&.paused]:text-[#8a5d00] tw:[&.unknown]:bg-[#f1f5f9] tw:[&.unknown]:text-[#5f738f] tw:[&.up]:bg-[#effbf6] tw:[&.up]:text-[#16825f] tw:before:size-1.5 tw:before:rounded-full tw:before:bg-[#9fb3c8] tw:before:content-[''] tw:[&.down]:before:bg-[#f97066] tw:[&.paused]:before:bg-[#f5b942] tw:[&.up]:before:bg-[#34d399] tw:dark:[&.down]:bg-[#f97066]/8 tw:dark:[&.down]:text-[#fda29b] tw:dark:[&.paused]:bg-[#f5b942]/8 tw:dark:[&.paused]:text-[#f7cd6b] tw:dark:[&.unknown]:bg-white/5 tw:dark:[&.unknown]:text-[#9fb3c8] tw:dark:[&.up]:bg-[#34d399]/8 tw:dark:[&.up]:text-[#70e0bd]" [class]="'status-chip ' + (stats.is_active ? stats.status : 'paused')">{{ stats.is_active ? stats.status : 'paused' }}</span>
           }
+          @if (isAuthProfileList() && record.is_log_source) {
+            <span data-testid="auth-profile-log-source-chip" class="tw:inline-flex tw:flex-none tw:items-center tw:gap-1.75 tw:rounded-full tw:bg-[#edf6ff] tw:px-2.5 tw:py-1.25 tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:dark:bg-[#57a5eb]/10 tw:dark:text-[#87c4f5]">Log source</span>
+          }
         </header>
 
         @if (stats) {
@@ -143,6 +146,11 @@
               @if (supportsConfigFiles()) {
                 <button data-testid="monitor-export-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="exportMonitor(record)" [disabled]="exportingId() === record.id" [attr.aria-label]="'Export ' + record.name">
                   {{ exportingId() === record.id ? 'Exporting…' : 'Export' }}
+                </button>
+              }
+              @if (isAuthProfileList()) {
+                <button data-testid="auth-profile-log-source-button" class="tw:min-h-9 tw:cursor-pointer tw:border-0 tw:bg-transparent tw:px-3.5 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:transition-colors tw:hover:bg-[#edf6ff] tw:hover:text-[#1176d4] tw:disabled:cursor-not-allowed tw:disabled:opacity-50 tw:dark:text-[#b9cee3] tw:dark:hover:bg-[#57a5eb]/10 tw:dark:hover:text-[#87c4f5]" type="button" (click)="selectLogSource(record)" [disabled]="selectingLogSourceId() === record.id || !!record.is_log_source" [attr.aria-label]="'Use ' + record.name + ' for Log Manager'">
+                  {{ selectingLogSourceId() === record.id ? 'Selecting…' : record.is_log_source ? 'Log source' : 'Use for logs' }}
                 </button>
               }
               @if (editBase()) {

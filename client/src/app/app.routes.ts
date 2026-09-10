@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { adminGuard, authGuard } from './shared/guards/auth.guard';
+const loadLogManagerComponent = () => import('./pages/log-manager/log-manager.component').then((m) => m.LogManagerComponent);
 const loadAppShellComponent = () => import('./shared/partials/app-shell/app-shell.component').then((m) => m.AppShellComponent);
 const loadDashboardComponent = () => import('./pages/dashboard/dashboard.component').then((m) => m.DashboardComponent);
 const loadLoginComponent = () => import('./pages/login/login.component').then((m) => m.LoginComponent);
@@ -297,6 +298,12 @@ export const routes: Routes = [
         loadComponent: loadRegisterUserComponent,
         canActivate: [adminGuard],
         title: 'Register user · Orion Uptime',
+      },
+      {
+        path: 'log-manager',
+        loadComponent: loadLogManagerComponent,
+        canActivate: [adminGuard],
+        title: 'Log Manager · Orion Uptime',
       },
       {
         path: 'users',
