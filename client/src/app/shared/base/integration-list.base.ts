@@ -13,6 +13,7 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
   readonly loading = signal(true);
   readonly deletingId = signal('');
+  readonly deleteTarget = signal<T | null>(null);
   readonly error = signal('');
 
   protected abstract readonly channel: string;
@@ -34,8 +35,20 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
       .filter((name): name is string => Boolean(name));
   }
 
-  deleteIntegration(integration: T): void {
-    if (!window.confirm(this.confirmMessage(integration))) {
+  requestDelete(integration: T): void {
+    this.deleteTarget.set(integration);
+  }
+
+  cancelDelete(): void {
+    if (this.deletingId()) {
+      return;
+    }
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete(): void {
+    const integration = this.deleteTarget();
+    if (!integration || this.deletingId()) {
       return;
     }
     this.deletingId.set(integration.id);
@@ -43,6 +56,7 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
       next: () => {
         this.integrations.update((items) => items.filter((item) => item.id !== integration.id));
         this.deletingId.set('');
+        this.deleteTarget.set(null);
         this.showNotice(`${this.label} integration “${integration.name}” deleted.`);
       },
       error: (error: unknown) => {
@@ -52,7 +66,7 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
     });
   }
 
-  protected abstract confirmMessage(integration: T): string;
+  abstract deleteConfirmationMessage(integration: T): string;
 
   protected watch(select: (resources: RealtimeResources) => T[]): void {
     this.realtime.connect();

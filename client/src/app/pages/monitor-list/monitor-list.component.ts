@@ -11,10 +11,11 @@ import { NoticePageBase } from '../../shared/base/notice-page.base';
 import { durationText } from '../../shared/utils/duration.util';
 import { parseJsonFile } from '../../shared/utils/json-file.util';
 import { HEARTBEAT_NOTICE_MS, NOTICE_VISIBLE_MS } from '../../shared/constants/ui.constants';
+import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 
 @Component({
   selector: 'app-resource-list-page',
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink, DeleteConfirmationDialogComponent],
   templateUrl: './monitor-list.component.html',
 })
 export class MonitorListComponent extends NoticePageBase {
@@ -35,6 +36,8 @@ export class MonitorListComponent extends NoticePageBase {
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
   readonly loading = signal(true);
   readonly deletingId = signal('');
+  readonly deleteTarget = signal<ResourceRecord | null>(null);
+  readonly deleteTargetLabel = computed(() => this.resourceLabel());
   readonly updatingId = signal('');
   readonly error = signal('');
   readonly heartbeatToken = signal('');
@@ -46,6 +49,8 @@ export class MonitorListComponent extends NoticePageBase {
     return resourceType !== null && this.isMonitorResource(resourceType);
   });
   readonly supportsConfigFiles = computed(() => this.isMonitorList() && this.resourceType() !== 'orion_script');
+  readonly isAuthProfileList = computed(() => this.resourceType() === 'auth_profiles');
+  readonly selectingLogSourceId = signal('');
   readonly monitorSummary = computed(() => {
     const summary = { total: this.records().length, up: 0, down: 0, paused: 0, unknown: 0 };
     const overviews = this.overviews();
@@ -183,8 +188,24 @@ export class MonitorListComponent extends NoticePageBase {
     }
   }
 
-  deleteResource(record: ResourceRecord): void {
-    if (!window.confirm(`Delete “${record.name}”? This action cannot be undone.`)) {
+  requestDelete(record: ResourceRecord): void {
+    this.deleteTarget.set(record);
+  }
+
+  cancelDelete(): void {
+    if (this.deletingId()) {
+      return;
+    }
+    this.deleteTarget.set(null);
+  }
+
+  deleteConfirmationMessage(record: ResourceRecord): string {
+    return `Are you sure you want to delete ${this.deleteTargetLabel()} “${record.name}”? This action cannot be undone.`;
+  }
+
+  confirmDelete(): void {
+    const record = this.deleteTarget();
+    if (!record || this.deletingId()) {
       return;
     }
     this.deletingId.set(record.id);
@@ -194,12 +215,38 @@ export class MonitorListComponent extends NoticePageBase {
         this.records.update((records) => records.filter((item) => item.id !== record.id));
         this.showNotice(`${this.resourceLabel()} “${record.name}” deleted.`);
         this.deletingId.set('');
+        this.deleteTarget.set(null);
       },
       error: (error: unknown) => {
         this.error.set(ApiService.errorMessage(error));
         this.deletingId.set('');
       },
     });
+  }
+
+  toggleLogSource(record: ResourceRecord): void {
+    this.selectingLogSourceId.set(record.id);
+    const endpoint = record.is_log_source
+      ? '/auth-profiles/clear-log-source'
+      : `/auth-profiles/${record.id}/select-log-source`;
+    this.api
+      .post<unknown, Record<string, string>>(endpoint, {})
+      .pipe(finalize(() => {
+        this.selectingLogSourceId.set('');
+      }))
+      .subscribe({
+        next: () => {
+          const selected = !record.is_log_source;
+          this.records.update((records) =>
+            records.map((item) => ({ ...item, is_log_source: selected && item.id === record.id })),);
+          this.showNotice(selected
+            ? `Log Manager will read system logs using “${record.name}”.`
+            : `“${record.name}” is no longer the Log Manager source.`,);
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
   }
 
   toggleActive(record: ResourceRecord): void {

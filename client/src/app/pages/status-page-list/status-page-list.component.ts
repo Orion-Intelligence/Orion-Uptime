@@ -6,10 +6,11 @@ import { ApiService } from '../../services/core/api.service';
 import { MonitorOverview, StatusPage } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { NoticePageBase } from '../../shared/base/notice-page.base';
+import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 
 @Component({
   selector: 'app-status-page-list',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent],
   templateUrl: './status-page-list.component.html',
 })
 export class StatusPageListComponent extends NoticePageBase {
@@ -20,6 +21,7 @@ export class StatusPageListComponent extends NoticePageBase {
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
   readonly loading = signal(true);
   readonly deletingId = signal('');
+  readonly deleteTarget = signal<StatusPage | null>(null);
   readonly error = signal('');
 
   constructor() {
@@ -47,8 +49,20 @@ export class StatusPageListComponent extends NoticePageBase {
       .filter((name): name is string => Boolean(name));
   }
 
-  deletePage(page: StatusPage): void {
-    if (!window.confirm(`Delete “${page.name}”? Its public link will stop working.`)) {
+  requestDelete(page: StatusPage): void {
+    this.deleteTarget.set(page);
+  }
+
+  cancelDelete(): void {
+    if (this.deletingId()) {
+      return;
+    }
+    this.deleteTarget.set(null);
+  }
+
+  confirmDelete(): void {
+    const page = this.deleteTarget();
+    if (!page || this.deletingId()) {
       return;
     }
     this.deletingId.set(page.id);
@@ -56,6 +70,7 @@ export class StatusPageListComponent extends NoticePageBase {
       next: () => {
         this.pages.update((pages) => pages.filter((item) => item.id !== page.id));
         this.deletingId.set('');
+        this.deleteTarget.set(null);
         this.showNotice(`Status page “${page.name}” deleted.`);
       },
       error: (error: unknown) => {
@@ -63,6 +78,10 @@ export class StatusPageListComponent extends NoticePageBase {
         this.error.set(ApiService.errorMessage(error));
       },
     });
+  }
+
+  deleteConfirmationMessage(page: StatusPage): string {
+    return `Are you sure you want to delete status page “${page.name}”? Its public link will stop working.`;
   }
 
 }

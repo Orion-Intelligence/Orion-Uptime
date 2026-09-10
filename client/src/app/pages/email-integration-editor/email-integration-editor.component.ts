@@ -31,6 +31,7 @@ export class EmailIntegrationEditorComponent extends IntegrationEditorBase {
     this.error.set('');
     this.form.markAllAsTouched();
     if (this.form.invalid) {
+      this.error.set(this.invalidFieldMessage());
       return;
     }
     const values = this.form.getRawValue();
@@ -45,4 +46,14 @@ export class EmailIntegrationEditorComponent extends IntegrationEditorBase {
     }
     this.persist<EmailIntegration, typeof body>(body);
   }
+
+  private invalidFieldMessage(): string {
+    const messages = new Map<string, string>([
+      ['name', 'Integration name is required (up to 100 characters).'],
+      ['email', 'Enter a valid recipient email address (up to 320 characters).'],
+    ]);
+    const invalid = Object.keys(this.form.controls).find((key) => this.form.get(key)?.invalid);
+    return (invalid === undefined ? undefined : messages.get(invalid)) ?? 'Check the highlighted fields.';
+  }
+
 }

@@ -1,4 +1,4 @@
-<div animate.enter="page-enter" id="status-page-list">
+<div animate.enter="page-enter" id="status-page-list" data-testid="status-page-list-page">
   <header class="tw:mb-9.5 tw:flex tw:items-end tw:justify-between tw:gap-7.5 tw:max-[700px]:flex-col tw:max-[700px]:items-start">
     <div>
       <p class="eyebrow">Publishing</p>
@@ -7,7 +7,7 @@
         Group selected monitors into public, live service-health pages.
       </p>
     </div>
-    <a class="header-action header-action--primary tw:max-[700px]:self-end" routerLink="/status-pages/new">
+    <a data-testid="new-status-page-button" class="header-action header-action--primary tw:max-[700px]:self-end" routerLink="/status-pages/new">
       <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
       New status page
     </a>
@@ -17,19 +17,19 @@
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   }
   @if (error()) {
-    <p animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
+    <p data-testid="status-page-error" animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
   }
   @if (message()) {
-    <div animate.enter="fade-in" animate.leave="fade-out" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
+    <div data-testid="app-notification" animate.enter="fade-in" class="notification app-notification tw:fixed tw:top-19 tw:right-5 tw:z-1400 tw:grid tw:w-[min(380px,calc(100vw-40px))] tw:gap-2 tw:rounded-[9px] tw:border tw:border-[#57a5eb]/25 tw:bg-[#172235] tw:px-3.75 tw:py-3.25 tw:text-white tw:shadow-[0_14px_32px_rgb(0_0_0_/_24%)] tw:transition tw:duration-200 tw:[&.leaving]:pointer-events-none tw:[&.leaving]:translate-x-4 tw:[&.leaving]:opacity-0" [class.leaving]="noticeLeaving()" role="status" aria-live="polite">
       <strong class="tw:text-xs">{{ message() }}</strong>
     </div>
   }
 
-  <section class="page-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Status pages">
+  <section data-testid="status-page-list" class="page-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Status pages">
     @for (page of pages(); track page.id) {
-      <article animate.enter="list-item-enter" class="panel status-page-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
+      <article data-testid="status-page-card" animate.enter="list-item-enter" class="panel status-page-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
         <header class="tw:min-w-0 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
-          <h2 class="tw:m-0 tw:text-[16px] tw:leading-snug tw:font-semibold tw:tracking-[-0.015em] tw:wrap-anywhere">{{ page.name }}</h2>
+          <h2 data-testid="status-page-name" class="tw:m-0 tw:text-[16px] tw:leading-snug tw:font-semibold tw:tracking-[-0.015em] tw:wrap-anywhere">{{ page.name }}</h2>
           <p class="tw:mt-1.5 tw:mb-0 tw:line-clamp-2 tw:overflow-hidden tw:text-[12px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#9fb3c8]">{{ page.description || 'No public description.' }}</p>
         </header>
 
@@ -48,10 +48,10 @@
         </div>
 
         <footer class="tw:mt-auto tw:flex tw:flex-wrap tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
-          <a class="tw:inline-flex tw:min-h-8 tw:items-center tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#2b90ee] tw:dark:text-[#87c4f5]" [href]="page.public_path" target="_blank" rel="noopener">Open public page ↗</a>
+          <a data-testid="status-page-public-link" class="tw:inline-flex tw:min-h-8 tw:items-center tw:text-[11px] tw:font-semibold tw:text-[#1176d4] tw:no-underline tw:hover:text-[#2b90ee] tw:dark:text-[#87c4f5]" [href]="page.public_path" target="_blank" rel="noopener">Open public page ↗</a>
           <div class="tw:flex tw:items-center tw:gap-2">
-            <a class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:text-[#87c4f5]" [routerLink]="['/status-pages', page.id, 'edit']">Edit</a>
-            <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="deletePage(page)" [disabled]="deletingId() === page.id">
+            <a data-testid="status-page-edit-link" class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:text-[#87c4f5]" [routerLink]="['/status-pages', page.id, 'edit']">Edit</a>
+            <button data-testid="status-page-delete-button" class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="requestDelete(page)" [disabled]="deletingId() === page.id">
               {{ deletingId() === page.id ? 'Deleting…' : 'Delete' }}
             </button>
           </div>
@@ -59,8 +59,11 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div animate.enter="fade-in" animate.leave="fade-out" class="empty-state panel tw:col-span-full">No status pages have been created yet.</div>
+        <div data-testid="status-page-empty" animate.enter="fade-in" animate.leave="fade-out" class="empty-state panel tw:col-span-full">No status pages have been created yet.</div>
       }
     }
   </section>
+  @if (deleteTarget(); as target) {
+    <app-delete-confirmation-dialog [message]="deleteConfirmationMessage(target)" [deleting]="deletingId() === target.id" (cancelled)="cancelDelete()" (confirmed)="confirmDelete()" />
+  }
 </div>

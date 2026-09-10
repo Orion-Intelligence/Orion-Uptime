@@ -103,6 +103,7 @@ export interface ResourceRecord {
   method?: string;
   expected_json?: Record<string, unknown> | null;
   credential_fields?: string[];
+  is_log_source?: boolean;
   check_interval?: number;
   timeout?: number;
   expected_response_time_ms?: number | null;
@@ -110,6 +111,23 @@ export interface ResourceRecord {
   last_checked_at?: string | null;
   last_heartbeat_at?: string | null;
   created_at?: string;
+}
+
+export interface SystemLogEntry {
+  type: string;
+  time: string;
+  file: string;
+  source: string;
+  message: string;
+}
+
+export interface SystemLogPage {
+  logs: SystemLogEntry[];
+  page: number;
+  limit: number;
+  total: number | null;
+  has_more: boolean;
+  source_profile_name: string | null;
 }
 
 export type MonitorConfigType = 'HTTP' | 'API' | 'ping' | 'heartbeat';

@@ -1,0 +1,12 @@
+<div animate.enter="overlay-in" class="tw:fixed tw:inset-0 tw:z-1500 tw:grid tw:place-items-center tw:bg-[#0b1526]/55 tw:p-5" role="presentation">
+  <section animate.enter="popup-in" class="tw:w-full tw:max-w-105 tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:p-5 tw:shadow-[0_24px_70px_rgb(11_21_38_/_32%)] tw:dark:border-white/12 tw:dark:bg-[#172235]" role="dialog" aria-modal="true" aria-labelledby="delete-confirmation-title" aria-describedby="delete-confirmation-message" data-testid="delete-confirmation-dialog">
+    <p id="delete-confirmation-title" class="eyebrow tw:mb-1.5">Confirmation</p>
+    <p id="delete-confirmation-message" class="tw:mt-0 tw:mb-0 tw:text-[13px] tw:leading-relaxed tw:text-[#5f738f] tw:dark:text-[#b9cee3]">{{ message() }}</p>
+    <div class="tw:mt-4 tw:flex tw:justify-end tw:gap-3">
+      <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-4 tw:text-[12px] tw:font-semibold tw:text-[#425b76] tw:transition-colors tw:hover:bg-[#f4f8fc] tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:border-white/15 tw:dark:bg-transparent tw:dark:text-[#c9d9e9] tw:dark:hover:bg-white/7" type="button" (click)="cancelled.emit()" [disabled]="deleting()" data-testid="delete-confirmation-cancel">No</button>
+      <button class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#b42318] tw:bg-[#b42318] tw:px-4 tw:text-[12px] tw:font-semibold tw:text-white tw:transition-colors tw:hover:bg-[#8f1c13] tw:disabled:cursor-wait tw:disabled:opacity-50" type="button" (click)="confirmed.emit()" [disabled]="deleting()" data-testid="delete-confirmation-confirm">
+        {{ deleting() ? 'Deleting…' : 'Yes, confirm' }}
+      </button>
+    </div>
+  </section>
+</div>

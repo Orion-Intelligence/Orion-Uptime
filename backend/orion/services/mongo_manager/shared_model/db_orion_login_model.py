@@ -12,6 +12,7 @@ class AuthProfileModel(PersistedModel):
     method: Literal["POST"] = "POST"
     credentials: dict[str, str] = Field(default_factory=dict)
     headers: dict[str, str] = Field(default_factory=dict)
+    is_log_source: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -35,6 +36,7 @@ class AuthProfileResponse(BaseModel):
     name: str
     login_url: str
     method: str
+    is_log_source: bool = False
     credential_fields: list[str]
     headers: dict[str, str] = Field(default_factory=dict)
     credentials: dict[str, str] | None = None

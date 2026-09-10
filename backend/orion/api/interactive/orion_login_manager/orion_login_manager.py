@@ -30,6 +30,8 @@ class AuthProfileManager:
         if await self.collection.find_one({"name": request.name}) is not None:
             raise ConflictError("An auth profile with this name already exists.")
 
+        await self._assert_unique_credentials(request.login_url, request.credentials)
+
         now = datetime.now(UTC)
         profile = AuthProfileModel(**request.model_dump(), method="POST", created_at=now, updated_at=now)
 
@@ -46,7 +48,7 @@ class AuthProfileManager:
         profile.id = str(result.inserted_id)
         token_manager.cache_token(profile.id, token)
         realtime_broker.notify("auth_profile", profile.id)
-        return AuthProfileResponse(id=profile.id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, created_at=profile.created_at, updated_at=profile.updated_at, login_status_code=login_status_code)
+        return AuthProfileResponse(id=profile.id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, created_at=profile.created_at, updated_at=profile.updated_at, login_status_code=login_status_code, is_log_source=profile.is_log_source)
 
     async def get_profile_model(self, profile_id: str) -> AuthProfileModel | None:
         try:
@@ -75,11 +77,11 @@ class AuthProfileManager:
         profile = await self.get_profile_model(profile_id)
         if profile is None:
             raise NotFoundError("Auth profile not found.")
-        return AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, credentials=profile.credentials, created_at=profile.created_at, updated_at=profile.updated_at)
+        return AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, credentials=profile.credentials, created_at=profile.created_at, updated_at=profile.updated_at, is_log_source=profile.is_log_source)
 
     async def list_profiles(self) -> list[AuthProfileResponse]:
         profiles = await self.list_profile_models()
-        return [AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, created_at=profile.created_at, updated_at=profile.updated_at) for profile in profiles]
+        return [AuthProfileResponse(id=profile.persisted_id, name=profile.name, login_url=profile.login_url, method=profile.method, credential_fields=sorted(profile.credentials), headers=profile.headers, created_at=profile.created_at, updated_at=profile.updated_at, is_log_source=profile.is_log_source) for profile in profiles]
 
     async def update_profile(self, profile_id: str, request: UpdateAuthProfileRequest) -> AuthProfileResponse:
         profile = await self.get_profile_model(profile_id)
@@ -96,6 +98,10 @@ class AuthProfileManager:
 
         if "name" in update_data and await self.collection.find_one({"name": update_data["name"], "_id": {"$ne": ObjectId(profile_id)}}) is not None:
             raise ConflictError("An auth profile with this name already exists.")
+        if "login_url" in update_data or "credentials" in update_data:
+            effective_login_url = update_data["login_url"] if "login_url" in update_data else profile.login_url
+            effective_credentials = update_data["credentials"] if "credentials" in update_data else profile.credentials
+            await self._assert_unique_credentials(effective_login_url, effective_credentials, exclude_id=profile_id)
         if update_data.get("credentials") is not None:
             update_data["credentials_encrypted"] = secret_box.encrypt_mapping(update_data.pop("credentials"))
         update_data["updated_at"] = datetime.now(UTC)
@@ -105,7 +111,29 @@ class AuthProfileManager:
         if updated is None:
             raise NotFoundError("Auth profile not found.")
         realtime_broker.notify("auth_profile", updated.id)
-        return AuthProfileResponse(id=updated.persisted_id, name=updated.name, login_url=updated.login_url, method=updated.method, credential_fields=sorted(updated.credentials), headers=updated.headers, created_at=updated.created_at, updated_at=updated.updated_at)
+        return AuthProfileResponse(id=updated.persisted_id, name=updated.name, login_url=updated.login_url, method=updated.method, credential_fields=sorted(updated.credentials), headers=updated.headers, created_at=updated.created_at, updated_at=updated.updated_at, is_log_source=updated.is_log_source)
+
+    async def select_log_source(self, profile_id: str) -> AuthProfileResponse:
+        try:
+            object_id = ObjectId(profile_id)
+        except (InvalidId, TypeError):
+            raise NotFoundError("Auth profile not found.") from None
+        if await self.collection.find_one({"_id": object_id}) is None:
+            raise NotFoundError("Auth profile not found.")
+        await self.collection.update_many({"_id": {"$ne": object_id}}, {"$set": {"is_log_source": False}})
+        await self.collection.update_one({"_id": object_id}, {"$set": {"is_log_source": True, "updated_at": datetime.now(UTC)}})
+        realtime_broker.notify("auth_profile", profile_id)
+        return await self.get_profile(profile_id)
+
+    async def clear_log_source(self) -> None:
+        await self.collection.update_many({"is_log_source": True}, {"$set": {"is_log_source": False}})
+        realtime_broker.notify("auth_profile", "log-source")
+
+    async def get_log_source_profile(self) -> AuthProfileModel | None:
+        document = await self.collection.find_one({"is_log_source": True})
+        if document is None:
+            return None
+        return self._deserialize(document)
 
     async def delete_profile(self, profile_id: str) -> None:
         try:
@@ -128,6 +156,21 @@ class AuthProfileManager:
     async def _encrypt_plaintext_credentials(self) -> None:
         async for document in self.collection.find({"credentials": {"$exists": True}}, {"credentials": 1}):
             await self.collection.update_one({"_id": document["_id"]}, {"$set": {"credentials_encrypted": secret_box.encrypt_mapping(document["credentials"] or {})}, "$unset": {"credentials": ""}})
+
+    @staticmethod
+    def _comparable_login_url(login_url: str) -> str:
+        return login_url.strip().rstrip("/")
+
+    async def _assert_unique_credentials(self, login_url: str, credentials: dict[str, str], exclude_id: str | None = None) -> None:
+        target_login_url = self._comparable_login_url(login_url)
+        async for document in self.collection.find():
+            if exclude_id is not None and str(document.get("_id")) == exclude_id:
+                continue
+            existing = self._deserialize(document)
+            if self._comparable_login_url(existing.login_url) != target_login_url:
+                continue
+            if existing.credentials == credentials:
+                raise ConflictError(f"Auth profile '{existing.name}' already uses these credentials for this login URL. Change the credentials, or point this profile at a different login URL.")
 
     @staticmethod
     def _serialize(profile: AuthProfileModel) -> dict:

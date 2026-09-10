@@ -37,6 +37,17 @@ async def update_profile(profile_id: str, request: UpdateAuthProfileRequest, ser
     return ApiResponse(success=True, message="Auth profile updated successfully.", data=await service.update_profile(profile_id, request))
 
 
+@router.post("/{profile_id}/select-log-source", response_model=ApiResponse[AuthProfileResponse])
+async def select_log_source(profile_id: str, service: AuthProfileManager = Depends(get_auth_profile_service)):
+    return ApiResponse(success=True, message="Auth profile selected as the system log source.", data=await service.select_log_source(profile_id))
+
+
+@router.post("/clear-log-source", response_model=ApiResponse[None])
+async def clear_log_source(service: AuthProfileManager = Depends(get_auth_profile_service)):
+    await service.clear_log_source()
+    return ApiResponse(success=True, message="System log source cleared.", data=None)
+
+
 @router.delete("/{profile_id}", response_model=ApiResponse[None])
 async def delete_profile(profile_id: str, service: AuthProfileManager = Depends(get_auth_profile_service)):
     await service.delete_profile(profile_id)

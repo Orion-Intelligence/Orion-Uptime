@@ -3,10 +3,11 @@ import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IntegrationListBase } from '../../shared/base/integration-list.base';
 import { RealtimeResources, SlackIntegration } from '../../shared/model/models';
+import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 
 @Component({
   selector: 'app-integration-list',
-  imports: [DatePipe, RouterLink],
+  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent],
   templateUrl: './integration-list.component.html',
 })
 export class IntegrationListComponent extends IntegrationListBase<SlackIntegration> {
@@ -18,7 +19,7 @@ export class IntegrationListComponent extends IntegrationListBase<SlackIntegrati
     this.watch((resources: RealtimeResources) => resources.slack_integrations);
   }
 
-  protected confirmMessage(integration: SlackIntegration): string {
-    return `Delete “${integration.name}”? Slack alerts from this integration will stop.`;
+  deleteConfirmationMessage(integration: SlackIntegration): string {
+    return `Are you sure you want to delete Slack integration “${integration.name}”? Slack alerts from this integration will stop.`;
   }
 }

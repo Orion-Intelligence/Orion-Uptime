@@ -1,0 +1,9 @@
+{
+  "format": "orion-monitor-config",
+  "version": 1,
+  "monitor_type": "heartbeat",
+  "name": "E2E heartbeat import fixture",
+  "expected_heartbeat_interval": 300,
+  "grace_period": 60,
+  "is_active": true
+}

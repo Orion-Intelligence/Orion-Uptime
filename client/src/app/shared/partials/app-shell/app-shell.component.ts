@@ -37,7 +37,8 @@ export class AppShellComponent {
   }
 
   breadcrumbSection(): string {
-    return this.router.url.startsWith('/status-pages') ||
+    return this.router.url.startsWith('/log-manager') ||
+      this.router.url.startsWith('/status-pages') ||
       this.router.url.startsWith('/integrations') ||
       this.router.url.startsWith('/auth-profiles') ||
       this.router.url.startsWith('/users')
@@ -142,6 +143,9 @@ export class AppShellComponent {
     }
     if (path.startsWith('/users')) {
       return 'Users';
+    }
+    if (path.startsWith('/log-manager')) {
+      return 'Log Manager';
     }
     return 'Uptime monitoring';
   }
