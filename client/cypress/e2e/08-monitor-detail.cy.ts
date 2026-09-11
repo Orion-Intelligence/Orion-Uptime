@@ -1,5 +1,4 @@
-import { E2E_NAME_PREFIX, HTTP_MONITORS_PATH, cleanupE2eHttpMonitors, deleteHttpMonitorViaUi, disableNoticeOverlay, monitorCardById, slugFor, testId, uniqueSuffix } from './controllers/shared.controller';
-import { cleanupE2eIntegrations, createEmailIntegration, createSlackIntegration, deleteEmailIntegration, deleteSlackIntegration, openIntegrationsHub } from './controllers/05-integrations.controller';
+import { E2E_NAME_PREFIX, HTTP_MONITORS_PATH, cleanupE2eHttpMonitors, disableNoticeOverlay, monitorCardById, slugFor, testId, uniqueSuffix } from './controllers/shared.controller';
 
 const createHttpMonitor = (name: string): Cypress.Chainable<string> => {
   cy.visit(HTTP_MONITORS_PATH);
@@ -31,34 +30,34 @@ const createHttpMonitor = (name: string): Cypress.Chainable<string> => {
   });
 };
 
-describe('Integrations', () => {
+describe('Monitor detail', () => {
   beforeEach(() => {
     cy.loginAsAdmin();
   });
 
   afterEach(() => {
-    cleanupE2eIntegrations();
     cleanupE2eHttpMonitors();
   });
 
-  it('assigns a monitor to a Slack and an Email integration, then removes everything', () => {
-    const suffix = uniqueSuffix();
-    const monitorName = `${E2E_NAME_PREFIX}HTTP integrations ${suffix}`;
-    const slackName = `${E2E_NAME_PREFIX}Slack ${suffix}`;
-    const emailName = `${E2E_NAME_PREFIX}Email ${suffix}`;
+  it('opens a monitor detail page and renders summary, charts, and incident history', () => {
+    const name = `${E2E_NAME_PREFIX}detail ${uniqueSuffix()}`;
 
-    createHttpMonitor(monitorName).then((monitorId) => {
-      openIntegrationsHub();
-      createSlackIntegration(slackName, monitorName, monitorId).then((slack) => {
-        deleteSlackIntegration(slack.id, slack.name);
-      });
+    createHttpMonitor(name).then((id) => {
+      monitorCardById(id).find(testId('monitor-detail-link')).click();
+      cy.location('pathname').should('eq', `${HTTP_MONITORS_PATH}/${id}`);
 
-      openIntegrationsHub();
-      createEmailIntegration(emailName, monitorName, monitorId).then((email) => {
-        deleteEmailIntegration(email.id, email.name);
-      });
+      cy.get(testId('monitor-detail-page')).should('be.visible');
+      cy.get(testId('monitor-detail-name')).should('contain.text', name);
 
-      deleteHttpMonitorViaUi(monitorId, monitorName);
+      cy.get(testId('monitor-detail-summary')).should('be.visible').and('contain.text', 'Uptime');
+      cy.get(testId('monitor-detail-status')).should('be.visible');
+      cy.get(testId('monitor-detail-status-chart')).should('be.visible').and('contain.text', 'Status over time');
+      cy.get(testId('monitor-detail-response-chart')).should('be.visible').and('contain.text', 'Response time');
+      cy.get(testId('incident-history')).should('be.visible').and('contain.text', 'Incident history');
+
+      cy.get(testId('monitor-detail-back')).click();
+      cy.location('pathname').should('eq', HTTP_MONITORS_PATH);
+      cy.get(testId('resource-list-page')).should('be.visible');
     });
   });
 });

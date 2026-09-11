@@ -1,4 +1,4 @@
-const testId = (id: string) => `[data-testid="${id}"]`;
+import { E2E_NAME_PREFIX, disableNoticeOverlay, monitorIdByName, slugFor, testId } from './controllers/shared.controller';
 
 interface MonitorScenario {
   label: string;
@@ -19,13 +19,9 @@ interface MonitorScenario {
   assertEditedForm: (name: string) => void;
 }
 
-const E2E_NAME_PREFIX = 'E2E ';
-
 const uniqueName = (label: string) => (
   `E2E ${label} lifecycle ${Date.now()} ${Math.floor(Math.random() * 1_000_000)}`
 );
-
-const slugFor = (name: string) => name.toLowerCase().replace(/[^a-z0-9]+/g, '-');
 
 const detailLinkFor = (scenario: MonitorScenario, id: string) => (
   `${testId('monitor-detail-link')}[href="${scenario.listPath}/${id}"]`
@@ -34,30 +30,6 @@ const detailLinkFor = (scenario: MonitorScenario, id: string) => (
 const cardById = (scenario: MonitorScenario, id: string) => (
   cy.get(detailLinkFor(scenario, id)).closest(testId('monitor-card'))
 );
-
-const monitorIdByName = (name: string): Cypress.Chainable<string> => (
-  cy.contains(testId('monitor-name'), name)
-    .closest(testId('monitor-card'))
-    .find(testId('monitor-detail-link'))
-    .invoke('attr', 'href')
-    .then((href) => {
-      const id = String(href ?? '').split('/').pop() ?? '';
-      expect(id, `${name} monitor ID`).to.not.equal('');
-      return cy.wrap(id);
-    })
-);
-
-const disableNoticeOverlay = () => {
-  cy.document().then((doc) => {
-    if (doc.getElementById('e2e-notice-overlay-style')) {
-      return;
-    }
-    const style = doc.createElement('style');
-    style.id = 'e2e-notice-overlay-style';
-    style.textContent = `${testId('app-notification')} { pointer-events: none !important; }`;
-    doc.head.appendChild(style);
-  });
-};
 
 const openList = (scenario: MonitorScenario) => {
   cy.visit(scenario.listPath);

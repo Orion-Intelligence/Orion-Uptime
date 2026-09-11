@@ -1,21 +1,9 @@
-const testId = (id: string) => `[data-testid="${id}"]`;
+import { disableNoticeOverlay, testId } from './controllers/shared.controller';
 
 const USERS_PATH = '/users';
 const E2E_USERNAME_PREFIX = 'e2e-user-';
 
 const uniqueUsername = () => `${E2E_USERNAME_PREFIX}${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
-
-const disableNoticeOverlay = () => {
-  cy.document().then((doc) => {
-    if (doc.getElementById('e2e-notice-overlay-style')) {
-      return;
-    }
-    const style = doc.createElement('style');
-    style.id = 'e2e-notice-overlay-style';
-    style.textContent = `${testId('app-notification')} { pointer-events: none !important; }`;
-    doc.head.appendChild(style);
-  });
-};
 
 const cardByUsername = (username: string) => (
   cy.contains(testId('user-name'), username).closest(testId('user-card'))

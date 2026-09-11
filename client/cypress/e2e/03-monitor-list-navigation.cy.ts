@@ -1,4 +1,4 @@
-const testId = (id: string) => `[data-testid="${id}"]`;
+import { testId } from './controllers/shared.controller';
 
 const systemLogPage = {
   success: true,
