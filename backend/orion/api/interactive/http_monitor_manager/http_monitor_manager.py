@@ -35,14 +35,7 @@ class HttpMonitorManager(MonitorRepository):
 
         now = datetime.now(UTC)
         monitor = HTTPMonitorModel(name=final_name, url=url, check_interval=check_interval, timeout=timeout, expected_status_code=expected_status_code, status=MonitorStatus.UNKNOWN, is_active=True, created_at=now, updated_at=now, last_checked_at=None, expected_response_time_ms=expected_response_time_ms, auth_profile_id=auth_profile_id)
-        document = monitor.model_dump()
-        document.pop("id", None)
-        result = await self.collection.insert_one(document)
-        monitor.id = str(result.inserted_id)
-
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.start_worker(monitor)
-        realtime_broker.notify("monitor", monitor.id)
+        await self._insert_and_start(monitor, monitor.model_dump())
         return HttpMonitorResponse(**monitor.model_dump())
 
     async def list_monitor_models(self) -> list[HTTPMonitorModel]:
@@ -91,16 +84,7 @@ class HttpMonitorManager(MonitorRepository):
         if not update_data:
             return HttpMonitorResponse(**monitor.model_dump())
 
-        update_data["updated_at"] = datetime.now(UTC)
-        await self.collection.update_one({"_id": ObjectId(http_monitor_id)}, {"$set": update_data})
-        updated_monitor = await self.get_monitor_model(http_monitor_id)
-        if updated_monitor is None:
-            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.stop_worker(updated_monitor.persisted_id)
-            if updated_monitor.is_active:
-                await scheduler_state.scheduler.start_worker(updated_monitor)
-        realtime_broker.notify("monitor", updated_monitor.id)
+        updated_monitor = await self._apply_update(http_monitor_id, update_data)
         return HttpMonitorResponse(**updated_monitor.model_dump())
 
     async def _validate_auth_profile(self, auth_profile_id: str | None) -> None:

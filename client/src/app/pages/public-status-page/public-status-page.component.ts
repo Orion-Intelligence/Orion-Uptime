@@ -2,7 +2,8 @@ import { DatePipe, DecimalPipe, NgOptimizedImage, isPlatformBrowser } from '@ang
 import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
-import { PublicOrionFeeder, PublicOrionScript, PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
+import { buildUptimeWindows } from '../../shared/utils/uptime.util';
+import { PublicOrionFeeder, PublicOrionScript, PublicStatusMonitor, PublicStatusPage } from '../../shared/model/models';
 
 const SOCIAL_SECTION = 'social';
 
@@ -101,17 +102,8 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
     return Math.max(0, interval - elapsed);
   }
 
-  uptimeWindows(page: PublicStatusPage): Array<{
-    label: string;
-    value: number | null;
-  }> {
-    const uptime: PublicUptimeStatus = page.uptime_status;
-    return [
-      { label: 'Last 24 hours', value: uptime.last_24_hours },
-      { label: 'Last 7 days', value: uptime.last_7_days },
-      { label: 'Last 30 days', value: uptime.last_30_days },
-      { label: 'Last 90 days', value: uptime.last_90_days },
-    ];
+  uptimeWindows(page: PublicStatusPage): Array<{ label: string; value: number | null }> {
+    return buildUptimeWindows(page.uptime_status);
   }
 
   protected connect(): void {

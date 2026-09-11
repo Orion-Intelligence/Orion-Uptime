@@ -29,10 +29,11 @@ export class IntegrationEditorComponent extends IntegrationEditorBase {
   }
 
   submit(): void {
-    this.error.set('');
-    this.form.markAllAsTouched();
-    if (this.form.invalid) {
-      this.error.set(this.invalidFieldMessage());
+    const messages = new Map<string, string>([
+      ['name', 'Integration name is required (up to 100 characters).'],
+      ['webhook_url', 'A Slack webhook URL is required (up to 500 characters).'],
+    ]);
+    if (!this.validateForm(this.form, messages)) {
       return;
     }
     const values = this.form.getRawValue();
@@ -46,15 +47,6 @@ export class IntegrationEditorComponent extends IntegrationEditorBase {
       return;
     }
     this.persist<SlackIntegrationDetail, typeof body>(body);
-  }
-
-  private invalidFieldMessage(): string {
-    const messages = new Map<string, string>([
-      ['name', 'Integration name is required (up to 100 characters).'],
-      ['webhook_url', 'A Slack webhook URL is required (up to 500 characters).'],
-    ]);
-    const invalid = Object.keys(this.form.controls).find((key) => this.form.get(key)?.invalid);
-    return (invalid === undefined ? undefined : messages.get(invalid)) ?? 'Check the highlighted fields.';
   }
 
 }

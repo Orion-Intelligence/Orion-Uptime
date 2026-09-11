@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import time
 from datetime import UTC, datetime
-from urllib.parse import urlsplit
 
 import httpx
 
-from orion.api.interactive.orion_login_manager.orion_token_manager import AccessTokenCookieManager, AuthTokenError
-from orion.constants.constant import Cookies, OrionIntelligence
+from orion.api.interactive.orion_login_manager.orion_token_manager import AuthTokenError
+from orion.constants.constant import OrionIntelligence
+from orion.management.jobs.monitoring_controller.checkers.base_checker import HttpCheckerBase
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.services.mongo_manager.shared_model.db_orion_login_model import AuthProfileModel
 from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionFeederStatus, OrionScriptCheckResponse, OrionScriptMonitorModel
@@ -21,12 +21,7 @@ class FeederFetchError(RuntimeError):
         super().__init__(message)
 
 
-class OrionScriptChecker:
-    def __init__(self, token_manager: AccessTokenCookieManager | None = None, client: httpx.AsyncClient | None = None):
-        self.token_manager = token_manager
-        self.client = client or httpx.AsyncClient(follow_redirects=True)
-        self._owns_client = client is None
-
+class OrionScriptChecker(HttpCheckerBase):
     async def check(self, monitor: OrionScriptMonitorModel) -> OrionScriptCheckResponse:
         start = None
         status = MonitorStatus.DOWN
@@ -68,10 +63,6 @@ class OrionScriptChecker:
             error = f"The Orion script checker failed unexpectedly: {type(exc).__name__}."
 
         return OrionScriptCheckResponse(url=monitor.url, status=status, status_code=status_code, response_time_ms=response_time_ms, success=success, is_slow=is_slow, error=error, timed_out=timed_out, feeders=feeders)
-
-    async def close(self) -> None:
-        if self._owns_client:
-            await self.client.aclose()
 
     @classmethod
     def find_profile(cls, profiles: list[AuthProfileModel], url: str) -> AuthProfileModel | None:
@@ -129,7 +120,7 @@ class OrionScriptChecker:
         return payload, token, response.status_code
 
     async def _request(self, monitor: OrionScriptMonitorModel, token: str, path: str, params: dict) -> httpx.Response:
-        return await self.client.get(f"{monitor.url.rstrip('/')}{path}", params=params, headers={"Cookie": f"{Cookies.ACCESS_TOKEN}={token}"}, timeout=monitor.timeout)
+        return await self.client.get(f"{monitor.url.rstrip('/')}{path}", params=params, headers=self._cookie_header(token), timeout=monitor.timeout)
 
     @classmethod
     def build_feeders(cls, scripts: list[dict], rule_paths: dict[str, str] | None = None) -> list[OrionFeederStatus]:
@@ -192,8 +183,3 @@ class OrionScriptChecker:
         if not message:
             return None
         return message[:MESSAGE_MAX_LENGTH]
-
-    @staticmethod
-    def _origin(url: str) -> str:
-        parts = urlsplit(url.strip())
-        return f"{parts.scheme.lower()}://{parts.netloc.lower()}"

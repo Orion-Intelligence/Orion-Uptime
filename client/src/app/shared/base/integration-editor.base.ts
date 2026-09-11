@@ -19,7 +19,6 @@ export abstract class IntegrationEditorBase extends MonitorSelectionBase {
   readonly editing = Boolean(this.integrationId);
   readonly loading = signal(true);
   readonly submitting = signal(false);
-  readonly error = signal('');
 
   protected abstract readonly channel: string;
 

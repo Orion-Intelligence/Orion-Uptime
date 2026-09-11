@@ -8,11 +8,16 @@ from bson.errors import InvalidId
 from pymongo.errors import DuplicateKeyError
 
 from orion.constants.constant import Limits
+from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
 if TYPE_CHECKING:
-    from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
+    from collections.abc import Callable
+
+    from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager, MonitorModel
+    from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorStateResult
 
 
 
@@ -28,6 +33,27 @@ class IntegrationCollectionMixin:
             return ObjectId(value)
         except (InvalidId, TypeError):
             return None
+
+    @staticmethod
+    def _transition_direction(state_result: MonitorStateResult) -> bool | None:
+        if state_result.transition == MonitorTransition.DOWN:
+            return True
+        if state_result.transition == MonitorTransition.UP and state_result.previous_status == MonitorStatus.DOWN:
+            return False
+        return None
+
+    async def _integrations_for_transition(self, monitor: MonitorModel, state_result: MonitorStateResult, load: Callable[[dict], object | None]) -> tuple[bool, list] | None:
+        direction = self._transition_direction(state_result)
+        if direction is None:
+            return None
+        integrations = []
+        async for document in self.collection.find({"monitor_ids": monitor.persisted_id}):
+            loaded = load(document)
+            if loaded is not None:
+                integrations.append(loaded)
+        if not integrations:
+            return None
+        return direction, integrations
 
     async def _apply_update(self, object_id: ObjectId, update_data: dict, requested_name: str | None) -> None:
         if requested_name is not None:

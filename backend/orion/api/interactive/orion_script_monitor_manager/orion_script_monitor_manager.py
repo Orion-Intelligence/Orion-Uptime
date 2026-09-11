@@ -6,7 +6,6 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from odmantic import AIOEngine
 
-import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
 from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
 from orion.constants.constant import Collections, Messages
 from orion.helper_manager.target_policy import validate_target_url
@@ -15,7 +14,6 @@ from orion.management.jobs.monitoring_controller.monitor_repository import Monit
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionFeederStatus, OrionScriptMonitorModel, OrionScriptMonitorResponse
-from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import ConflictError, NotFoundError, ValidationError
 
 
@@ -34,14 +32,7 @@ class OrionScriptMonitorManager(MonitorRepository):
 
         now = datetime.now(UTC)
         monitor = OrionScriptMonitorModel(name=name, url=url, monitor_type=MonitorType.ORION_SCRIPT, check_interval=check_interval, timeout=timeout, expected_response_time_ms=expected_response_time_ms, auth_profile_id=auth_profile_id, created_by=created_by, is_active=True, status=MonitorStatus.UNKNOWN, created_at=now, updated_at=now)
-        document = monitor.model_dump()
-        document.pop("id", None)
-        result = await self.collection.insert_one(document)
-        monitor.id = str(result.inserted_id)
-
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.start_worker(monitor)
-        realtime_broker.notify("monitor", monitor.id)
+        await self._insert_and_start(monitor, monitor.model_dump())
         return OrionScriptMonitorResponse(**monitor.model_dump())
 
     async def list_monitor_models(self) -> list[OrionScriptMonitorModel]:
@@ -63,8 +54,6 @@ class OrionScriptMonitorManager(MonitorRepository):
         monitor = await self.get_monitor_model(monitor_id)
         if monitor is None:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if name is not None:
-            monitor.name = name
         if url is not None:
             url = await self._validated_url(url)
             if await self.collection.find_one({"url": url, "_id": {"$ne": ObjectId(monitor_id)}}) is not None:
@@ -74,24 +63,8 @@ class OrionScriptMonitorManager(MonitorRepository):
             monitor.auth_profile_id = auth_profile_id
         if url is not None or auth_profile_id_set:
             await self._validate_profile(monitor.url, monitor.auth_profile_id)
-        if check_interval is not None:
-            monitor.check_interval = check_interval
-        if timeout is not None:
-            monitor.timeout = timeout
-        if expected_response_time_ms_set or expected_response_time_ms is not None:
-            monitor.expected_response_time_ms = expected_response_time_ms
-        if is_active is not None:
-            monitor.is_active = is_active
-        monitor.updated_at = datetime.now(UTC)
-
-        document = monitor.model_dump()
-        document.pop("id", None)
-        await self.collection.replace_one({"_id": ObjectId(monitor_id)}, document)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.stop_worker(monitor_id)
-            if monitor.is_active:
-                await scheduler_state.scheduler.start_worker(monitor)
-        realtime_broker.notify("monitor", monitor.id)
+        self._apply_common_update(monitor, name=name, check_interval=check_interval, timeout=timeout, expected_response_time_ms=expected_response_time_ms, expected_response_time_ms_set=expected_response_time_ms_set, is_active=is_active)
+        await self._replace_and_reschedule(monitor)
         return OrionScriptMonitorResponse(**monitor.model_dump())
 
     async def delete_monitor(self, monitor_id: str) -> None:

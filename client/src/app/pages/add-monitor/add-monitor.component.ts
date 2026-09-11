@@ -6,6 +6,7 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
 import { AuthProfileOption, EditableResource } from '../../shared/model/models';
+import { firstInvalidFieldMessage } from '../../shared/utils/form.util';
 
 type ResourceKind = 'http' | 'api' | 'ping' | 'heartbeat' | 'orion-script' | 'auth-profile';
 
@@ -218,8 +219,7 @@ export class AddMonitorComponent {
       ['expected_heartbeat_interval', 'Expected heartbeat interval must be at least 1 second.'],
       ['grace_period', 'Grace period cannot be negative.'],
     ]);
-    const invalid = Object.keys(this.form.controls).find((key) => this.form.get(key)?.invalid);
-    return (invalid === undefined ? undefined : messages.get(invalid)) ?? 'Check the highlighted fields.';
+    return firstInvalidFieldMessage(this.form, messages);
   }
 
   private buildRequest(): { endpoint: string; body: Record<string, unknown> } {

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from bson import ObjectId
@@ -53,3 +53,49 @@ class MonitorRepository(ABC):
             return False
         result = await self.collection.update_one({"_id": object_id}, {"$set": changes})
         return result.modified_count > 0
+
+    async def _insert_and_start(self, monitor: Any, document: dict) -> None:
+        document.pop("id", None)
+        result = await self.collection.insert_one(document)
+        monitor.id = str(result.inserted_id)
+        if scheduler_state.scheduler is not None:
+            await scheduler_state.scheduler.start_worker(monitor)
+        realtime_broker.notify("monitor", monitor.id)
+
+    async def _reschedule_and_notify(self, monitor: Any) -> None:
+        if scheduler_state.scheduler is not None:
+            await scheduler_state.scheduler.stop_worker(monitor.persisted_id)
+            if monitor.is_active:
+                await scheduler_state.scheduler.start_worker(monitor)
+        realtime_broker.notify("monitor", monitor.id)
+
+    @staticmethod
+    def _apply_common_update(monitor: Any, *, name: str | None, check_interval: int | None, timeout: int | None, expected_response_time_ms: int | None, expected_response_time_ms_set: bool, is_active: bool | None) -> None:
+        if name is not None:
+            monitor.name = name
+        if check_interval is not None:
+            monitor.check_interval = check_interval
+        if timeout is not None:
+            monitor.timeout = timeout
+        if expected_response_time_ms_set or expected_response_time_ms is not None:
+            monitor.expected_response_time_ms = expected_response_time_ms
+        if is_active is not None:
+            monitor.is_active = is_active
+
+    async def _replace_and_reschedule(self, monitor: Any) -> None:
+        monitor.updated_at = datetime.now(UTC)
+        document = monitor.model_dump()
+        document.pop("id", None)
+        await self.collection.replace_one({"_id": ObjectId(monitor.persisted_id)}, document)
+        await self._reschedule_and_notify(monitor)
+
+    async def _apply_update(self, monitor_id: str, update_data: dict) -> Any:
+        update_data["updated_at"] = datetime.now(UTC)
+        result = await self.collection.update_one({"_id": ObjectId(monitor_id)}, {"$set": update_data})
+        if result.matched_count == 0:
+            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
+        updated = await self.get_monitor_model(monitor_id)
+        if updated is None:
+            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
+        await self._reschedule_and_notify(updated)
+        return updated

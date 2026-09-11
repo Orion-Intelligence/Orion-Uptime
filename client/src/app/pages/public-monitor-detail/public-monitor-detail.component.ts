@@ -3,6 +3,7 @@ import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core'
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
 import { durationText } from '../../shared/utils/duration.util';
+import { buildUptimeWindows } from '../../shared/utils/uptime.util';
 import { ChartPoint, PublicMonitorDetail, PublicMonitorEvent, PublicResponseTimePoint, PublicUptimeStatus, } from '../../shared/model/models';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
@@ -66,12 +67,7 @@ export class PublicMonitorDetailComponent extends PublicStreamPageBase {
   }
 
   uptimeWindows(uptime: PublicUptimeStatus): Array<{ label: string; value: number | null }> {
-    return [
-      { label: 'Last 24 hours', value: uptime.last_24_hours },
-      { label: 'Last 7 days', value: uptime.last_7_days },
-      { label: 'Last 30 days', value: uptime.last_30_days },
-      { label: 'Last 90 days', value: uptime.last_90_days },
-    ];
+    return buildUptimeWindows(uptime);
   }
 
   protected connect(): void {

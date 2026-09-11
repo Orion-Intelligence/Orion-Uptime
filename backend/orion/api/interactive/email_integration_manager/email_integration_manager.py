@@ -20,8 +20,7 @@ from orion.constants.constant import AllowedValues, Collections, Patterns
 from orion.services.email_template_manager import EMAIL_INTEGRATION_ALERT_TEMPLATE, EmailTemplateManager
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_email_integration_model import CreateEmailIntegrationRequest, EmailIntegrationModel, EmailIntegrationResponse, UpdateEmailIntegrationRequest
-from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 
@@ -135,16 +134,10 @@ class EmailIntegrationManager(IntegrationCollectionMixin):
 
 
     async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, incident: IncidentModel | None = None) -> None:
-        is_down = state_result.transition == MonitorTransition.DOWN
-        is_recovery = state_result.transition == MonitorTransition.UP and state_result.previous_status == MonitorStatus.DOWN
-        if not is_down and not is_recovery:
+        resolved = await self._integrations_for_transition(monitor, state_result, lambda document: EmailIntegrationModel(**with_string_id(document)))
+        if resolved is None:
             return
-
-        integrations = []
-        async for document in self.collection.find({"monitor_ids": monitor.persisted_id}):
-            integrations.append(EmailIntegrationModel(**with_string_id(document)))
-        if not integrations:
-            return
+        is_down, integrations = resolved
 
         await asyncio.gather(*(asyncio.to_thread(self._deliver, integration, self._build_message(integration, monitor, is_down=is_down, result=result, incident=incident)) for integration in integrations))
 

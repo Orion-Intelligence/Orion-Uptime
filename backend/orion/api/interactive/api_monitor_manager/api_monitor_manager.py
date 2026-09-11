@@ -5,7 +5,6 @@ from datetime import UTC, datetime
 from bson import ObjectId
 from odmantic import AIOEngine
 
-import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
 from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
 from orion.constants.constant import Collections, Messages
 from orion.helper_manager.target_policy import validate_target_url
@@ -13,7 +12,6 @@ from orion.management.jobs.monitoring_controller.monitor_repository import Monit
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_api_monitor_model import APIMonitorModel, ApiMonitorResponse, CreateApiMonitorRequest, UpdateApiMonitorRequest
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
-from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import ConflictError, NotFoundError
 
 
@@ -55,14 +53,7 @@ class ApiMonitorManager(MonitorRepository):
             expected_content_type=request.expected_content_type,
             auth_profile_id=request.auth_profile_id,
         )
-        document = monitor.model_dump()
-        document.pop("id", None)
-        result = await self.collection.insert_one(document)
-        monitor.id = str(result.inserted_id)
-
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.start_worker(monitor)
-        realtime_broker.notify("monitor", monitor.id)
+        await self._insert_and_start(monitor, monitor.model_dump())
         return ApiMonitorManager._response(monitor)
 
 
@@ -135,18 +126,7 @@ class ApiMonitorManager(MonitorRepository):
         if "auth_profile_id" in update_data:
             await self._validate_auth_profile(update_data["auth_profile_id"])
 
-        update_data["updated_at"] = datetime.now(UTC)
-        result = await self.collection.update_one({"_id": ObjectId(monitor_id)}, {"$set": update_data})
-        if result.matched_count == 0:
-            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        updated_monitor = await self.get_monitor_model(monitor_id)
-        if updated_monitor is None:
-            raise NotFoundError(Messages.MONITOR_NOT_FOUND)
-        if scheduler_state.scheduler is not None:
-            await scheduler_state.scheduler.stop_worker(monitor_id)
-            if updated_monitor.is_active:
-                await scheduler_state.scheduler.start_worker(updated_monitor)
-        realtime_broker.notify("monitor", updated_monitor.id)
+        updated_monitor = await self._apply_update(monitor_id, update_data)
         return ApiMonitorManager._response(updated_monitor)
 
     async def delete_monitor(self, monitor_id: str) -> None:

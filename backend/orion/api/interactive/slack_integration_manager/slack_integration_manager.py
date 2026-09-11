@@ -15,8 +15,7 @@ from orion.api.interactive.integration_shared.integration_collection import Inte
 from orion.constants.constant import AllowedValues, Collections
 from orion.services.encryption_manager.secrets import secret_box
 from orion.services.mongo_manager.documents import with_string_id
-from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
 from orion.services.mongo_manager.shared_model.db_slack_integration_model import CreateSlackIntegrationRequest, SlackIntegrationModel, SlackIntegrationResponse, SlackIntegrationSummaryResponse, UpdateSlackIntegrationRequest
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import NotFoundError, ValidationError
@@ -116,22 +115,20 @@ class SlackIntegrationManager(IntegrationCollectionMixin):
 
 
     async def notify_transition(self, monitor: MonitorModel, result, state_result: MonitorStateResult, incident: IncidentModel | None = None) -> None:
-        is_down = state_result.transition == MonitorTransition.DOWN
-        is_recovery = state_result.transition == MonitorTransition.UP and state_result.previous_status == MonitorStatus.DOWN
-        if not is_down and not is_recovery:
+        resolved = await self._integrations_for_transition(monitor, state_result, self._load_for_notification)
+        if resolved is None:
             return
-
-        integrations = []
-        async for document in self.collection.find({"monitor_ids": monitor.persisted_id}):
-            try:
-                integrations.append(self._deserialize(document))
-            except (InvalidToken, KeyError, RuntimeError, ValueError):
-                logger.exception("A Slack integration could not be loaded for notification delivery.")
-        if not integrations:
-            return
+        is_down, integrations = resolved
 
         payload = self._notification_payload(monitor, is_down=is_down, result=result, incident=incident)
         await asyncio.gather(*(self._deliver(integration, payload) for integration in integrations))
+
+    def _load_for_notification(self, document: dict) -> SlackIntegrationModel | None:
+        try:
+            return self._deserialize(document)
+        except (InvalidToken, KeyError, RuntimeError, ValueError):
+            logger.exception("A Slack integration could not be loaded for notification delivery.")
+            return None
 
     async def close(self) -> None:
         if self._owns_client:

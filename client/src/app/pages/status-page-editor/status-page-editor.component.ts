@@ -26,7 +26,6 @@ export class StatusPageEditorComponent extends MonitorSelectionBase {
   readonly editing = Boolean(this.pageId);
   readonly loading = signal(this.editing);
   readonly submitting = signal(false);
-  readonly error = signal('');
   readonly form = this.formBuilder.nonNullable.group({
     name: ['', [Validators.required, Validators.maxLength(100)]],
     description: ['', Validators.maxLength(500)],
@@ -58,10 +57,11 @@ export class StatusPageEditorComponent extends MonitorSelectionBase {
   }
 
   submit(): void {
-    this.error.set('');
-    this.form.markAllAsTouched();
-    if (this.form.invalid) {
-      this.error.set(this.invalidFieldMessage());
+    const messages = new Map<string, string>([
+      ['name', 'Name is required (up to 100 characters).'],
+      ['description', 'Description cannot exceed 500 characters.'],
+    ]);
+    if (!this.validateForm(this.form, messages)) {
       return;
     }
     const values = this.form.getRawValue();
@@ -91,15 +91,6 @@ export class StatusPageEditorComponent extends MonitorSelectionBase {
         this.error.set(ApiService.errorMessage(error));
       },
     });
-  }
-
-  private invalidFieldMessage(): string {
-    const messages = new Map<string, string>([
-      ['name', 'Name is required (up to 100 characters).'],
-      ['description', 'Description cannot exceed 500 characters.'],
-    ]);
-    const invalid = Object.keys(this.form.controls).find((key) => this.form.get(key)?.invalid);
-    return (invalid === undefined ? undefined : messages.get(invalid)) ?? 'Check the highlighted fields.';
   }
 
 }
