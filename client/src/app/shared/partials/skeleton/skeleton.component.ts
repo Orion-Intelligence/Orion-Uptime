@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 
-export type SkeletonVariant = 'list' | 'table' | 'detail' | 'dashboard' | 'form' | 'status';
+export type SkeletonVariant = 'list' | 'table' | 'detail' | 'dashboard' | 'form';
 
 @Component({
   selector: 'orion-skeleton',

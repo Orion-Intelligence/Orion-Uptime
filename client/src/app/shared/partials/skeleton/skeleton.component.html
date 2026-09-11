@@ -158,21 +158,4 @@
       </div>
     </div>
   }
-
-  @case ('status') {
-    <div class="tw:grid tw:gap-6" aria-hidden="true">
-      <div class="skeleton tw:h-40 tw:w-full tw:rounded-2xl"></div>
-      <div class="tw:mx-auto tw:grid tw:w-[min(1000px,calc(100%-40px))] tw:gap-6">
-        <div class="skeleton tw:h-24 tw:rounded-2xl"></div>
-        @for (g of [0, 1]; track $index) {
-          <section class="panel tw:grid tw:gap-3 tw:rounded-2xl tw:p-6">
-            <span class="skeleton tw:h-3.5 tw:w-40"></span>
-            @for (r of cards(); track $index) {
-              <span class="skeleton tw:h-10 tw:w-full tw:rounded-lg"></span>
-            }
-          </section>
-        }
-      </div>
-    </div>
-  }
 }

@@ -2,9 +2,6 @@
   @if (loading()) {
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading service status"></div>
   }
-  @if (loading() && !page()) {
-    <orion-skeleton animate.leave="fade-out" variant="status" [count]="4" />
-  }
 
   @if (error() && !page()) {
     <main data-testid="public-status-error" animate.enter="fade-in" animate.leave="fade-out" class="tw:mx-auto tw:min-h-screen tw:w-[min(1000px,calc(100%_-_40px))] tw:py-10 tw:max-[640px]:w-[calc(100%_-_30px)] tw:max-[640px]:py-5">
