@@ -4,7 +4,6 @@ import re
 from datetime import UTC, datetime
 
 from bson import ObjectId
-from bson.errors import InvalidId
 from odmantic import AIOEngine
 
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
@@ -20,6 +19,8 @@ from orion.shared_models.exceptions import ConflictError, NotFoundError
 
 
 class HttpMonitorManager(MonitorRepository):
+    model_class = HTTPMonitorModel
+
     def __init__(self, engine: AIOEngine, auth_profile_service: AuthProfileManager | None = None):
         self.collection = engine.database[Collections.HTTP_MONITORS]
         self.auth_profile_service = auth_profile_service
@@ -50,17 +51,6 @@ class HttpMonitorManager(MonitorRepository):
         async for document in cursor:
             monitors.append(HTTPMonitorModel(**with_string_id(document)))
         return monitors
-
-    async def get_monitor_model(self, monitor_id: str) -> HTTPMonitorModel | None:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return None
-        document = await self.collection.find_one({"_id": object_id})
-        if document is None:
-            return None
-        document = with_string_id(document)
-        return HTTPMonitorModel(**document)
 
     async def list_monitors(self) -> list[HttpMonitorResponse]:
         return [HttpMonitorResponse(**monitor.model_dump()) for monitor in await self.list_monitor_models()]

@@ -23,6 +23,8 @@ if TYPE_CHECKING:
 
 
 class HeartbeatMonitorManager(MonitorRepository):
+    model_class = HeartbeatMonitorModel
+
     def __init__(self, engine: AIOEngine, monitor_service: MonitorManager | None = None):
         self.collection = engine.database[Collections.HEARTBEAT_MONITORS]
         self.monitor_service = monitor_service
@@ -54,17 +56,6 @@ class HeartbeatMonitorManager(MonitorRepository):
             created_at=monitor.created_at.isoformat(),
             updated_at=monitor.updated_at.isoformat(),
         )
-
-    async def get_monitor_model(self, monitor_id: str) -> HeartbeatMonitorModel | None:
-        try:
-            object_id = ObjectId(monitor_id)
-        except (InvalidId, TypeError):
-            return None
-        document = await self.collection.find_one({"_id": object_id})
-        if document is None:
-            return None
-        document = with_string_id(document)
-        return HeartbeatMonitorModel(**document)
 
     async def list_monitor_models(self) -> list[HeartbeatMonitorModel]:
         monitors = []

@@ -3,7 +3,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 
 from bson import ObjectId
-from bson.errors import InvalidId
 from odmantic import AIOEngine
 
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
@@ -19,6 +18,8 @@ from orion.shared_models.exceptions import ConflictError, NotFoundError
 
 
 class ApiMonitorManager(MonitorRepository):
+    model_class = APIMonitorModel
+
     def __init__(self, engine: AIOEngine, auth_profile_service: AuthProfileManager | None = None):
         self.collection = engine.database[Collections.API_MONITORS]
         self.auth_profile_service = auth_profile_service
@@ -91,17 +92,6 @@ class ApiMonitorManager(MonitorRepository):
             expected_content_type=monitor.expected_content_type,
             auth_profile_id=monitor.auth_profile_id,
         )
-
-    async def get_monitor_model(self, monitor_id: str) -> APIMonitorModel | None:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return None
-        document = await self.collection.find_one({"_id": object_id})
-        if document is None:
-            return None
-        document = with_string_id(document)
-        return APIMonitorModel(**document)
 
     async def list_monitor_models(self) -> list[APIMonitorModel]:
         cursor = self.collection.find().sort("created_at", -1)

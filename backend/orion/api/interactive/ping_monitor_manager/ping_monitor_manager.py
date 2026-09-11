@@ -20,6 +20,8 @@ from orion.shared_models.exceptions import NotFoundError
 
 
 class PingMonitorManager(MonitorRepository):
+    model_class = PingMonitorModel
+
     def __init__(self, engine: AIOEngine):
         self.collection = engine.database[Collections.PING_MONITORS]
 
@@ -35,17 +37,6 @@ class PingMonitorManager(MonitorRepository):
             await scheduler_state.scheduler.start_worker(monitor)
         realtime_broker.notify("monitor", monitor.id)
         return PingMonitorResponse(**monitor.model_dump())
-
-    async def get_monitor_model(self, monitor_id: str) -> PingMonitorModel | None:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return None
-        document = await self.collection.find_one({"_id": object_id})
-        if document is None:
-            return None
-        document = with_string_id(document)
-        return PingMonitorModel(**document)
 
     async def list_monitor_models(self) -> list[PingMonitorModel]:
         monitors = []

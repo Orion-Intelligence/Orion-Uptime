@@ -20,6 +20,8 @@ from orion.shared_models.exceptions import ConflictError, NotFoundError, Validat
 
 
 class OrionScriptMonitorManager(MonitorRepository):
+    model_class = OrionScriptMonitorModel
+
     def __init__(self, engine: AIOEngine, auth_profile_service: AuthProfileManager | None = None):
         self.collection = engine.database[Collections.ORION_SCRIPT_MONITORS]
         self.auth_profile_service = auth_profile_service
@@ -41,16 +43,6 @@ class OrionScriptMonitorManager(MonitorRepository):
             await scheduler_state.scheduler.start_worker(monitor)
         realtime_broker.notify("monitor", monitor.id)
         return OrionScriptMonitorResponse(**monitor.model_dump())
-
-    async def get_monitor_model(self, monitor_id: str) -> OrionScriptMonitorModel | None:
-        try:
-            object_id = ObjectId(monitor_id)
-        except InvalidId:
-            return None
-        document = await self.collection.find_one({"_id": object_id})
-        if document is None:
-            return None
-        return OrionScriptMonitorModel(**with_string_id(document))
 
     async def list_monitor_models(self) -> list[OrionScriptMonitorModel]:
         monitors = []

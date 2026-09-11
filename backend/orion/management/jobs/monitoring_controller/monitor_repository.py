@@ -7,6 +7,7 @@ from bson.errors import InvalidId
 
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
 from orion.constants.constant import Messages
+from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import HeartbeatMonitorModel
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import BaseMonitorModel, MonitorStatus
 from orion.services.realtime_manager.realtime import realtime_broker
@@ -15,9 +16,16 @@ from orion.shared_models.exceptions import NotFoundError
 
 class MonitorRepository(ABC):
     collection: Any
+    model_class: Any
 
-    @abstractmethod
-    async def get_monitor_model(self, monitor_id: str) -> BaseMonitorModel | HeartbeatMonitorModel | None: ...
+    async def get_monitor_model(self, monitor_id: str) -> BaseMonitorModel | HeartbeatMonitorModel | None:
+        object_id = self._object_id(monitor_id)
+        if object_id is None:
+            return None
+        document = await self.collection.find_one({"_id": object_id})
+        if document is None:
+            return None
+        return self.model_class(**with_string_id(document))
 
     @abstractmethod
     async def update_monitoring_result(self, monitor_id: str, status: MonitorStatus, status_code: int | None, response_time_ms: int | None, checked_at: datetime) -> bool: ...
