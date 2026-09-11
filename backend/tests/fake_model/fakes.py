@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from types import SimpleNamespace
 
 from bson import ObjectId
@@ -35,6 +36,11 @@ class FakeCursor:
     def sort(self, *_args):
         return self
 
+    def limit(self, count):
+        self.documents = self.documents[:count]
+        self.iterator = iter(self.documents)
+        return self
+
     def __aiter__(self):
         self.iterator = iter(self.documents)
         return self
@@ -54,8 +60,14 @@ class FakeCollection:
     def _matches(document, query):
         for key, condition in query.items():
             value = document.get(key)
-            if isinstance(condition, dict) and "$ne" in condition:
-                if value == condition["$ne"]:
+            if isinstance(condition, dict):
+                if "$ne" in condition and value == condition["$ne"]:
+                    return False
+                if "$in" in condition and value not in condition["$in"]:
+                    return False
+                if "$exists" in condition and (key in document) != bool(condition["$exists"]):
+                    return False
+                if "$regex" in condition and (value is None or re.search(condition["$regex"], str(value)) is None):
                     return False
             elif key == "monitor_ids":
                 if condition not in (value or []):
@@ -63,6 +75,12 @@ class FakeCollection:
             elif value != condition:
                 return False
         return True
+
+    @staticmethod
+    def _apply_update(document, update):
+        document.update(update.get("$set", {}))
+        for field, amount in update.get("$inc", {}).items():
+            document[field] = document.get(field, 0) + amount
 
     async def find_one(self, query, _projection=None):
         for document in self.documents:
@@ -75,12 +93,23 @@ class FakeCollection:
         self.documents.append(inserted)
         return SimpleNamespace(inserted_id=inserted["_id"])
 
+    async def create_index(self, *_args, **_kwargs):
+        return None
+
     async def update_one(self, query, update):
         for document in self.documents:
             if self._matches(document, query):
-                document.update(update.get("$set", {}))
+                self._apply_update(document, update)
                 return SimpleNamespace(matched_count=1, modified_count=1)
         return SimpleNamespace(matched_count=0, modified_count=0)
+
+    async def update_many(self, query, update):
+        count = 0
+        for document in self.documents:
+            if self._matches(document, query):
+                self._apply_update(document, update)
+                count += 1
+        return SimpleNamespace(matched_count=count, modified_count=count)
 
     async def delete_one(self, query):
         for index, document in enumerate(self.documents):

@@ -47,18 +47,6 @@ def _fake_token_manager(*, token="token-1", status_code=200, error=None):
 
 def _manager():
     collection = FakeCollection()
-
-    async def update_many(query, update):
-        matched = [document for document in collection.documents if FakeCollection._matches(document, query)]
-        for document in matched:
-            document.update(update.get("$set", {}))
-        return SimpleNamespace(matched_count=len(matched), modified_count=len(matched))
-
-    async def create_index(*_args, **_kwargs):
-        return "name_1"
-
-    collection.update_many = update_many
-    collection.create_index = create_index
     engine = SimpleNamespace(database={Collections.AUTH_PROFILES: collection})
     return AuthProfileManager(engine), collection
 

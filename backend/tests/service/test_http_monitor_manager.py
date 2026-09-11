@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import re
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
@@ -20,25 +19,6 @@ NOW = datetime.now(UTC)
 @pytest.fixture(autouse=True)
 def _allow_private_targets(monkeypatch):
     monkeypatch.setenv("MONITOR_ALLOW_PRIVATE_TARGETS", "true")
-
-
-class RegexCollection(FakeCollection):
-    """Adds $regex support to count_documents so _unique_name suffixing can be exercised."""
-
-    async def count_documents(self, query=None):
-        query = query or {}
-
-        def matches(document):
-            for key, condition in query.items():
-                value = document.get(key)
-                if isinstance(condition, dict) and "$regex" in condition:
-                    if not re.match(condition["$regex"], value or ""):
-                        return False
-                elif value != condition:
-                    return False
-            return True
-
-        return sum(1 for document in self.documents if matches(document))
 
 
 def _auth_profile_service(valid_ids=None):
@@ -99,7 +79,7 @@ def test_create_monitor_without_auth_profile_service_rejects_auth_profile_id():
 
 
 def test_create_monitor_generates_unique_name_suffix():
-    manager, _ = _manager(collection=RegexCollection())
+    manager, _ = _manager(collection=FakeCollection())
     first = _create(manager, name="Site", url="http://one.example.com")
     second = _create(manager, name="Site", url="http://two.example.com")
 
@@ -159,7 +139,7 @@ def test_update_monitor_changes_simple_fields():
 
 
 def test_update_monitor_renames_with_unique_suffix():
-    manager, _ = _manager(collection=RegexCollection())
+    manager, _ = _manager(collection=FakeCollection())
     _create(manager, name="Other", url="http://other.example.com")
     created = _create(manager, name="Site", url="http://site.example.com")
 

@@ -7,42 +7,13 @@ from types import SimpleNamespace
 from orion.api.interactive.incident_manager.incident_manager import IncidentManager
 from orion.constants.constant import Collections
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
-from tests.fake_model.fakes import FakeCollection, FakeCursor
+from tests.fake_model.fakes import FakeCollection
 
 NOW = datetime.now(UTC)
 
 
-class _IncidentCollection(FakeCollection):
-    @staticmethod
-    def _matches(document, query):
-        for key, condition in query.items():
-            value = document.get(key)
-            if isinstance(condition, dict) and "$in" in condition:
-                if value not in condition["$in"]:
-                    return False
-            elif isinstance(condition, dict) and "$ne" in condition:
-                if value == condition["$ne"]:
-                    return False
-            elif value != condition:
-                return False
-        return True
-
-    def find(self, query=None, _projection=None):
-        query = query or {}
-        documents = [document for document in self.documents if self._matches(document, query)]
-        cursor = FakeCursor([document.copy() for document in documents])
-
-        def limit(count):
-            cursor.documents = cursor.documents[:count]
-            cursor.iterator = iter(cursor.documents)
-            return cursor
-
-        cursor.limit = limit
-        return cursor
-
-
 def _manager():
-    collection = _IncidentCollection()
+    collection = FakeCollection()
     engine = SimpleNamespace(database={Collections.INCIDENTS: collection})
     manager = IncidentManager(engine)
     return manager, collection

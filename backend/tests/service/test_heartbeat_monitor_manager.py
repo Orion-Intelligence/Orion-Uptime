@@ -17,20 +17,6 @@ from tests.fake_model.fakes import FakeCollection
 
 NOW = datetime.now(UTC)
 
-
-class _HeartbeatCollection(FakeCollection):
-    """FakeCollection does not apply `$inc`; receive_heartbeat relies on it to bump heartbeat_count."""
-
-    async def update_one(self, query, update):
-        for document in self.documents:
-            if self._matches(document, query):
-                document.update(update.get("$set", {}))
-                for key, amount in update.get("$inc", {}).items():
-                    document[key] = document.get(key, 0) + amount
-                return SimpleNamespace(matched_count=1, modified_count=1)
-        return SimpleNamespace(matched_count=0, modified_count=0)
-
-
 _UNSET = object()
 
 
@@ -42,7 +28,7 @@ def _monitor_service(process_heartbeat=None):
 
 
 def _manager(monitor_service=_UNSET):
-    collection = _HeartbeatCollection()
+    collection = FakeCollection()
     engine = SimpleNamespace(database={Collections.HEARTBEAT_MONITORS: collection})
     manager = HeartbeatMonitorManager(engine, _monitor_service() if monitor_service is _UNSET else monitor_service)
     return manager, collection
@@ -141,7 +127,7 @@ def test_update_monitor_partial_update_only_interval_leaves_is_active_untouched(
 
 
 def test_update_monitor_raises_not_found_when_monitor_disappears_after_update():
-    class _DisappearingCollection(_HeartbeatCollection):
+    class _DisappearingCollection(FakeCollection):
         async def update_one(self, query, update):
             result = await super().update_one(query, update)
             self.documents.clear()
