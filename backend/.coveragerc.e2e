@@ -1,0 +1,14 @@
+[run]
+branch = true
+relative_files = true
+parallel = true
+sigterm = true
+concurrency = multiprocessing
+source =
+    orion
+    routes
+    configs
+data_file = /app/coverage-e2e/.coverage
+omit =
+    */tests/*
+    */build/*

@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 from datetime import UTC, datetime
-from types import SimpleNamespace
 
 import httpx
 
@@ -11,30 +10,9 @@ from orion.management.jobs.monitoring_controller.checkers.orion_script_checker i
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.services.mongo_manager.shared_model.db_orion_login_model import AuthProfileModel
 from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionScriptMonitorModel, feeder_result_id
+from tests.fake_model.fakes import FakeTokenManager
 
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
-
-
-class FakeTokenManager:
-    def __init__(self, profiles: list[AuthProfileModel], token: str = "token-1"):
-        self.auth_profile_service = SimpleNamespace(list_profile_models=self._list_profiles, get_profile_model=self._get_profile)
-        self._profiles = profiles
-        self._token = token
-        self.refreshes = 0
-        self.token_profile_ids: list[str] = []
-
-    async def _list_profiles(self):
-        return self._profiles
-
-    async def _get_profile(self, profile_id: str):
-        return next((profile for profile in self._profiles if profile.id == profile_id), None)
-
-    async def get_token(self, profile_id: str, *, force_refresh: bool = False) -> str:
-        self.token_profile_ids.append(profile_id)
-        if force_refresh:
-            self.refreshes += 1
-            self._token = "token-2"
-        return self._token
 
 
 def _monitor() -> OrionScriptMonitorModel:

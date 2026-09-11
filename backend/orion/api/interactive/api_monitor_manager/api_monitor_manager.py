@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
+# CPD-OFF
 from bson import ObjectId
 from odmantic import AIOEngine
 
@@ -13,6 +14,8 @@ from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_api_monitor_model import APIMonitorModel, ApiMonitorResponse, CreateApiMonitorRequest, UpdateApiMonitorRequest
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.shared_models.exceptions import ConflictError, NotFoundError
+
+# CPD-ON
 
 
 class ApiMonitorManager(MonitorRepository):

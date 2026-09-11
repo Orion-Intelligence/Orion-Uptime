@@ -1,0 +1,10 @@
+services:
+  backend:
+    command: ["coverage", "run", "--rcfile=/app/.coveragerc.e2e", "-m", "hypercorn", "main:app", "--bind", "0.0.0.0:8000", "--workers", "1"]
+    environment:
+      COVERAGE_PROCESS_START: /app/.coveragerc.e2e
+    stop_signal: SIGTERM
+    stop_grace_period: 40s
+    volumes:
+      - ./backend/.coveragerc.e2e:/app/.coveragerc.e2e:ro
+      - ./backend/coverage-e2e:/app/coverage-e2e

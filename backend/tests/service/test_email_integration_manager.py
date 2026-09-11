@@ -15,54 +15,7 @@ from orion.services.mongo_manager.shared_model.db_incident_model import Incident
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 from orion.shared_models.exceptions import ValidationError
-
-
-class FakeCursor:
-    def __init__(self, documents):
-        self.documents = documents
-        self.iterator = iter(documents)
-
-    def sort(self, *_args):
-        return self
-
-    def __aiter__(self):
-        self.iterator = iter(self.documents)
-        return self
-
-    async def __anext__(self):
-        try:
-            return next(self.iterator)
-        except StopIteration:
-            raise StopAsyncIteration from None
-
-
-class FakeCollection:
-    def __init__(self):
-        self.documents = []
-
-    async def find_one(self, query, _projection=None):
-        for document in self.documents:
-            if "name_key" in query and document.get("name_key") == query["name_key"]:
-                return document
-            if "_id" in query and document.get("_id") == query["_id"]:
-                return document
-        return None
-
-    async def insert_one(self, document):
-        inserted = {**document, "_id": ObjectId()}
-        self.documents.append(inserted)
-        return SimpleNamespace(inserted_id=inserted["_id"])
-
-    def find(self, query=None):
-        query = query or {}
-        monitor_id = query.get("monitor_ids")
-        documents = self.documents if monitor_id is None else [document for document in self.documents if monitor_id in document.get("monitor_ids", [])]
-        return FakeCursor([document.copy() for document in documents])
-
-
-class FakeMonitorService:
-    async def list_monitors(self):
-        return []
+from tests.fake_model.fakes import FakeCollection, FakeMonitorService
 
 
 @pytest.fixture(autouse=True)

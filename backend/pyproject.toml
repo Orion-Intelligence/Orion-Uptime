@@ -20,6 +20,7 @@ filterwarnings = ["error::DeprecationWarning:orion.*", "error::DeprecationWarnin
 
 [tool.coverage.run]
 branch = true
+relative_files = true
 omit = ["*/tests/*", "*/build/*"]
 
 [tool.coverage.report]

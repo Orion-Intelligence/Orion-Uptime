@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
-from types import SimpleNamespace
 
 import httpx
 
@@ -10,26 +9,10 @@ from orion.management.jobs.monitoring_controller.checkers.http_checker import HT
 from orion.services.mongo_manager.shared_model.db_http_monitor_model import HTTPMonitorModel
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.services.mongo_manager.shared_model.db_orion_login_model import AuthProfileModel
+from tests.fake_model.fakes import FakeTokenManager
 
 NOW = datetime(2026, 9, 4, 12, 0, tzinfo=UTC)
 PROFILE_ID = "64f000000000000000000002"
-
-
-class FakeTokenManager:
-    def __init__(self, profiles: list[AuthProfileModel], token: str = "token-1"):
-        self.auth_profile_service = SimpleNamespace(get_profile_model=self._get_profile)
-        self._profiles = profiles
-        self._token = token
-        self.refreshes = 0
-
-    async def _get_profile(self, profile_id: str):
-        return next((profile for profile in self._profiles if profile.id == profile_id), None)
-
-    async def get_token(self, profile_id: str, *, force_refresh: bool = False) -> str:
-        if force_refresh:
-            self.refreshes += 1
-            self._token = "token-2"
-        return self._token
 
 
 def _monitor(auth_profile_id: str | None = None) -> HTTPMonitorModel:

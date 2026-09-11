@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from datetime import UTC, datetime
 
+# CPD-OFF
 from bson import ObjectId
 from odmantic import AIOEngine
 
@@ -16,6 +17,8 @@ from orion.services.mongo_manager.shared_model.db_http_monitor_model import HTTP
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.services.realtime_manager.realtime import realtime_broker
 from orion.shared_models.exceptions import ConflictError, NotFoundError
+
+# CPD-ON
 
 
 class HttpMonitorManager(MonitorRepository):

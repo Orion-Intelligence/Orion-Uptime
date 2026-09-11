@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
-from bson import ObjectId
 
 from orion.api.interactive.slack_integration_manager.slack_integration_manager import SlackIntegrationManager
 from orion.constants.constant import Collections
@@ -14,31 +13,7 @@ from orion.services.mongo_manager.shared_model.db_incident_model import Incident
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
 from orion.services.mongo_manager.shared_model.db_slack_integration_model import CreateSlackIntegrationRequest
 from orion.shared_models.exceptions import ValidationError
-
-
-class FakeCollection:
-    def __init__(self):
-        self.documents = []
-
-    async def find_one(self, query, _projection=None):
-        for document in self.documents:
-            if document.get("name_key") == query.get("name_key"):
-                return document
-        return None
-
-    async def insert_one(self, document):
-        inserted = {**document, "_id": ObjectId()}
-        self.documents.append(inserted)
-        return SimpleNamespace(inserted_id=inserted["_id"])
-
-
-class FakeMonitorService:
-    async def list_monitors(self):
-        return []
-
-
-class FakeHttpClient:
-    pass
+from tests.fake_model.fakes import FakeCollection, FakeHttpClient, FakeMonitorService
 
 
 def test_duplicate_slack_integration_names_receive_numeric_suffix(monkeypatch):
