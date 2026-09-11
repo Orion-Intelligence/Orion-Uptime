@@ -18,13 +18,13 @@ from routes.heartbeat_monitor_routes import router as heartbeat_router
 from routes.http_monitor_routes import router as http_monitor_router
 from routes.insight_routes import router as dashboard_router
 from routes.monitor_config_routes import router as monitor_config_router
-from routes.system_log_routes import router as system_log_router
 from routes.orion_login_routes import router as auth_profiles_router
 from routes.orion_script_monitor_routes import router as orion_script_router
 from routes.ping_monitor_routes import router as ping_router
 from routes.realtime_routes import router as realtime_router
 from routes.slack_integration_routes import router as slack_integration_router
 from routes.status_page_routes import router as status_page_router
+from routes.system_log_routes import router as system_log_router
 from routes.user_account_routes import router as users_router
 
 api_router = APIRouter(prefix="/api")

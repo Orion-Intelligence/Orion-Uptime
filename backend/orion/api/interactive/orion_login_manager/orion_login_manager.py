@@ -99,8 +99,8 @@ class AuthProfileManager:
         if "name" in update_data and await self.collection.find_one({"name": update_data["name"], "_id": {"$ne": ObjectId(profile_id)}}) is not None:
             raise ConflictError("An auth profile with this name already exists.")
         if "login_url" in update_data or "credentials" in update_data:
-            effective_login_url = update_data["login_url"] if "login_url" in update_data else profile.login_url
-            effective_credentials = update_data["credentials"] if "credentials" in update_data else profile.credentials
+            effective_login_url = update_data.get("login_url", profile.login_url)
+            effective_credentials = update_data.get("credentials", profile.credentials)
             await self._assert_unique_credentials(effective_login_url, effective_credentials, exclude_id=profile_id)
         if update_data.get("credentials") is not None:
             update_data["credentials_encrypted"] = secret_box.encrypt_mapping(update_data.pop("credentials"))

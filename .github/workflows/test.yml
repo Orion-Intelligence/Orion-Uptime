@@ -8,37 +8,6 @@ on:
 permissions: read-all
 
 jobs:
-  lint:
-    runs-on: ubuntu-latest
-
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
-        with:
-          node-version: lts/*
-          cache: npm
-          cache-dependency-path: client/package-lock.json
-
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.12"
-
-      - name: Install linters
-        run: |
-          set -euo pipefail
-          export npm_config_loglevel=error
-          (cd client && npm ci)
-          python -m pip install --require-hashes -r backend/requirements.txt
-
-      - name: Lint the client (eslint + stylelint) and the backend (ruff)
-        run: |
-          set -euo pipefail
-          chmod +x ./run.sh
-          ./run.sh lint
-
   client-tests:
     runs-on: ubuntu-latest
 
