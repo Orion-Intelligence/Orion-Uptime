@@ -6,10 +6,11 @@ import { RealtimeResources, SlackIntegration } from '../../shared/model/models';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 import { EmptyStateComponent } from '../../shared/partials/empty-state/empty-state.component';
+import { NotificationComponent } from '../../shared/partials/notification/notification.component';
 
 @Component({
   selector: 'app-integration-list',
-  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent, SkeletonComponent, EmptyStateComponent],
+  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent, SkeletonComponent, EmptyStateComponent, NotificationComponent],
   templateUrl: './integration-list.component.html',
 })
 export class IntegrationListComponent extends IntegrationListBase<SlackIntegration> {
