@@ -10,12 +10,22 @@ from bson import ObjectId
 from orion.api.interactive.email_integration_manager.email_integration_manager import EmailIntegrationManager
 from orion.constants.constant import Collections
 from orion.services.email_template_manager import EmailTemplateManager
-from orion.services.mongo_manager.shared_model.db_email_integration_model import CreateEmailIntegrationRequest, EmailIntegrationModel
+from orion.services.mongo_manager.shared_model.db_email_integration_model import CreateEmailIntegrationRequest, EmailIntegrationModel, UpdateEmailIntegrationRequest
 from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
-from orion.shared_models.exceptions import ValidationError
+from orion.shared_models.exceptions import NotFoundError, ValidationError
 from tests.fake_model.fakes import FakeCollection, FakeMonitorService
+
+
+def _manager(monitors=None):
+    collection = FakeCollection()
+    engine = SimpleNamespace(database={Collections.EMAIL_INTEGRATIONS: collection})
+    return EmailIntegrationManager(engine, FakeMonitorService(monitors)), collection
+
+
+def _create(manager, name="On-call", email="alerts@example.com", monitor_ids=None):
+    return asyncio.run(manager.create_integration(CreateEmailIntegrationRequest(name=name, email=email, monitor_ids=monitor_ids or [])))
 
 
 @pytest.fixture(autouse=True)
@@ -94,3 +104,93 @@ def test_ping_email_omits_http_status_code():
     message = manager._build_message(integration, monitor, is_down=True, result=SimpleNamespace(response_time_ms=None), incident=incident)
 
     assert "Status code:" not in message.get_body(preferencelist=("plain",)).get_content()
+
+
+def test_list_and_get_email_integrations():
+    manager, _ = _manager()
+    created = _create(manager, name="Primary")
+
+    listed = asyncio.run(manager.list_integrations())
+    fetched = asyncio.run(manager.get_integration(created.id))
+
+    assert [item.name for item in listed] == ["Primary"]
+    assert fetched.id == created.id
+    assert fetched.email == "alerts@example.com"
+
+
+def test_get_email_integration_missing_or_invalid_id_raises_not_found():
+    manager, _ = _manager()
+    with pytest.raises(NotFoundError):
+        asyncio.run(manager.get_integration(str(ObjectId())))
+    with pytest.raises(NotFoundError):
+        asyncio.run(manager.get_integration("not-a-valid-object-id"))
+
+
+def test_update_email_integration_changes_name_and_email():
+    manager, _ = _manager()
+    created = _create(manager, name="On-call")
+
+    updated = asyncio.run(manager.update_integration(created.id, UpdateEmailIntegrationRequest(name="Renamed", email="ops@example.com")))
+
+    assert updated.name == "Renamed"
+    assert updated.email == "ops@example.com"
+
+
+def test_update_email_integration_rejects_explicit_null_fields():
+    manager, _ = _manager()
+    created = _create(manager)
+    with pytest.raises(ValidationError):
+        asyncio.run(manager.update_integration(created.id, UpdateEmailIntegrationRequest(monitor_ids=None)))
+
+
+def test_update_email_integration_missing_raises_not_found():
+    manager, _ = _manager()
+    with pytest.raises(NotFoundError):
+        asyncio.run(manager.update_integration(str(ObjectId()), UpdateEmailIntegrationRequest(name="Nope")))
+
+
+def test_delete_email_integration_and_missing_cases():
+    manager, _ = _manager()
+    created = _create(manager)
+
+    asyncio.run(manager.delete_integration(created.id))
+
+    with pytest.raises(NotFoundError):
+        asyncio.run(manager.delete_integration(created.id))
+    with pytest.raises(NotFoundError):
+        asyncio.run(manager.delete_integration("not-a-valid-object-id"))
+
+
+def test_create_validates_monitor_ids():
+    manager, _ = _manager()
+    with pytest.raises(ValidationError):
+        _create(manager, monitor_ids=["unknown-monitor"])
+
+    manager_with_monitor, _ = _manager(monitors=[SimpleNamespace(id="monitor-1")])
+    created = _create(manager_with_monitor, monitor_ids=["monitor-1", "monitor-1"])
+    assert created.monitor_ids == ["monitor-1"]
+
+
+def test_smtp_settings_requires_host(monkeypatch):
+    monkeypatch.setenv("SMTP_HOST", "")
+    with pytest.raises(RuntimeError):
+        EmailIntegrationManager._smtp_settings()
+
+
+def test_smtp_settings_builds_from_environment(monkeypatch):
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_PORT", "587")
+    monkeypatch.setenv("SMTP_SECURITY", "starttls")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
+    settings = EmailIntegrationManager._smtp_settings()
+    assert settings.host == "smtp.example.com"
+    assert settings.port == 587
+    assert settings.from_email == "alerts@example.com"
+
+
+def test_smtp_settings_rejects_invalid_port(monkeypatch):
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
+    monkeypatch.setenv("SMTP_PORT", "not-a-number")
+    with pytest.raises(RuntimeError):
+        EmailIntegrationManager._smtp_settings()

@@ -50,12 +50,24 @@ class FakeCollection:
     def __init__(self):
         self.documents = []
 
+    @staticmethod
+    def _matches(document, query):
+        for key, condition in query.items():
+            value = document.get(key)
+            if isinstance(condition, dict) and "$ne" in condition:
+                if value == condition["$ne"]:
+                    return False
+            elif key == "monitor_ids":
+                if condition not in (value or []):
+                    return False
+            elif value != condition:
+                return False
+        return True
+
     async def find_one(self, query, _projection=None):
         for document in self.documents:
-            if "name_key" in query and document.get("name_key") == query["name_key"]:
-                return document
-            if "_id" in query and document.get("_id") == query["_id"]:
-                return document
+            if self._matches(document, query):
+                return document.copy()
         return None
 
     async def insert_one(self, document):
@@ -63,16 +75,32 @@ class FakeCollection:
         self.documents.append(inserted)
         return SimpleNamespace(inserted_id=inserted["_id"])
 
+    async def update_one(self, query, update):
+        for document in self.documents:
+            if self._matches(document, query):
+                document.update(update.get("$set", {}))
+                return SimpleNamespace(matched_count=1, modified_count=1)
+        return SimpleNamespace(matched_count=0, modified_count=0)
+
+    async def delete_one(self, query):
+        for index, document in enumerate(self.documents):
+            if self._matches(document, query):
+                del self.documents[index]
+                return SimpleNamespace(deleted_count=1)
+        return SimpleNamespace(deleted_count=0)
+
     def find(self, query=None, _projection=None):
         query = query or {}
-        monitor_id = query.get("monitor_ids")
-        documents = self.documents if monitor_id is None else [document for document in self.documents if monitor_id in document.get("monitor_ids", [])]
+        documents = [document for document in self.documents if self._matches(document, query)]
         return FakeCursor([document.copy() for document in documents])
 
 
 class FakeMonitorService:
+    def __init__(self, monitors: list | None = None):
+        self._monitors = monitors or []
+
     async def list_monitors(self):
-        return []
+        return self._monitors
 
 
 class FakeHttpClient:
