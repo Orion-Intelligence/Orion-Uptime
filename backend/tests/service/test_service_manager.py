@@ -290,23 +290,16 @@ def test_terminate_process_logs_and_signals_self(monkeypatch):
     assert calls == [(os.getpid(), signal.SIGTERM)]
 
 
-def test_scheduler_watchdog_terminates_when_scheduler_is_unhealthy():
+def test_scheduler_watchdog_terminates_when_scheduler_is_unhealthy(monkeypatch):
     terminated = {}
 
     def fake_terminate(reason):
         terminated["reason"] = reason
 
+    monkeypatch.setattr(service_manager, "terminate_process", fake_terminate)
     fake_scheduler = SimpleNamespace(running=True, last_reconcile_at=1.0, is_healthy=lambda _seconds: False)
 
-    async def scenario():
-        await asyncio.wait_for(service_manager.scheduler_watchdog(fake_scheduler, interval=0), timeout=5)
-
-    original_terminate = service_manager.terminate_process
-    service_manager.terminate_process = fake_terminate
-    try:
-        asyncio.run(scenario())
-    finally:
-        service_manager.terminate_process = original_terminate
+    asyncio.run(asyncio.wait_for(service_manager.scheduler_watchdog(fake_scheduler, interval=0), timeout=5))
 
     assert "not reconciled" in terminated["reason"]
 
