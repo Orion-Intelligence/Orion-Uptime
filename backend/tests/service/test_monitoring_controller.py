@@ -13,6 +13,7 @@ from orion.services.mongo_manager.shared_model.db_heartbeat_monitor_model import
 from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorStateModel, MonitorStateResult, MonitorTransition
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import HealthCheckResponse, MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionFeederStatus, OrionScriptCheckResponse
 from tests.fake_model.fakes import FakeCollection
 
 NOW = datetime.now(UTC)
@@ -251,6 +252,27 @@ def test_delete_monitor_history_cleans_up_related_data():
     assert calls[names.index("results")][1][0] == "m1"
 
 
+def test_delete_monitor_history_notifies_for_slack_and_email_matches():
+    calls = []
+    status_pages = FakeCollection()
+    status_pages.documents.append({"_id": ObjectId(), "monitor_ids": ["other"], "updated_at": NOW})
+    slack_integrations = FakeCollection()
+    slack_integrations.documents.append({"_id": ObjectId(), "monitor_ids": ["m1"], "updated_at": NOW})
+    email_integrations = FakeCollection()
+    email_integrations.documents.append({"_id": ObjectId(), "monitor_ids": ["m1"], "updated_at": NOW})
+    database = {Collections.STATUS_PAGES: status_pages, Collections.SLACK_INTEGRATIONS: slack_integrations, Collections.EMAIL_INTEGRATIONS: email_integrations}
+    results_service = SimpleNamespace(delete_for_monitor=_tracked(calls, "results"), collection=SimpleNamespace(database=database))
+    incident_service = SimpleNamespace(delete_for_monitor=_tracked(calls, "incident"))
+    state_service = SimpleNamespace(delete_for_monitor=_tracked(calls, "state"))
+    manager = _manager(results=results_service, incident=incident_service, state=state_service)
+
+    asyncio.run(manager.delete_monitor_history("m1"))
+
+    assert status_pages.documents[0]["monitor_ids"] == ["other"]
+    assert slack_integrations.documents[0]["monitor_ids"] == ["m1"]
+    assert email_integrations.documents[0]["monitor_ids"] == ["m1"]
+
+
 def test_check_and_update_returns_when_monitor_missing():
     calls = []
     monitor = _monitor()
@@ -266,6 +288,37 @@ def test_check_and_update_skips_heartbeat_without_last_heartbeat():
     manager = _manager(heartbeat=SimpleNamespace(get_monitor_model=_async_return(heartbeat_model)), results=SimpleNamespace(record_result=_tracked(calls, "record")))
     asyncio.run(manager.check_and_update(monitor))
     assert calls == []
+
+
+def test_check_and_update_swallows_exceptions():
+    monitor = _monitor()
+
+    async def _raise(_monitor_id):
+        raise RuntimeError("boom")
+
+    manager = _manager(http=SimpleNamespace(get_monitor_model=_raise))
+    asyncio.run(manager.check_and_update(monitor))
+
+
+def test_check_and_update_stores_feeder_results_for_orion_script():
+    calls = []
+    monitor = _monitor(persisted_id="os1", monitor_type=MonitorType.ORION_SCRIPT)
+    feeder = OrionFeederStatus(key="f1", name="Feeder", status=MonitorStatus.UP)
+    response = OrionScriptCheckResponse(url="http://x", status=MonitorStatus.UP, status_code=200, response_time_ms=10, success=True, feeders=[feeder])
+    state_result = _state_result(MonitorStatus.UP, previous_status=MonitorStatus.UP, transition=MonitorTransition.NONE)
+    orion_service = SimpleNamespace(get_monitor_model=_async_return(monitor), update_monitoring_result=_tracked(calls, "update"), store_feeders=_tracked(calls, "store_feeders"))
+    manager = _manager(
+        orion_script=orion_service,
+        checker_factory=SimpleNamespace(get_checker=lambda _monitor_type: SimpleNamespace(check=_async_return(response))),
+        state=SimpleNamespace(process_result=_async_return(state_result)),
+        results=SimpleNamespace(record_result=_tracked(calls, "record"), record_feeder_results=_tracked(calls, "feeder_results")),
+    )
+
+    asyncio.run(manager.check_and_update(monitor))
+
+    names = [call[0] for call in calls]
+    assert "store_feeders" in names
+    assert "feeder_results" in names
 
 
 def test_check_and_update_records_success_and_resolves_incident():

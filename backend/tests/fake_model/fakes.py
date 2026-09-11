@@ -111,6 +111,16 @@ class FakeCollection:
                 count += 1
         return SimpleNamespace(matched_count=count, modified_count=count)
 
+    async def replace_one(self, query, replacement):
+        for index, document in enumerate(self.documents):
+            if self._matches(document, query):
+                new_document = dict(replacement)
+                if "_id" in document:
+                    new_document["_id"] = document["_id"]
+                self.documents[index] = new_document
+                return SimpleNamespace(matched_count=1, modified_count=1)
+        return SimpleNamespace(matched_count=0, modified_count=0)
+
     async def delete_one(self, query):
         for index, document in enumerate(self.documents):
             if self._matches(document, query):
@@ -139,6 +149,32 @@ class FakeMonitorService:
 
     async def list_monitors(self):
         return self._monitors
+
+
+class FakeDatabase:
+    def __getitem__(self, _name):
+        return SimpleNamespace()
+
+
+class FakeEngine:
+    def __init__(self):
+        self.database = FakeDatabase()
+
+
+class FakeService:
+    def __init__(self, **returns):
+        self._returns = returns
+        self.calls: dict[str, list] = {}
+
+    def __getattr__(self, name):
+        async def _call(*args, **kwargs):
+            self.calls.setdefault(name, []).append((args, kwargs))
+            result = self._returns.get(name)
+            if isinstance(result, Exception):
+                raise result
+            return result
+
+        return _call
 
 
 class FakeHttpClient:
