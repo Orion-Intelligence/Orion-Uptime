@@ -40,7 +40,7 @@ def test_get_snapshot_without_factory_raises():
 
 def test_notify_without_factory_is_a_noop():
     broker = RealtimeBroker()
-    broker.notify("monitor", "monitor-1")  # no factory configured -> returns early
+    broker.notify("monitor", "monitor-1")
     assert broker._pending_changes == set()
 
 
@@ -49,8 +49,8 @@ def test_notify_without_subscribers_invalidates_cache():
         broker = RealtimeBroker()
         broker.configure(_factory())
         first = await broker.get_snapshot(is_admin=False)
-        broker.notify("monitor", "monitor-1")  # no subscribers -> drops cached snapshot
-        second = await broker.get_snapshot(is_admin=False)  # forces a rebuild
+        broker.notify("monitor", "monitor-1")
+        second = await broker.get_snapshot(is_admin=False)
         return first, second
 
     first, second = asyncio.run(run())
@@ -79,9 +79,9 @@ def test_notify_replaces_stale_update_when_queue_is_full():
         broker.configure(_factory())
         queue = broker.subscribe(is_admin=False)
         stale = RealtimeUpdate(revision=0, changed=(), common_snapshot={}, admin_snapshot={})
-        queue.put_nowait(stale)  # fill the maxsize=1 queue
+        queue.put_nowait(stale)
         broker.notify("monitor", "monitor-1")
-        await asyncio.sleep(0.15)  # let the refresh task rebuild and replace the stale item
+        await asyncio.sleep(0.15)
         update = await asyncio.wait_for(queue.get(), timeout=1)
         broker.unsubscribe(queue)
         return update

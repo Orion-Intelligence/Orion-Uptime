@@ -89,6 +89,15 @@ class FakeCollection:
                 return SimpleNamespace(deleted_count=1)
         return SimpleNamespace(deleted_count=0)
 
+    async def delete_many(self, query):
+        matched = [document for document in self.documents if self._matches(document, query)]
+        self.documents = [document for document in self.documents if not self._matches(document, query)]
+        return SimpleNamespace(deleted_count=len(matched))
+
+    async def count_documents(self, query=None):
+        query = query or {}
+        return sum(1 for document in self.documents if self._matches(document, query))
+
     def find(self, query=None, _projection=None):
         query = query or {}
         documents = [document for document in self.documents if self._matches(document, query)]
