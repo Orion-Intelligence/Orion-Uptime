@@ -58,7 +58,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div data-testid="slack-integration-empty" animate.enter="fade-in" animate.leave="fade-out" class="empty-state panel tw:col-span-full">No Slack integrations have been created yet.</div>
+        <app-empty-state testid="slack-integration-empty" message="No Slack integrations have been created yet." />
       }
     }
   </section>

@@ -62,7 +62,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div data-testid="status-page-empty" animate.enter="fade-in" animate.leave="fade-out" class="empty-state panel tw:col-span-full">No status pages have been created yet.</div>
+        <app-empty-state testid="status-page-empty" message="No status pages have been created yet." />
       }
     }
   </section>

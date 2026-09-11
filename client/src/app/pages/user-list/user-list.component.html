@@ -62,7 +62,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div data-testid="user-list-empty" animate.enter="fade-in" animate.leave="fade-out" class="empty-state panel tw:col-span-full">No registered users were found.</div>
+        <app-empty-state testid="user-list-empty" message="No registered users were found." />
       }
     }
   </section>

@@ -49,7 +49,7 @@
       </article>
     } @empty {
       @if (!loading() && !error()) {
-        <div data-testid="email-integration-empty" animate.enter="fade-in" animate.leave="fade-out" class="empty-state">No email integrations have been created yet.</div>
+        <app-empty-state testid="email-integration-empty" message="No email integrations have been created yet." [panel]="false" />
       }
     }
   </section>
