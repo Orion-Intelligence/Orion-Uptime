@@ -3,10 +3,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { IntegrationEditorBase } from '../../shared/base/integration-editor.base';
 import { EmailIntegration } from '../../shared/model/models';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-email-integration-editor',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, SkeletonComponent],
   templateUrl: './email-integration-editor.component.html',
 })
 export class EmailIntegrationEditorComponent extends IntegrationEditorBase {

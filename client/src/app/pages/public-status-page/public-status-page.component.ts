@@ -3,6 +3,7 @@ import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core'
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
 import { PublicOrionFeeder, PublicOrionScript, PublicStatusMonitor, PublicStatusPage, PublicUptimeStatus } from '../../shared/model/models';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 const SOCIAL_SECTION = 'social';
 
@@ -32,7 +33,7 @@ interface OrionSection {
 
 @Component({
   selector: 'app-public-status-page',
-  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink],
+  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink, SkeletonComponent],
   templateUrl: './public-status-page.component.html',
 })
 export class PublicStatusPageComponent extends PublicStreamPageBase {

@@ -4,10 +4,11 @@ import { RouterLink } from '@angular/router';
 import { IntegrationListBase } from '../../shared/base/integration-list.base';
 import { RealtimeResources, SlackIntegration } from '../../shared/model/models';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-integration-list',
-  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent],
+  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent, SkeletonComponent],
   templateUrl: './integration-list.component.html',
 })
 export class IntegrationListComponent extends IntegrationListBase<SlackIntegration> {

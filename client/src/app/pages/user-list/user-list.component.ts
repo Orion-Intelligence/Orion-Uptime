@@ -7,10 +7,11 @@ import { UserResponse } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { NoticePageBase } from '../../shared/base/notice-page.base';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-user-list-page',
-  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent],
+  imports: [DatePipe, RouterLink, DeleteConfirmationDialogComponent, SkeletonComponent],
   templateUrl: './user-list.component.html',
 })
 export class UserListComponent extends NoticePageBase {

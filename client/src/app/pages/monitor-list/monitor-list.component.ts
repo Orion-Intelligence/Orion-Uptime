@@ -12,10 +12,11 @@ import { durationText } from '../../shared/utils/duration.util';
 import { parseJsonFile } from '../../shared/utils/json-file.util';
 import { HEARTBEAT_NOTICE_MS, NOTICE_VISIBLE_MS } from '../../shared/constants/ui.constants';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-resource-list-page',
-  imports: [DatePipe, DecimalPipe, RouterLink, DeleteConfirmationDialogComponent],
+  imports: [DatePipe, DecimalPipe, RouterLink, DeleteConfirmationDialogComponent, SkeletonComponent],
   templateUrl: './monitor-list.component.html',
 })
 export class MonitorListComponent extends NoticePageBase {

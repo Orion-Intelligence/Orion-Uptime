@@ -17,6 +17,9 @@
   @if (loading()) {
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading monitor details"></div>
   }
+  @if (loading() && !detail()) {
+    <orion-skeleton animate.leave="fade-out" variant="detail" />
+  }
 
   @if (error()) {
     <p data-testid="monitor-detail-error" animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-5" role="alert">{{ error() }}</p>

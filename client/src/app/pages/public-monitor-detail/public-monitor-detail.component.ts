@@ -4,10 +4,11 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
 import { durationText } from '../../shared/utils/duration.util';
 import { ChartPoint, PublicMonitorDetail, PublicMonitorEvent, PublicResponseTimePoint, PublicUptimeStatus, } from '../../shared/model/models';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-public-monitor-detail',
-  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink],
+  imports: [DatePipe, DecimalPipe, NgOptimizedImage, RouterLink, SkeletonComponent],
   templateUrl: './public-monitor-detail.component.html',
 })
 export class PublicMonitorDetailComponent extends PublicStreamPageBase {

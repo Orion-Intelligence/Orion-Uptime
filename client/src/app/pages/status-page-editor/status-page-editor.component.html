@@ -15,6 +15,7 @@
 
   @if (loading()) {
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
+    <orion-skeleton animate.leave="fade-out" variant="form" [count]="5" />
   } @else {
     <form data-testid="status-page-editor-form" animate.enter="fade-in" class="tw:grid tw:max-w-220 tw:gap-4" [formGroup]="form" (ngSubmit)="submit()">
       @if (error()) {

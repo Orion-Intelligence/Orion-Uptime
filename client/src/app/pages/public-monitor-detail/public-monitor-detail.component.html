@@ -3,6 +3,9 @@
     @if (loading()) {
       <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading monitor status"></div>
     }
+    @if (loading() && !detail()) {
+      <orion-skeleton animate.leave="fade-out" variant="detail" [header]="true" />
+    }
 
     @if (error() && !detail()) {
       <section data-testid="public-monitor-error" animate.enter="fade-in" animate.leave="fade-out" class="tw:mt-[12vh] tw:rounded-2xl tw:border tw:border-[#dce5ef] tw:bg-white tw:px-8 tw:py-14 tw:shadow-[0_12px_34px_rgb(30_64_105_/_7%)] tw:max-[640px]:px-5 tw:max-[640px]:py-10">

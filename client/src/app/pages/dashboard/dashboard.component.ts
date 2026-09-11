@@ -2,10 +2,11 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { DashboardIncident } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DatePipe, DecimalPipe],
+  imports: [DatePipe, DecimalPipe, SkeletonComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {

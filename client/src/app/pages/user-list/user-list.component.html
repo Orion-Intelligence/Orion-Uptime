@@ -14,6 +14,9 @@
   @if (loading()) {
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   }
+  @if (loading() && !users().length && !error()) {
+    <orion-skeleton animate.leave="fade-out" variant="list" [count]="4" />
+  }
   @if (error()) {
     <p data-testid="user-list-error" animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-4">{{ error() }}</p>
   }

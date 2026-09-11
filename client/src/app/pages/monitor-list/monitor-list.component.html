@@ -25,6 +25,9 @@
   @if (loading()) {
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]"></div>
   }
+  @if (loading() && !records().length && !error()) {
+    <orion-skeleton animate.leave="fade-out" variant="list" [summary]="isMonitorList()" />
+  }
   @if (error()) {
     <p data-testid="monitor-list-error" animate.enter="fade-in" animate.leave="fade-out" class="form-error tw:mb-5" role="alert">{{ error() }}</p>
   }

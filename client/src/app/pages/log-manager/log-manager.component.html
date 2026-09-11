@@ -95,6 +95,17 @@
           </tr>
         </thead>
         <tbody>
+          @if (loading() && !logs().length) {
+            @for (r of [0, 1, 2, 3, 4, 5]; track $index) {
+              <tr aria-hidden="true">
+                <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:dark:border-white/7"><span class="skeleton tw:h-6 tw:w-16 tw:rounded-md"></span></td>
+                <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:dark:border-white/7"><span class="skeleton tw:h-3 tw:w-40"></span></td>
+                <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:dark:border-white/7"><span class="skeleton tw:h-3 tw:w-44"></span></td>
+                <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:dark:border-white/7"><span class="skeleton tw:h-3 tw:w-52"></span></td>
+                <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:dark:border-white/7"><span class="skeleton tw:h-3 tw:w-full"></span></td>
+              </tr>
+            }
+          }
           @for (entry of logs(); track $index) {
             <tr data-testid="log-row" class="tw:[transition:background-color_140ms_ease] tw:hover:bg-[#f7fbff] tw:dark:hover:bg-[#1a283d]">
               <td class="tw:border-b tw:border-[#e3ebf3] tw:px-4.5 tw:py-3.5 tw:align-top tw:dark:border-white/7 tw:in-[tr:last-child]:border-b-0">

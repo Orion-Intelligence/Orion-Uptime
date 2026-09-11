@@ -7,10 +7,11 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
 import { ChartPoint, MonitorDetail, MonitorIncident, MonitorOverview, RealtimeSnapshot, ResponseHistory, ResponseHistoryPoint, StatusHistory, StatusHistoryPoint, } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-monitor-detail-page',
-  imports: [DatePipe, DecimalPipe, RouterLink],
+  imports: [DatePipe, DecimalPipe, RouterLink, SkeletonComponent],
   templateUrl: './monitor-detail.component.html',
 })
 export class MonitorDetailComponent {

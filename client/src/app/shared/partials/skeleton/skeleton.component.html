@@ -1,0 +1,178 @@
+@switch (variant()) {
+  @case ('list') {
+    @if (summary()) {
+      <div class="tw:mb-6 tw:grid tw:grid-cols-4 tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:shadow-[0_8px_28px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:max-[900px]:grid-cols-2 tw:max-[520px]:grid-cols-1 tw:bg-[#f9fbff] tw:dark:bg-[#172235]" aria-hidden="true">
+        @for (t of tiles; track $index) {
+          <div class="tw:grid tw:min-h-25 tw:content-between tw:gap-3 tw:border-r tw:border-[#d7e2ef] tw:p-4.5 tw:last:border-r-0 tw:dark:border-white/9">
+            <span class="skeleton tw:h-2.5 tw:w-24"></span>
+            <span class="skeleton tw:h-7 tw:w-14"></span>
+          </div>
+        }
+      </div>
+    }
+    <div class="tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-hidden="true">
+      @for (c of cards(); track $index) {
+        <article class="panel tw:grid tw:min-h-full tw:content-start tw:overflow-hidden tw:rounded-2xl">
+          <header class="tw:flex tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
+            <div class="tw:flex tw:min-w-0 tw:flex-1 tw:items-start tw:gap-3.5">
+              <span class="skeleton tw:size-10 tw:flex-none tw:rounded-[10px]"></span>
+              <span class="tw:grid tw:min-w-0 tw:flex-1 tw:gap-2 tw:pt-1">
+                <span class="skeleton tw:h-3.5 tw:w-3/5"></span>
+                <span class="skeleton tw:h-2.5 tw:w-2/5"></span>
+              </span>
+            </div>
+            <span class="skeleton tw:h-5 tw:w-16 tw:flex-none tw:rounded-full"></span>
+          </header>
+          <dl class="tw:grid tw:grid-cols-2 tw:border-y tw:border-[#d7e2ef] tw:dark:border-white/9">
+            @for (s of tiles; track $index) {
+              <div class="tw:grid tw:min-h-21 tw:content-between tw:gap-2 tw:p-4 tw:odd:border-r tw:[&:nth-child(-n+2)]:border-b tw:border-[#d7e2ef] tw:dark:border-white/9">
+                <span class="skeleton tw:h-2.5 tw:w-16"></span>
+                <span class="skeleton tw:h-5 tw:w-20"></span>
+              </div>
+            }
+          </dl>
+          <footer class="tw:flex tw:items-center tw:justify-between tw:gap-3 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
+            <span class="skeleton tw:h-3 tw:w-24"></span>
+            <span class="skeleton tw:h-8 tw:w-32 tw:rounded-[10px]"></span>
+          </footer>
+        </article>
+      }
+    </div>
+  }
+
+  @case ('table') {
+    <div class="tw:grid tw:max-w-220 tw:overflow-hidden tw:rounded-2xl tw:border tw:border-[#d7e2ef] tw:bg-white tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:dark:border-white/9 tw:dark:bg-[#172235]" aria-hidden="true">
+      @for (r of cards(); track $index) {
+        <div class="tw:grid tw:grid-cols-[minmax(0,1fr)_auto] tw:items-center tw:gap-4 tw:border-b tw:border-[#d7e2ef] tw:p-5 tw:last:border-b-0 tw:dark:border-white/9">
+          <div class="tw:grid tw:gap-2.5">
+            <span class="skeleton tw:h-3.5 tw:w-48 tw:max-w-full"></span>
+            <span class="skeleton tw:h-2.5 tw:w-64 tw:max-w-full"></span>
+          </div>
+          <span class="skeleton tw:h-8 tw:w-24 tw:rounded-[10px]"></span>
+        </div>
+      }
+    </div>
+  }
+
+  @case ('detail') {
+    @if (header()) {
+      <div class="tw:mb-6 tw:grid tw:gap-3" aria-hidden="true">
+        <span class="skeleton tw:h-8 tw:w-72 tw:max-w-full"></span>
+        <span class="skeleton tw:h-3 tw:w-96 tw:max-w-full"></span>
+      </div>
+    }
+    <section class="panel tw:mb-5 tw:overflow-hidden tw:rounded-2xl" aria-hidden="true">
+      <div class="tw:grid tw:gap-3 tw:p-6">
+        <span class="skeleton tw:h-6 tw:w-40"></span>
+        <span class="skeleton tw:h-3 tw:w-56 tw:max-w-full"></span>
+      </div>
+      <dl class="tw:m-0 tw:grid tw:grid-cols-4 tw:border-t tw:border-[#d7e2ef] tw:dark:border-white/9 tw:max-[1050px]:grid-cols-2 tw:max-[600px]:grid-cols-1">
+        @for (s of tiles; track $index) {
+          <div class="tw:grid tw:min-h-24 tw:content-between tw:gap-2 tw:border-r tw:border-[#d7e2ef] tw:p-5 tw:last:border-r-0 tw:dark:border-white/9">
+            <span class="skeleton tw:h-2.5 tw:w-20"></span>
+            <span class="skeleton tw:h-6 tw:w-16"></span>
+          </div>
+        }
+      </dl>
+    </section>
+    <div class="tw:mb-5 tw:grid tw:grid-cols-2 tw:gap-4.5 tw:max-[1050px]:grid-cols-1" aria-hidden="true">
+      @for (c of [0, 1]; track $index) {
+        <section class="panel tw:grid tw:gap-4 tw:overflow-hidden tw:rounded-2xl tw:p-6">
+          <span class="skeleton tw:h-3.5 tw:w-32"></span>
+          <span class="skeleton tw:h-40 tw:w-full tw:rounded-xl"></span>
+        </section>
+      }
+    </div>
+    <section class="panel tw:grid tw:gap-3 tw:overflow-hidden tw:rounded-2xl tw:p-6" aria-hidden="true">
+      <span class="skeleton tw:h-3.5 tw:w-40"></span>
+      @for (r of [0, 1, 2]; track $index) {
+        <span class="skeleton tw:h-12 tw:w-full tw:rounded-xl"></span>
+      }
+    </section>
+  }
+
+  @case ('dashboard') {
+    <div class="tw:mb-6 tw:grid tw:gap-3" aria-hidden="true">
+      <span class="skeleton tw:h-9 tw:w-80 tw:max-w-full"></span>
+      <span class="skeleton tw:h-3 tw:w-[28rem] tw:max-w-full"></span>
+    </div>
+    <div class="tw:mb-4 tw:grid tw:grid-cols-[minmax(230px,0.72fr)_minmax(0,1.75fr)] tw:gap-4 tw:max-[900px]:grid-cols-1" aria-hidden="true">
+      <div class="skeleton tw:h-32 tw:rounded-2xl"></div>
+      <div class="skeleton tw:h-32 tw:rounded-2xl"></div>
+    </div>
+    <div class="tw:mb-5.5 tw:grid tw:grid-cols-4 tw:gap-3.5 tw:max-[1100px]:grid-cols-2 tw:max-[600px]:grid-cols-1" aria-hidden="true">
+      @for (t of tiles; track $index) {
+        <div class="panel tw:grid tw:min-h-28 tw:content-between tw:gap-3 tw:rounded-2xl tw:p-5">
+          <span class="skeleton tw:h-2.5 tw:w-24"></span>
+          <span class="skeleton tw:h-7 tw:w-16"></span>
+          <span class="skeleton tw:h-2 tw:w-20"></span>
+        </div>
+      }
+    </div>
+    <div class="tw:grid tw:grid-cols-[minmax(0,1.65fr)_minmax(290px,0.75fr)] tw:items-start tw:gap-4.5 tw:max-[1100px]:grid-cols-1" aria-hidden="true">
+      <section class="panel tw:grid tw:gap-3 tw:rounded-2xl tw:p-6">
+        <span class="skeleton tw:h-3.5 tw:w-40"></span>
+        @for (r of cards(); track $index) {
+          <span class="skeleton tw:h-11 tw:w-full tw:rounded-lg"></span>
+        }
+      </section>
+      <section class="panel tw:grid tw:gap-3 tw:rounded-2xl tw:p-6">
+        <span class="skeleton tw:h-3.5 tw:w-32"></span>
+        @for (r of tiles; track $index) {
+          <span class="skeleton tw:h-14 tw:w-full tw:rounded-lg"></span>
+        }
+      </section>
+    </div>
+  }
+
+  @case ('form') {
+    <div class="tw:grid tw:max-w-220 tw:gap-4" aria-hidden="true">
+      <section class="panel tw:grid tw:grid-cols-[220px_1fr] tw:gap-7.5 tw:rounded-2xl tw:p-6 tw:max-[700px]:grid-cols-1">
+        <div class="tw:grid tw:content-start tw:gap-2">
+          <span class="skeleton tw:h-3.5 tw:w-28"></span>
+          <span class="skeleton tw:h-2.5 tw:w-40 tw:max-w-full"></span>
+        </div>
+        <div class="tw:grid tw:gap-5">
+          @for (f of [0, 1, 2]; track $index) {
+            <div class="tw:grid tw:gap-2">
+              <span class="skeleton tw:h-2.5 tw:w-24"></span>
+              <span class="skeleton tw:h-11 tw:w-full tw:rounded-[9px]"></span>
+            </div>
+          }
+        </div>
+      </section>
+      <section class="panel tw:grid tw:grid-cols-[220px_1fr] tw:gap-7.5 tw:rounded-2xl tw:p-6 tw:max-[700px]:grid-cols-1">
+        <div class="tw:grid tw:content-start tw:gap-2">
+          <span class="skeleton tw:h-3.5 tw:w-32"></span>
+          <span class="skeleton tw:h-2.5 tw:w-40 tw:max-w-full"></span>
+        </div>
+        <div class="tw:grid tw:gap-2.5 tw:overflow-hidden tw:rounded-xl tw:border tw:border-[#d7e2ef] tw:p-3 tw:dark:border-white/9">
+          @for (m of cards(); track $index) {
+            <span class="skeleton tw:h-9 tw:w-full tw:rounded-lg"></span>
+          }
+        </div>
+      </section>
+      <div class="tw:flex tw:justify-end tw:gap-3">
+        <span class="skeleton tw:h-10 tw:w-24 tw:rounded-[9px]"></span>
+        <span class="skeleton tw:h-10 tw:w-32 tw:rounded-[9px]"></span>
+      </div>
+    </div>
+  }
+
+  @case ('status') {
+    <div class="tw:grid tw:gap-6" aria-hidden="true">
+      <div class="skeleton tw:h-40 tw:w-full tw:rounded-2xl"></div>
+      <div class="tw:mx-auto tw:grid tw:w-[min(1000px,calc(100%-40px))] tw:gap-6">
+        <div class="skeleton tw:h-24 tw:rounded-2xl"></div>
+        @for (g of [0, 1]; track $index) {
+          <section class="panel tw:grid tw:gap-3 tw:rounded-2xl tw:p-6">
+            <span class="skeleton tw:h-3.5 tw:w-40"></span>
+            @for (r of cards(); track $index) {
+              <span class="skeleton tw:h-10 tw:w-full tw:rounded-lg"></span>
+            }
+          </section>
+        }
+      </div>
+    </div>
+  }
+}

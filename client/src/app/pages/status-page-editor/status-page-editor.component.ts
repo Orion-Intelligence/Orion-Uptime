@@ -5,10 +5,11 @@ import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
 import { MonitorOverview, StatusPage } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-status-page-editor',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, SkeletonComponent],
   templateUrl: './status-page-editor.component.html',
 })
 export class StatusPageEditorComponent {
