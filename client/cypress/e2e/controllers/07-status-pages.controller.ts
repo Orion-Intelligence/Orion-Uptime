@@ -64,6 +64,30 @@ export const createStatusPage = (name: string, description: string, monitorName:
   });
 };
 
+export const editStatusPage = (id: string, currentName: string, newName: string) => {
+  cy.visit(STATUS_PAGES_PATH);
+  cy.get(testId('status-page-list-page')).should('be.visible');
+  disableNoticeOverlay();
+
+  statusPageCardById(id).find(testId('status-page-edit-link')).click();
+  cy.location('pathname').should('eq', `${STATUS_PAGES_PATH}/${id}/edit`);
+  cy.get(testId('status-page-editor-form')).should('be.visible');
+  cy.get(testId('status-page-name-input')).should('have.value', currentName);
+
+  cy.get(testId('status-page-name-input')).clear().type(newName);
+
+  cy.intercept('PUT', '**/api/status-pages/*').as('updateStatusPage');
+  cy.get(testId('save-button')).click();
+  cy.wait('@updateStatusPage').then(({ request, response }) => {
+    expect(response?.statusCode, 'status page update status').to.eq(200);
+    expect(request.body.name, 'status page updated name sent').to.eq(newName);
+  });
+
+  cy.location('pathname').should('eq', STATUS_PAGES_PATH);
+  disableNoticeOverlay();
+  statusPageCardById(id).find(testId('status-page-name')).should('have.text', newName);
+};
+
 export const assertPublicStatusPage = (slug: string, name: string, monitorName: string, monitorId: string) => {
   cy.visit(`/status/${slug}`);
 
