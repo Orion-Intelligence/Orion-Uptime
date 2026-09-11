@@ -153,7 +153,9 @@ export class AddMonitorComponent {
   }
 
   private path(action: 'create' | 'read' | 'update'): string {
-    return RESOURCE_PATHS[this.kind][action].replace(':id', this.editId);
+    const paths = RESOURCE_PATHS[this.kind];
+    const template = action === 'read' ? paths.read : action === 'update' ? paths.update : paths.create;
+    return template.replace(':id', this.editId);
   }
 
   submit(): void {

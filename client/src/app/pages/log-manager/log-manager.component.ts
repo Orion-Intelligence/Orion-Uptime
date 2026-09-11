@@ -192,7 +192,7 @@ export class LogManagerComponent {
   }
 
   typeClass(type: string): string {
-    const value = (type ?? '').toLowerCase();
+    const value = type.toLowerCase();
     if (value.includes('error') || value.includes('critical') || value.includes('fatal')) {
       return 'error';
     }
@@ -206,7 +206,7 @@ export class LogManagerComponent {
   }
 
   typeLabel(type: string): string {
-    return (type ?? '').toLowerCase() || 'unknown';
+    return type.toLowerCase() || 'unknown';
   }
 
   private formatDay(iso: string): string {

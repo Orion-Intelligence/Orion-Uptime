@@ -3,16 +3,17 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
-import { MonitorOverview, StatusPage } from '../../shared/model/models';
+import { StatusPage } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
+import { MonitorSelectionBase } from '../../shared/base/monitor-selection.base';
 
 @Component({
   selector: 'app-status-page-editor',
   imports: [ReactiveFormsModule, RouterLink, SkeletonComponent],
   templateUrl: './status-page-editor.component.html',
 })
-export class StatusPageEditorComponent {
+export class StatusPageEditorComponent extends MonitorSelectionBase {
   private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
@@ -23,8 +24,6 @@ export class StatusPageEditorComponent {
   private initialized = false;
 
   readonly editing = Boolean(this.pageId);
-  readonly monitors = signal<MonitorOverview[]>([]);
-  readonly selectedIds = signal<Set<string>>(new Set());
   readonly loading = signal(this.editing);
   readonly submitting = signal(false);
   readonly error = signal('');
@@ -34,6 +33,7 @@ export class StatusPageEditorComponent {
   });
 
   constructor() {
+    super();
     this.realtime.connect();
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
       if (!snapshot.resources) {
@@ -54,23 +54,6 @@ export class StatusPageEditorComponent {
       this.selectedIds.set(new Set(page.monitor_ids));
       this.initialized = true;
       this.loading.set(false);
-    });
-  }
-
-  isSelected(monitorId: string): boolean {
-    return this.selectedIds().has(monitorId);
-  }
-
-  toggleMonitor(monitorId: string): void {
-    this.selectedIds.update((current) => {
-      const selected = new Set(current);
-      if (selected.has(monitorId)) {
-        selected.delete(monitorId);
-      }
-      else {
-        selected.add(monitorId);
-      }
-      return selected;
     });
   }
 

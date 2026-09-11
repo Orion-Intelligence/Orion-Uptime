@@ -180,8 +180,8 @@ export class MonitorDetailComponent {
         })),),);
   }
 
-  private mergeStatusPoints( current: StatusHistoryPoint[], incoming: StatusHistoryPoint[], ): StatusHistoryPoint[] {
-    const cutoff = Date.now() - this.statusDays() * 24 * 60 * 60 * 1000;
+  private mergePoints<T extends { checked_at: string }>(current: T[], incoming: T[], days: number): T[] {
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
     return [
       ...new Map([...current, ...incoming].map((point) => [point.checked_at, point])).values(),
     ]
@@ -189,13 +189,12 @@ export class MonitorDetailComponent {
       .sort((left, right) => Date.parse(left.checked_at) - Date.parse(right.checked_at));
   }
 
+  private mergeStatusPoints( current: StatusHistoryPoint[], incoming: StatusHistoryPoint[], ): StatusHistoryPoint[] {
+    return this.mergePoints(current, incoming, this.statusDays());
+  }
+
   private mergeResponsePoints( current: ResponseHistoryPoint[], incoming: ResponseHistoryPoint[], ): ResponseHistoryPoint[] {
-    const cutoff = Date.now() - this.responseDays() * 24 * 60 * 60 * 1000;
-    return [
-      ...new Map([...current, ...incoming].map((point) => [point.checked_at, point])).values(),
-    ]
-      .filter((point) => Date.parse(point.checked_at) >= cutoff)
-      .sort((left, right) => Date.parse(left.checked_at) - Date.parse(right.checked_at));
+    return this.mergePoints(current, incoming, this.responseDays());
   }
 
   private statusY(status: StatusHistoryPoint['status']): number {

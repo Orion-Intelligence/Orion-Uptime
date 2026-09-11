@@ -7,6 +7,6 @@ import { Component, input, output } from '@angular/core';
 export class DeleteConfirmationDialogComponent {
   readonly message = input.required<string>();
   readonly deleting = input(false);
-  readonly confirmed = output<void>();
-  readonly cancelled = output<void>();
+  readonly confirmed = output();
+  readonly cancelled = output();
 }

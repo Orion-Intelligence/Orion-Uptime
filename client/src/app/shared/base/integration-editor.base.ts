@@ -3,9 +3,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
-import { IntegrationBody, IntegrationSummary, MonitorOverview } from '../model/models';
+import { IntegrationBody, IntegrationSummary } from '../model/models';
+import { MonitorSelectionBase } from './monitor-selection.base';
 
-export abstract class IntegrationEditorBase {
+export abstract class IntegrationEditorBase extends MonitorSelectionBase {
   private readonly api = inject(ApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly realtime = inject(RealtimeService);
@@ -16,8 +17,6 @@ export abstract class IntegrationEditorBase {
   private integrationLoaded = !this.integrationId;
 
   readonly editing = Boolean(this.integrationId);
-  readonly monitors = signal<MonitorOverview[]>([]);
-  readonly selectedIds = signal<Set<string>>(new Set());
   readonly loading = signal(true);
   readonly submitting = signal(false);
   readonly error = signal('');
@@ -25,23 +24,6 @@ export abstract class IntegrationEditorBase {
   protected abstract readonly channel: string;
 
   protected abstract readonly label: string;
-
-  isSelected(monitorId: string): boolean {
-    return this.selectedIds().has(monitorId);
-  }
-
-  toggleMonitor(monitorId: string): void {
-    this.selectedIds.update((current) => {
-      const selected = new Set(current);
-      if (selected.has(monitorId)) {
-        selected.delete(monitorId);
-      }
-      else {
-        selected.add(monitorId);
-      }
-      return selected;
-    });
-  }
 
   protected watch<T extends IntegrationSummary>(apply: (detail: T) => void): void {
     this.realtime.connect();
