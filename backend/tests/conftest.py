@@ -17,7 +17,7 @@ from main import app as fastapi_app
 from orion.services.auth import authorization
 from orion.services.mongo_manager.mongo_controller import get_engine
 from orion.services.mongo_manager.shared_model.db_user_account_model import CurrentUserResponse, UserRole
-from tests.fake_model.fakes import FakeEngine
+from tests.model.fakes import FakeEngine
 
 
 @pytest.fixture
