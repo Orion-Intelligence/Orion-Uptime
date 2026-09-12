@@ -135,3 +135,36 @@ def test_reconcile_records_error_and_reraises():
 
     error = asyncio.run(run())
     assert "RuntimeError" in error
+
+
+def test_start_is_idempotent():
+    async def run():
+        scheduler, _ = _scheduler(active=[])
+        await scheduler.start()
+        await scheduler.start()
+        await scheduler.stop()
+
+    asyncio.run(run())
+
+
+def test_start_survives_initial_reconcile_failure():
+    async def run():
+        scheduler, _ = _scheduler(active=RuntimeError("boom"))
+        await scheduler.start()
+        running = scheduler.running
+        await scheduler.stop()
+        return running
+
+    assert asyncio.run(run()) is True
+
+
+def test_reconcile_loop_runs_a_cycle():
+    async def run():
+        scheduler, _ = _scheduler(active=[])
+        scheduler.reconcile_interval = 0.02
+        await scheduler.start()
+        await asyncio.sleep(0.06)
+        await scheduler.stop()
+        return scheduler.last_reconcile_at
+
+    assert asyncio.run(run()) is not None

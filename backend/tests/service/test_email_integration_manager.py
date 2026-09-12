@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import smtplib
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
@@ -194,3 +196,117 @@ def test_smtp_settings_rejects_invalid_port(monkeypatch):
     monkeypatch.setenv("SMTP_PORT", "not-a-number")
     with pytest.raises(RuntimeError):
         EmailIntegrationManager._smtp_settings()
+
+
+class FakeSMTPClient:
+    created: list[FakeSMTPClient] = []
+
+    def __init__(self, host, port, timeout=None):
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+        self.calls = []
+        FakeSMTPClient.created.append(self)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def ehlo(self):
+        self.calls.append("ehlo")
+
+    def starttls(self, context=None):
+        self.calls.append("starttls")
+
+    def login(self, username, password):
+        self.calls.append(("login", username, password))
+
+    def send_message(self, message):
+        self.calls.append(("send_message", message))
+
+
+class RaisingSMTPClient(FakeSMTPClient):
+    def login(self, username, password):
+        raise smtplib.SMTPAuthenticationError(535, b"bad credentials")
+
+
+def _smtp_message(manager):
+    now = datetime.now(UTC)
+    integration = EmailIntegrationModel(name="On-call", name_key="on-call", email="alerts@example.com", monitor_ids=[], created_at=now, updated_at=now)
+    monitor = SimpleNamespace(name="Public API", monitor_type=MonitorType.API)
+    result = SimpleNamespace(status_code=503, response_time_ms=120)
+    return integration, manager._build_message(integration, monitor, is_down=True, result=result, incident=None)
+
+
+def test_send_smtp_uses_starttls_and_login(monkeypatch):
+    FakeSMTPClient.created.clear()
+    monkeypatch.setattr(smtplib, "SMTP", FakeSMTPClient)
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
+    monkeypatch.setenv("SMTP_SECURITY", "starttls")
+    monkeypatch.setenv("SMTP_USERNAME", "bot")
+    monkeypatch.setenv("SMTP_PASSWORD", "secret")
+    manager, _ = _manager()
+    _, message = _smtp_message(manager)
+
+    manager._send_smtp(message)
+
+    client = FakeSMTPClient.created[-1]
+    assert client.calls[0] == "ehlo"
+    assert "starttls" in client.calls
+    assert ("login", "bot", "secret") in client.calls
+    assert any(call[0] == "send_message" for call in client.calls if isinstance(call, tuple))
+    assert "alerts@example.com" in message["From"]
+    assert message["Message-ID"] is not None
+
+
+def test_send_smtp_uses_ssl_client_without_login(monkeypatch):
+    FakeSMTPClient.created.clear()
+    monkeypatch.setattr(smtplib, "SMTP_SSL", FakeSMTPClient)
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
+    monkeypatch.setenv("SMTP_SECURITY", "ssl")
+    monkeypatch.delenv("SMTP_USERNAME", raising=False)
+    manager, _ = _manager()
+    _, message = _smtp_message(manager)
+
+    manager._send_smtp(message)
+
+    client = FakeSMTPClient.created[-1]
+    assert "starttls" not in client.calls
+    assert not any(call[0] == "login" for call in client.calls if isinstance(call, tuple))
+    assert any(call[0] == "send_message" for call in client.calls if isinstance(call, tuple))
+
+
+def test_deliver_sends_via_smtp_when_no_sender_configured(monkeypatch):
+    FakeSMTPClient.created.clear()
+    monkeypatch.setattr(smtplib, "SMTP", FakeSMTPClient)
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
+    monkeypatch.setenv("SMTP_SECURITY", "starttls")
+    monkeypatch.delenv("SMTP_USERNAME", raising=False)
+    manager, _ = _manager()
+    integration, message = _smtp_message(manager)
+
+    manager._deliver(integration, message)
+
+    client = FakeSMTPClient.created[-1]
+    assert any(call[0] == "send_message" for call in client.calls if isinstance(call, tuple))
+
+
+def test_deliver_swallows_smtp_errors(monkeypatch, caplog):
+    monkeypatch.setattr(smtplib, "SMTP", RaisingSMTPClient)
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
+    monkeypatch.setenv("SMTP_SECURITY", "starttls")
+    monkeypatch.setenv("SMTP_USERNAME", "bot")
+    monkeypatch.setenv("SMTP_PASSWORD", "secret")
+    manager, _ = _manager()
+    integration, message = _smtp_message(manager)
+
+    with caplog.at_level(logging.ERROR, logger="orion.uptime.email"):
+        manager._deliver(integration, message)
+
+    assert "Email notification delivery failed" in caplog.text

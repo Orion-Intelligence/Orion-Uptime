@@ -147,3 +147,33 @@ def _record(calls):
         calls.append(item)
 
     return _call
+
+
+def test_start_is_idempotent_when_already_running():
+    async def run():
+        worker = MonitorWorker(_http_monitor(), SimpleNamespace(get_monitor=_returns(None)))
+        await worker.start()
+        first_task = worker._task
+        await worker.start()
+        same = worker._task is first_task
+        await worker.stop()
+        return same
+
+    assert asyncio.run(run()) is True
+
+
+def test_heartbeat_run_backs_off_on_error():
+    async def run():
+        monitor = _heartbeat_monitor(last_heartbeat_at=NOW - timedelta(days=1))
+        errored = asyncio.Event()
+
+        async def get_monitor(_mid, _mtype):
+            errored.set()
+            raise RuntimeError("boom")
+
+        worker = MonitorWorker(monitor, SimpleNamespace(get_monitor=get_monitor, check_and_update=_returns(None)))
+        await worker.start()
+        await asyncio.wait_for(errored.wait(), timeout=1)
+        await worker.stop()
+
+    asyncio.run(run())

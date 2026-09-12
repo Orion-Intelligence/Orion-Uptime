@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
+import httpx
 import pytest
 from bson import ObjectId
 
@@ -11,8 +13,9 @@ from orion.api.interactive.slack_integration_manager.slack_integration_manager i
 from orion.constants.constant import Collections
 from orion.services.encryption_manager.secrets import secret_box
 from orion.services.mongo_manager.shared_model.db_incident_model import IncidentModel
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorType
-from orion.services.mongo_manager.shared_model.db_slack_integration_model import CreateSlackIntegrationRequest, UpdateSlackIntegrationRequest
+from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
+from orion.services.mongo_manager.shared_model.db_slack_integration_model import CreateSlackIntegrationRequest, SlackIntegrationModel, UpdateSlackIntegrationRequest
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 from tests.fake_model.fakes import FakeCollection, FakeHttpClient, FakeMonitorService
 
@@ -164,3 +167,108 @@ def test_create_slack_validates_monitor_ids(slack_crypto):
     manager_with_monitor, _ = _slack_manager(monitors=[SimpleNamespace(id="monitor-1")])
     created = _create_slack(manager_with_monitor, monitor_ids=["monitor-1", "monitor-1"])
     assert created.monitor_ids == ["monitor-1"]
+
+
+class RecordingSlackClient:
+    def __init__(self, *, error=None):
+        self.calls = []
+        self._error = error
+
+    async def post(self, url, json):
+        self.calls.append((url, json))
+        if self._error is not None:
+            raise self._error
+        return SimpleNamespace(raise_for_status=lambda: None)
+
+
+def _slack_integration_document(monitor_id="monitor-1", webhook_url=WEBHOOK_URL):
+    now = datetime.now(UTC)
+    integration = SlackIntegrationModel(name="Ops", name_key="ops", webhook_url=webhook_url, monitor_ids=[monitor_id], created_at=now, updated_at=now)
+    document = integration.model_dump(exclude={"id", "webhook_url"})
+    document["webhook_url_encrypted"] = secret_box.encrypt_mapping({"webhook_url": integration.webhook_url})
+    document["_id"] = ObjectId()
+    return document
+
+
+def test_notify_transition_posts_to_slack_webhook_on_down_transition(slack_crypto):
+    collection = FakeCollection()
+    collection.documents.append(_slack_integration_document())
+    engine = SimpleNamespace(database={Collections.SLACK_INTEGRATIONS: collection})
+    client = RecordingSlackClient()
+    manager = SlackIntegrationManager(engine, FakeMonitorService(), client=client)
+    monitor = SimpleNamespace(name="Public website", monitor_type=MonitorType.HTTP, persisted_id="monitor-1")
+    incident = IncidentModel(id="incident-id", monitor_id="monitor-1", monitor_type=MonitorType.HTTP, started_at=datetime.now(UTC), reason="Received HTTP 503 Service Unavailable.", status_code=503)
+    result = SimpleNamespace(status_code=503, response_time_ms=120)
+    state_result = SimpleNamespace(transition=MonitorTransition.DOWN, previous_status=MonitorStatus.UP)
+
+    asyncio.run(manager.notify_transition(monitor, result, state_result, incident))
+
+    assert len(client.calls) == 1
+    url, payload = client.calls[0]
+    assert url == WEBHOOK_URL
+    assert "Public website is DOWN" in payload["text"]
+
+
+def test_notify_transition_posts_to_slack_webhook_on_recovery(slack_crypto):
+    collection = FakeCollection()
+    collection.documents.append(_slack_integration_document())
+    engine = SimpleNamespace(database={Collections.SLACK_INTEGRATIONS: collection})
+    client = RecordingSlackClient()
+    manager = SlackIntegrationManager(engine, FakeMonitorService(), client=client)
+    monitor = SimpleNamespace(name="Public website", monitor_type=MonitorType.HTTP, persisted_id="monitor-1")
+    started_at = datetime.now(UTC)
+    incident = IncidentModel(id="incident-id", monitor_id="monitor-1", monitor_type=MonitorType.HTTP, started_at=started_at, resolved_at=started_at + timedelta(minutes=5), reason="Received HTTP 503 Service Unavailable.", status_code=503, is_resolved=True)
+    result = SimpleNamespace(status_code=200, response_time_ms=85)
+    state_result = SimpleNamespace(transition=MonitorTransition.UP, previous_status=MonitorStatus.DOWN)
+
+    asyncio.run(manager.notify_transition(monitor, result, state_result, incident))
+
+    assert len(client.calls) == 1
+    url, payload = client.calls[0]
+    assert url == WEBHOOK_URL
+    assert "Public website is RECOVERED" in payload["text"]
+
+
+def test_notify_transition_swallows_slack_delivery_failures(slack_crypto, caplog):
+    collection = FakeCollection()
+    collection.documents.append(_slack_integration_document())
+    engine = SimpleNamespace(database={Collections.SLACK_INTEGRATIONS: collection})
+    client = RecordingSlackClient(error=httpx.HTTPError("boom"))
+    manager = SlackIntegrationManager(engine, FakeMonitorService(), client=client)
+    monitor = SimpleNamespace(name="Public website", monitor_type=MonitorType.HTTP, persisted_id="monitor-1")
+    incident = IncidentModel(id="incident-id", monitor_id="monitor-1", monitor_type=MonitorType.HTTP, started_at=datetime.now(UTC), reason="Received HTTP 503.", status_code=503)
+    result = SimpleNamespace(status_code=503, response_time_ms=120)
+    state_result = SimpleNamespace(transition=MonitorTransition.DOWN, previous_status=MonitorStatus.UP)
+
+    with caplog.at_level(logging.ERROR, logger="orion.uptime.slack"):
+        asyncio.run(manager.notify_transition(monitor, result, state_result, incident))
+
+    assert len(client.calls) == 1
+    assert "Slack notification delivery failed" in caplog.text
+
+
+def test_notify_transition_skips_integrations_that_fail_to_load():
+    collection = FakeCollection()
+    now = datetime.now(UTC)
+    collection.documents.append({"name": "Ops", "name_key": "ops", "monitor_ids": ["monitor-1"], "created_at": now, "updated_at": now, "_id": ObjectId()})
+    engine = SimpleNamespace(database={Collections.SLACK_INTEGRATIONS: collection})
+    client = RecordingSlackClient()
+    manager = SlackIntegrationManager(engine, FakeMonitorService(), client=client)
+    monitor = SimpleNamespace(name="Public website", monitor_type=MonitorType.HTTP, persisted_id="monitor-1")
+    result = SimpleNamespace(status_code=503, response_time_ms=120)
+    state_result = SimpleNamespace(transition=MonitorTransition.DOWN, previous_status=MonitorStatus.UP)
+
+    asyncio.run(manager.notify_transition(monitor, result, state_result, None))
+
+    assert client.calls == []
+
+
+def test_close_closes_default_and_injected_clients():
+    collection = FakeCollection()
+    engine = SimpleNamespace(database={Collections.SLACK_INTEGRATIONS: collection})
+    owned_manager = SlackIntegrationManager(engine, FakeMonitorService())
+    asyncio.run(owned_manager.close())
+
+    injected_client = RecordingSlackClient()
+    injected_manager = SlackIntegrationManager(engine, FakeMonitorService(), client=injected_client)
+    asyncio.run(injected_manager.close())
