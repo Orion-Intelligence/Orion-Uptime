@@ -13,6 +13,7 @@ def _addrinfo(*addresses):
     return [(socket.AF_INET, socket.SOCK_STREAM, socket.IPPROTO_TCP, "", (address, 0)) for address in addresses]
 
 
+
 def test_is_public_address():
     assert target_policy._is_public_address("8.8.8.8") is True
     assert target_policy._is_public_address("127.0.0.1") is False
