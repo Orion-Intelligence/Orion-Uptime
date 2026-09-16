@@ -1,5 +1,6 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
@@ -21,7 +22,6 @@ export class StatusPageEditorComponent extends MonitorSelectionBase {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly pageId = this.route.snapshot.paramMap.get('id');
-  private initialized = false;
 
   readonly editing = Boolean(this.pageId);
   readonly loading = signal(this.editing);
@@ -35,25 +35,36 @@ export class StatusPageEditorComponent extends MonitorSelectionBase {
     super();
     this.realtime.connect();
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
-      if (!snapshot.resources) {
-        return;
-      }
       this.monitors.set(snapshot.overviews);
-      if (!this.editing || this.initialized) {
+      if (!this.editing) {
         this.loading.set(false);
-        return;
       }
-      const page = snapshot.resources.status_pages.find((item) => item.id === this.pageId);
-      if (!page) {
-        this.error.set('Status page not found.');
-        this.loading.set(false);
-        return;
-      }
-      this.form.setValue({ name: page.name, description: page.description });
-      this.selectedIds.set(new Set(page.monitor_ids));
-      this.initialized = true;
-      this.loading.set(false);
     });
+    if (this.editing) {
+      this.loadPage();
+    }
+  }
+
+  private loadPage(): void {
+    this.api
+      .get<StatusPage>(`/status-pages/${this.pageId}`)
+      .pipe(finalize(() => {
+        this.loading.set(false);
+      }))
+      .subscribe({
+        next: (response) => {
+          const page = response.data;
+          if (!page) {
+            this.error.set('Status page not found.');
+            return;
+          }
+          this.form.setValue({ name: page.name, description: page.description });
+          this.selectedIds.set(new Set(page.monitor_ids));
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
   }
 
   submit(): void {

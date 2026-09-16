@@ -80,7 +80,7 @@ class MonitorManager:
 
             incident = await self._handle_incident_transition(monitor, result, state_result)
             await self._notify_integrations(monitor, result, state_result, incident)
-            realtime_broker.notify("monitor", monitor.id)
+            realtime_broker.notify("monitor", monitor.id, catalog=False)
         except Exception:
             logger.exception("Check for %s monitor %s could not be completed.", monitor.monitor_type, monitor.id)
 
@@ -207,7 +207,7 @@ class MonitorManager:
 
         incident = await self._handle_incident_transition(monitor, None, state_result)
         await self._notify_integrations(monitor, None, state_result, incident)
-        realtime_broker.notify("monitor", monitor.id)
+        realtime_broker.notify("monitor", monitor.id, catalog=False)
 
     async def _notify_integrations(self, monitor: MonitorModel, result, state_result, incident: IncidentModel | None) -> None:
         notifications = []

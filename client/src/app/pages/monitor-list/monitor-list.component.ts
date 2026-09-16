@@ -7,6 +7,7 @@ import { ApiService } from '../../services/core/api.service';
 import { AuthService } from '../../services/authentication/auth.service';
 import { MonitorConfigDocument, MonitorImportResult, MonitorOverview, RealtimeResources, ResourceRecord } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { ResourceService } from '../../services/dashboard/resource.service';
 import { NoticePageBase } from '../../shared/base/notice-page.base';
 import { durationText } from '../../shared/utils/duration.util';
 import { parseJsonFile } from '../../shared/utils/json-file.util';
@@ -24,6 +25,7 @@ export class MonitorListComponent extends NoticePageBase {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   private readonly realtime = inject(RealtimeService);
+  private readonly resources = inject(ResourceService);
   private readonly resourceType = signal<keyof RealtimeResources | null>(null);
 
   readonly title = signal('Resources');
@@ -86,6 +88,13 @@ export class MonitorListComponent extends NoticePageBase {
       }
     });
 
+    this.realtime.resourceChanges$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((invalidation) => {
+      const resourceType = this.resourceType();
+      if (resourceType && invalidation.types.includes(resourceType)) {
+        this.loadRecords();
+      }
+    });
+
     this.route.data.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((data) => {
       this.title.set(String(data['title'] ?? 'Resources'));
       this.description.set(String(data['description'] ?? ''));
@@ -95,39 +104,56 @@ export class MonitorListComponent extends NoticePageBase {
       this.deletePath.set(String(data['deletePath'] ?? ''));
       this.updatePath.set(String(data['updatePath'] ?? ''));
       this.resourceType.set(data['resourceType'] as keyof RealtimeResources);
+      this.loadRecords();
     });
 
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
-      const resourceType = this.resourceType();
-      if (!resourceType) {
-        return;
-      }
-      const resources = this.resourcesOf(snapshot.resources, resourceType);
-      if (resources) {
-        this.records.set(resources as ResourceRecord[]);
-      }
-      else if (this.isMonitorResource(resourceType)) {
-        this.records.set(snapshot.overviews
-          .filter((overview) => overview.monitor_type === resourceType)
-          .map((overview) => ({
-            id: overview.id,
-            name: overview.name,
-            monitor_type: overview.monitor_type,
-            status: overview.status,
-            is_active: overview.is_active,
-            created_at: overview.created_at,
-            last_checked_at: overview.last_checked_at,
-          })),);
-      }
-      else {
-        return;
-      }
       this.overviews.set(Object.fromEntries(snapshot.overviews.map((overview) => [overview.id, overview])),);
-      if (this.loading() && this.error() === this.realtime.error()) {
-        this.error.set('');
+      if (!this.canManage()) {
+        this.recordsFromOverviews(snapshot.overviews);
       }
-      this.loading.set(false);
     });
+  }
+
+  private recordsFromOverviews(overviews: MonitorOverview[]): void {
+    const resourceType = this.resourceType();
+    if (!resourceType || !this.isMonitorResource(resourceType)) {
+      return;
+    }
+    this.records.set(overviews
+      .filter((overview) => overview.monitor_type === resourceType)
+      .map((overview) => ({
+        id: overview.id,
+        name: overview.name,
+        monitor_type: overview.monitor_type,
+        status: overview.status,
+        is_active: overview.is_active,
+        created_at: overview.created_at,
+        last_checked_at: overview.last_checked_at,
+      })),);
+    this.loading.set(false);
+  }
+
+  loadRecords(): void {
+    const resourceType = this.resourceType();
+    if (!resourceType || !this.canManage()) {
+      return;
+    }
+    this.loading.set(true);
+    this.error.set('');
+    this.resources
+      .list<ResourceRecord>(resourceType)
+      .pipe(finalize(() => {
+        this.loading.set(false);
+      }))
+      .subscribe({
+        next: (records) => {
+          this.records.set(records);
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
   }
 
   target(record: ResourceRecord): string {
@@ -164,31 +190,6 @@ export class MonitorListComponent extends NoticePageBase {
 
   private isMonitorResource(resourceType: keyof RealtimeResources,): resourceType is 'HTTP' | 'API' | 'ping' | 'heartbeat' | 'orion_script' {
     return ['HTTP', 'API', 'ping', 'heartbeat', 'orion_script'].includes(resourceType);
-  }
-
-  private resourcesOf(resources: RealtimeResources | undefined, resourceType: keyof RealtimeResources): unknown[] | undefined {
-    switch (resourceType) {
-      case 'HTTP':
-        return resources?.HTTP;
-      case 'API':
-        return resources?.API;
-      case 'ping':
-        return resources?.ping;
-      case 'heartbeat':
-        return resources?.heartbeat;
-      case 'orion_script':
-        return resources?.orion_script;
-      case 'auth_profiles':
-        return resources?.auth_profiles;
-      case 'users':
-        return resources?.users;
-      case 'status_pages':
-        return resources?.status_pages;
-      case 'slack_integrations':
-        return resources?.slack_integrations;
-      case 'email_integrations':
-        return resources?.email_integrations;
-    }
   }
 
   requestDelete(record: ResourceRecord): void {

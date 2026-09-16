@@ -2,8 +2,8 @@ import { isPlatformBrowser } from '@angular/common';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { computed, inject, Injectable, PLATFORM_ID, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { ReplaySubject, Subscription } from 'rxjs';
-import { DashboardIncident, MonitorOverview, RealtimeSnapshot } from '../../shared/model/models';
+import { ReplaySubject, Subject, Subscription } from 'rxjs';
+import { DashboardIncident, MonitorOverview, RealtimeSnapshot, ResourceInvalidation } from '../../shared/model/models';
 
 @Injectable({ providedIn: 'root' })
 export class RealtimeService {
@@ -11,6 +11,8 @@ export class RealtimeService {
   private readonly router = inject(Router);
   private readonly platformId = inject(PLATFORM_ID);
   private updates = new ReplaySubject<RealtimeSnapshot>(1);
+  private readonly invalidations = new Subject<ResourceInvalidation>();
+  private readonly resets = new Subject<void>();
   private source: EventSource | undefined;
   private recovery: Subscription | undefined;
   private retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -28,6 +30,14 @@ export class RealtimeService {
 
   get snapshots$() {
     return this.updates.asObservable();
+  }
+
+  get resourceChanges$() {
+    return this.invalidations.asObservable();
+  }
+
+  get resets$() {
+    return this.resets.asObservable();
   }
 
   connect(): void {
@@ -67,6 +77,7 @@ export class RealtimeService {
     this.snapshot.set(null);
     this.updates.complete();
     this.updates = new ReplaySubject<RealtimeSnapshot>(1);
+    this.resets.next();
   }
 
   liveUptimeSeconds(overview: MonitorOverview): number {
@@ -133,13 +144,24 @@ export class RealtimeService {
     };
     source.addEventListener('snapshot', (event) => {
       try {
-        const snapshot = JSON.parse((event as MessageEvent<string>).data) as RealtimeSnapshot;
-        if (snapshot.revision <= (this.snapshot()?.revision ?? 0)) {
+        const partial = JSON.parse((event as MessageEvent<string>).data) as Partial<RealtimeSnapshot>;
+        const current = this.snapshot();
+        if ((partial.revision ?? 0) <= (current?.revision ?? 0)) {
           return;
         }
-        this.snapshot.set(snapshot);
-        this.updates.next(snapshot);
+        const merged = { ...(current ?? {}), ...partial } as RealtimeSnapshot;
+        this.snapshot.set(merged);
+        this.updates.next(merged);
         this.error.set('');
+      }
+      catch {
+        this.error.set('A live update could not be read. Reconnecting…');
+        this.handleStreamFailure();
+      }
+    });
+    source.addEventListener('resources', (event) => {
+      try {
+        this.invalidations.next(JSON.parse((event as MessageEvent<string>).data) as ResourceInvalidation);
       }
       catch {
         this.error.set('A live update could not be read. Reconnecting…');

@@ -76,10 +76,10 @@ def stub_stream(monkeypatch):
     async def _disconnected(_self):
         return True
 
-    async def _snapshot(is_admin):
+    async def _snapshot():
         return {"revision": 1, "overviews": []}
 
     monkeypatch.setattr(Request, "is_disconnected", _disconnected)
-    monkeypatch.setattr(realtime_broker, "subscribe", lambda is_admin: object())
+    monkeypatch.setattr(realtime_broker, "subscribe", lambda: object())
     monkeypatch.setattr(realtime_broker, "unsubscribe", lambda queue: None)
     monkeypatch.setattr(realtime_broker, "get_snapshot", _snapshot)

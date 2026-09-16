@@ -1,13 +1,16 @@
 import { inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { ResourceService } from '../../services/dashboard/resource.service';
 import { NoticePageBase } from './notice-page.base';
-import { IntegrationSummary, MonitorOverview, RealtimeResources } from '../model/models';
+import { IntegrationSummary, MonitorOverview, ResourceType } from '../model/models';
 
 export abstract class IntegrationListBase<T extends IntegrationSummary> extends NoticePageBase {
   private readonly api = inject(ApiService);
   private readonly realtime = inject(RealtimeService);
+  private readonly resources = inject(ResourceService);
 
   readonly integrations = signal<T[]>([]);
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
@@ -69,19 +72,35 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
 
   abstract deleteConfirmationMessage(integration: T): string;
 
-  protected watch(select: (resources: RealtimeResources) => T[]): void {
+  protected watch(resourceType: ResourceType): void {
     this.realtime.connect();
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
-      if (!snapshot.resources) {
-        return;
-      }
-      this.integrations.set(select(snapshot.resources));
       this.overviews.set(Object.fromEntries(snapshot.overviews.map((overview) => [overview.id, overview])));
-      if (this.loading() && this.error() === this.realtime.error()) {
-        this.error.set('');
-      }
-      this.loading.set(false);
     });
+    this.realtime.resourceChanges$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((invalidation) => {
+      if (invalidation.types.includes(resourceType)) {
+        this.loadIntegrations(resourceType);
+      }
+    });
+    this.loadIntegrations(resourceType);
+  }
+
+  protected loadIntegrations(resourceType: ResourceType): void {
+    this.loading.set(true);
+    this.error.set('');
+    this.resources
+      .list<T>(resourceType)
+      .pipe(finalize(() => {
+        this.loading.set(false);
+      }))
+      .subscribe({
+        next: (integrations) => {
+          this.integrations.set(integrations);
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
   }
 
 }

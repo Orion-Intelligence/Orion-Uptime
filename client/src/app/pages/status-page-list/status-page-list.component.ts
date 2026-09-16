@@ -1,10 +1,12 @@
 import { DatePipe } from '@angular/common';
 import { Component, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { finalize } from 'rxjs';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../services/core/api.service';
 import { MonitorOverview, StatusPage } from '../../shared/model/models';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { ResourceService } from '../../services/dashboard/resource.service';
 import { NoticePageBase } from '../../shared/base/notice-page.base';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
@@ -19,6 +21,7 @@ import { NotificationComponent } from '../../shared/partials/notification/notifi
 export class StatusPageListComponent extends NoticePageBase {
   private readonly api = inject(ApiService);
   private readonly realtime = inject(RealtimeService);
+  private readonly resources = inject(ResourceService);
 
   readonly pages = signal<StatusPage[]>([]);
   readonly overviews = signal<Partial<Record<string, MonitorOverview>>>({});
@@ -35,16 +38,32 @@ export class StatusPageListComponent extends NoticePageBase {
     }
     this.realtime.connect();
     this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
-      if (!snapshot.resources) {
-        return;
-      }
-      this.pages.set(snapshot.resources.status_pages);
       this.overviews.set(Object.fromEntries(snapshot.overviews.map((overview) => [overview.id, overview])),);
-      if (this.loading() && this.error() === this.realtime.error()) {
-        this.error.set('');
-      }
-      this.loading.set(false);
     });
+    this.realtime.resourceChanges$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((invalidation) => {
+      if (invalidation.types.includes('status_pages')) {
+        this.loadPages();
+      }
+    });
+    this.loadPages();
+  }
+
+  loadPages(): void {
+    this.loading.set(true);
+    this.error.set('');
+    this.resources
+      .list<StatusPage>('status_pages')
+      .pipe(finalize(() => {
+        this.loading.set(false);
+      }))
+      .subscribe({
+        next: (pages) => {
+          this.pages.set(pages);
+        },
+        error: (error: unknown) => {
+          this.error.set(ApiService.errorMessage(error));
+        },
+      });
   }
 
   monitorNames(page: StatusPage): string[] {

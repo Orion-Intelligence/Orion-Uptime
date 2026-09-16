@@ -57,7 +57,8 @@ def _patch_init_infra(monkeypatch, fake_services, scheduler_cls):
     configured = {}
     monkeypatch.setattr(service_manager, "EmailTemplateManager", SimpleNamespace(get_instance=lambda: SimpleNamespace(initialize=lambda: None, clear=lambda: None)))
     monkeypatch.setattr(service_manager, "db_manager", SimpleNamespace(connect=_async_noop(), disconnect=_async_noop(), engine="fake-engine"))
-    monkeypatch.setattr(service_manager, "realtime_broker", SimpleNamespace(configure=lambda factory: configured.setdefault("factory", factory), shutdown=_async_noop()))
+    monkeypatch.setattr(service_manager, "realtime_broker", SimpleNamespace(configure=lambda factory, bus=None: configured.update({"factory": factory, "bus": bus}), shutdown=_async_noop(), is_leader=True))
+    monkeypatch.setattr(service_manager, "bus_mode", lambda: "memory")
     monkeypatch.setattr(service_manager, "MonitorScheduler", scheduler_cls)
     monkeypatch.setattr(ServiceManager, "build_services", staticmethod(_async_return(fake_services)))
     monkeypatch.setenv("DEFAULT_ADMIN_USERNAME", "admin")

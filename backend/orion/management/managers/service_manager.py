@@ -6,6 +6,8 @@ from contextlib import suppress
 from datetime import UTC, datetime
 from typing import NamedTuple
 
+from fastapi.encoders import jsonable_encoder
+
 import orion.api.interactive.orion_login_manager.orion_token_manager as auth_token_state
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
 from orion.api.interactive.api_monitor_manager.api_monitor_manager import ApiMonitorManager
@@ -31,6 +33,7 @@ from orion.management.jobs.monitoring_controller.scheduler import MonitorSchedul
 from orion.services.email_template_manager import EmailTemplateManager
 from orion.services.mongo_manager.mongo_controller import db_manager
 from orion.services.realtime_manager.realtime import realtime_broker
+from orion.services.realtime_manager.realtime_bus import BUS_MONGO, MongoRealtimeBus, bus_mode
 
 logger = logging.getLogger("orion.uptime")
 
@@ -78,6 +81,7 @@ class ServiceManager:
         self.services: Services | None = None
         self.scheduler_task: asyncio.Task | None = None
         self.watchdog_task: asyncio.Task | None = None
+        self.realtime_bus = None
 
     async def init_services(self) -> Services:
         EmailTemplateManager.get_instance().initialize()
@@ -85,11 +89,24 @@ class ServiceManager:
         self.services = await self.build_services(db_manager.engine)
         if await self.services.user_service.default_admin_password_in_use(os.environ["DEFAULT_ADMIN_USERNAME"], os.environ["DEFAULT_ADMIN_PASSWORD"]):
             logger.warning("The default administrator account still uses DEFAULT_ADMIN_PASSWORD from the environment; change it from the Users page.")
-        realtime_broker.configure(self.build_realtime_snapshot)
+        self.realtime_bus = await self._start_realtime_bus()
+        realtime_broker.configure(self.build_realtime_snapshot, bus=self.realtime_bus)
         scheduler_state.scheduler = MonitorScheduler(monitor_service=self.services.monitor_service, on_fatal=lambda exc: terminate_process(f"The monitor scheduler failed: {exc!r}."))
-        self.scheduler_task = asyncio.create_task(scheduler_state.scheduler.start())
-        self.watchdog_task = asyncio.create_task(scheduler_watchdog(scheduler_state.scheduler))
+        if realtime_broker.is_leader:
+            self.scheduler_task = asyncio.create_task(scheduler_state.scheduler.start())
+            self.watchdog_task = asyncio.create_task(scheduler_watchdog(scheduler_state.scheduler))
+        else:
+            logger.info("This node is a real-time follower; monitor scheduling stays with the leader.")
         return self.services
+
+    @staticmethod
+    async def _start_realtime_bus():
+        if bus_mode() != BUS_MONGO:
+            return None
+        bus = MongoRealtimeBus(db_manager.engine.database)
+        await bus.start()
+        logger.info("Real-time bus started in mongo mode; leader=%s", bus.is_leader)
+        return bus
 
     async def shutdown(self) -> None:
         if self.watchdog_task is not None:
@@ -106,6 +123,9 @@ class ServiceManager:
             await self.services.checker_factory.close()
             await self.services.slack_integration_service.close()
         await realtime_broker.shutdown()
+        if self.realtime_bus is not None:
+            await self.realtime_bus.stop()
+            self.realtime_bus = None
         EmailTemplateManager.get_instance().clear()
         auth_token_state.token_manager = None
         await db_manager.disconnect()
@@ -154,31 +174,11 @@ class ServiceManager:
             return {}
         return await dashboard_service.build_monitor_details(overviews, monitor_ids)
 
-    @staticmethod
-    def viewer_resources(overviews) -> dict:
-        resources = {"HTTP": [], "API": [], "ping": [], "heartbeat": [], "orion_script": [], "auth_profiles": [], "users": [], "status_pages": [], "slack_integrations": [], "email_integrations": []}
-        for overview in overviews:
-            if overview.monitor_type not in resources:
-                continue
-            resources[overview.monitor_type].append({"id": overview.id, "name": overview.name, "monitor_type": overview.monitor_type, "status": overview.status, "is_active": overview.is_active, "created_at": overview.created_at, "last_checked_at": overview.last_checked_at})
-        return resources
-
-    @staticmethod
-    async def admin_resources(services: Services) -> dict:
-        http_monitors, api_monitors, ping_monitors, heartbeat_monitors, orion_script_monitors, auth_profiles, users, status_pages, slack_integrations, email_integrations = await asyncio.gather(
-            services.http_monitor_service.list_monitors(), services.api_monitor_manager.list_monitors(), services.ping_monitor_service.list_monitors(), services.heartbeat_monitor_service.list_monitors(), services.orion_script_monitor_service.list_monitors(), services.auth_profile_service.list_profiles(), services.user_service.list_users(), services.status_page_service.list_pages(), services.slack_integration_service.list_integrations(), services.email_integration_service.list_integrations()
-        )
-        return {"HTTP": http_monitors, "API": api_monitors, "ping": ping_monitors, "heartbeat": heartbeat_monitors, "orion_script": orion_script_monitors, "auth_profiles": auth_profiles, "users": users, "status_pages": status_pages, "slack_integrations": slack_integrations, "email_integrations": email_integrations}
-
-    async def build_realtime_snapshot(self, changed, include_admin):
+    async def build_realtime_snapshot(self, changed):
         services = self.services
         if services is None:
             raise RuntimeError("Services are not initialised.")
         dashboard_service = services.dashboard_service
         summary, incidents, activity, overviews = await dashboard_service.collect_snapshot_sections()
         changed_details = await self.changed_monitor_details(dashboard_service, changed, overviews)
-        common = {"generated_at": datetime.now(UTC), "summary": summary, "incidents": incidents, "activity": activity, "overviews": overviews, "changed_monitor_details": changed_details, "resources": self.viewer_resources(overviews)}
-        admin = common
-        if include_admin:
-            admin = {**common, "resources": await self.admin_resources(services)}
-        return common, admin
+        return jsonable_encoder({"generated_at": datetime.now(UTC), "summary": summary, "incidents": incidents, "activity": activity, "overviews": overviews, "changed_monitor_details": changed_details})

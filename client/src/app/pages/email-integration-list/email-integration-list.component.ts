@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IntegrationListBase } from '../../shared/base/integration-list.base';
-import { EmailIntegration, RealtimeResources } from '../../shared/model/models';
+import { EmailIntegration } from '../../shared/model/models';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 import { EmptyStateComponent } from '../../shared/partials/empty-state/empty-state.component';
@@ -19,7 +19,7 @@ export class EmailIntegrationListComponent extends IntegrationListBase<EmailInte
 
   constructor() {
     super();
-    this.watch((resources: RealtimeResources) => resources.email_integrations);
+    this.watch('email_integrations');
   }
 
   deleteConfirmationMessage(integration: EmailIntegration): string {

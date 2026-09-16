@@ -345,7 +345,13 @@ export interface RealtimeSnapshot {
   activity: DashboardActivity[];
   overviews: MonitorOverview[];
   changed_monitor_details: Partial<Record<string, MonitorDetail>>;
-  resources?: RealtimeResources;
+}
+
+export type ResourceType = keyof RealtimeResources;
+
+export interface ResourceInvalidation {
+  revision: number;
+  types: ResourceType[];
 }
 
 export interface ApiErrorBody {

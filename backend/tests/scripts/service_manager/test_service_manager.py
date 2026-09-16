@@ -48,48 +48,6 @@ def test_build_services_wires_dependencies():
     assert auth_token_state.token_manager.auth_profile_service is services.auth_profile_service
 
 
-def test_viewer_resources_groups_known_types_and_skips_unknown():
-    overviews = [_overview("m1", "HTTP"), _overview("m2", "ping"), _overview("m3", "unknown")]
-
-    resources = ServiceManager.viewer_resources(overviews)
-
-    assert [entry["id"] for entry in resources["HTTP"]] == ["m1"]
-    assert [entry["id"] for entry in resources["ping"]] == ["m2"]
-    assert "unknown" not in resources
-    assert resources["API"] == []
-    assert set(resources) == {"HTTP", "API", "ping", "heartbeat", "orion_script", "auth_profiles", "users", "status_pages", "slack_integrations", "email_integrations"}
-
-
-def test_admin_resources_gathers_every_service_listing():
-    services = _placeholder_services(
-        http_monitor_service=SimpleNamespace(list_monitors=_async_return(["http"])),
-        api_monitor_manager=SimpleNamespace(list_monitors=_async_return(["api"])),
-        ping_monitor_service=SimpleNamespace(list_monitors=_async_return(["ping"])),
-        heartbeat_monitor_service=SimpleNamespace(list_monitors=_async_return(["heartbeat"])),
-        orion_script_monitor_service=SimpleNamespace(list_monitors=_async_return(["orion_script"])),
-        auth_profile_service=SimpleNamespace(list_profiles=_async_return(["profile"])),
-        user_service=SimpleNamespace(list_users=_async_return(["user"])),
-        status_page_service=SimpleNamespace(list_pages=_async_return(["page"])),
-        slack_integration_service=SimpleNamespace(list_integrations=_async_return(["slack"])),
-        email_integration_service=SimpleNamespace(list_integrations=_async_return(["email"])),
-    )
-
-    resources = asyncio.run(ServiceManager.admin_resources(services))
-
-    assert resources == {
-        "HTTP": ["http"],
-        "API": ["api"],
-        "ping": ["ping"],
-        "heartbeat": ["heartbeat"],
-        "orion_script": ["orion_script"],
-        "auth_profiles": ["profile"],
-        "users": ["user"],
-        "status_pages": ["page"],
-        "slack_integrations": ["slack"],
-        "email_integrations": ["email"],
-    }
-
-
 def test_changed_monitor_details_forwards_only_monitor_ids():
     received = {}
 
@@ -121,10 +79,10 @@ def test_changed_monitor_details_skips_lookup_without_monitor_changes():
 def test_build_realtime_snapshot_raises_when_services_missing():
     manager = ServiceManager()
     with pytest.raises(RuntimeError):
-        asyncio.run(manager.build_realtime_snapshot([], include_admin=False))
+        asyncio.run(manager.build_realtime_snapshot([]))
 
 
-def test_build_realtime_snapshot_common_and_admin_views():
+def test_build_realtime_snapshot_returns_encoded_sections():
     overviews = [_overview("m1", "HTTP")]
     detail_calls = []
 
@@ -136,34 +94,17 @@ def test_build_realtime_snapshot_common_and_admin_views():
         collect_snapshot_sections=_async_return(("summary", "incidents", "activity", overviews)),
         build_monitor_details=build_monitor_details,
     )
-    services = _placeholder_services(
-        dashboard_service=dashboard,
-        http_monitor_service=SimpleNamespace(list_monitors=_async_return([])),
-        api_monitor_manager=SimpleNamespace(list_monitors=_async_return([])),
-        ping_monitor_service=SimpleNamespace(list_monitors=_async_return([])),
-        heartbeat_monitor_service=SimpleNamespace(list_monitors=_async_return([])),
-        orion_script_monitor_service=SimpleNamespace(list_monitors=_async_return([])),
-        auth_profile_service=SimpleNamespace(list_profiles=_async_return([])),
-        user_service=SimpleNamespace(list_users=_async_return([])),
-        status_page_service=SimpleNamespace(list_pages=_async_return([])),
-        slack_integration_service=SimpleNamespace(list_integrations=_async_return([])),
-        email_integration_service=SimpleNamespace(list_integrations=_async_return([])),
-    )
     manager = ServiceManager()
-    manager.services = services
+    manager.services = _placeholder_services(dashboard_service=dashboard)
 
-    common, admin = asyncio.run(manager.build_realtime_snapshot([("monitor", "m1")], include_admin=False))
-    assert common is admin
-    assert common["summary"] == "summary"
-    assert common["changed_monitor_details"] == {"m1": {"id": "m1"}}
-    assert common["resources"]["HTTP"][0]["id"] == "m1"
+    snapshot = asyncio.run(manager.build_realtime_snapshot([("monitor", "m1")]))
+
+    assert snapshot["summary"] == "summary"
+    assert snapshot["changed_monitor_details"] == {"m1": {"id": "m1"}}
+    assert snapshot["overviews"][0]["id"] == "m1"
+    assert isinstance(snapshot["generated_at"], str)
+    assert "resources" not in snapshot
     assert detail_calls == [(overviews, ["m1"])]
-
-    common2, admin2 = asyncio.run(manager.build_realtime_snapshot([], include_admin=True))
-    assert admin2 is not common2
-    assert admin2["resources"] == {"HTTP": [], "API": [], "ping": [], "heartbeat": [], "orion_script": [], "auth_profiles": [], "users": [], "status_pages": [], "slack_integrations": [], "email_integrations": []}
-    assert common2["resources"]["HTTP"][0]["id"] == "m1"
-    assert len(detail_calls) == 1
 
 
 def test_init_services_and_shutdown_wire_scheduler_and_teardown(monkeypatch):

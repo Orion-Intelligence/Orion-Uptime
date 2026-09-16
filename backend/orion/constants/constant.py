@@ -53,6 +53,9 @@ class Collections:
     STATUS_PAGES = "status_pages"
     SLACK_INTEGRATIONS = "slack_integrations"
     EMAIL_INTEGRATIONS = "email_integrations"
+    REALTIME_CHANNEL = "realtime_channel"
+    REALTIME_LEASES = "realtime_leases"
+    REALTIME_LEADER_KEY = "realtime-leader"
 
 
 class OrionIntelligence:

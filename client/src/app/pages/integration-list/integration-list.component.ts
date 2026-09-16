@@ -2,7 +2,7 @@ import { DatePipe } from '@angular/common';
 import { Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { IntegrationListBase } from '../../shared/base/integration-list.base';
-import { RealtimeResources, SlackIntegration } from '../../shared/model/models';
+import { SlackIntegration } from '../../shared/model/models';
 import { DeleteConfirmationDialogComponent } from '../../shared/partials/delete-confirmation-dialog/delete-confirmation-dialog.component';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 import { EmptyStateComponent } from '../../shared/partials/empty-state/empty-state.component';
@@ -19,7 +19,7 @@ export class IntegrationListComponent extends IntegrationListBase<SlackIntegrati
 
   constructor() {
     super();
-    this.watch((resources: RealtimeResources) => resources.slack_integrations);
+    this.watch('slack_integrations');
   }
 
   deleteConfirmationMessage(integration: SlackIntegration): string {

@@ -14,6 +14,7 @@ from jwt import PyJWTError
 
 from configs.app_dependency import app_dependency
 from orion.constants.constant import Intervals
+from orion.management.managers.resource_catalog import VIEWER_RESOURCE_TYPES
 from orion.services.auth.authorization import require_viewer
 from orion.services.mongo_manager.shared_model.db_user_account_model import CurrentUserResponse, UserRole
 from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_broker
@@ -24,6 +25,17 @@ router = APIRouter(prefix="/events", tags=["Real-time Updates"])
 def _snapshot_event(snapshot: dict[str, Any]) -> str:
     payload = json.dumps(jsonable_encoder(snapshot), separators=(",", ":"))
     return f"id: {snapshot['revision']}\nevent: snapshot\ndata: {payload}\n\n"
+
+
+def _resources_event(revision: int, resource_types: tuple[str, ...]) -> str:
+    payload = json.dumps({"revision": revision, "types": list(resource_types)}, separators=(",", ":"))
+    return f"event: resources\ndata: {payload}\n\n"
+
+
+def _visible_resource_types(resource_types: tuple[str, ...], is_admin: bool) -> tuple[str, ...]:
+    if is_admin:
+        return resource_types
+    return tuple(resource_type for resource_type in resource_types if resource_type in VIEWER_RESOURCE_TYPES)
 
 
 def _connection_lifetime(request: Request, response: Response) -> float:
@@ -46,9 +58,9 @@ def _connection_lifetime(request: Request, response: Response) -> float:
 async def stream_events(request: Request, response: Response, current_user: CurrentUserResponse = Depends(require_viewer())):
     is_admin = current_user.role == UserRole.ADMIN
     connection_lifetime = _connection_lifetime(request, response)
-    queue = realtime_broker.subscribe(is_admin)
+    queue = realtime_broker.subscribe()
     try:
-        initial = await realtime_broker.get_snapshot(is_admin)
+        initial = await realtime_broker.get_snapshot()
     except Exception:
         realtime_broker.unsubscribe(queue)
         raise
@@ -74,8 +86,11 @@ async def stream_events(request: Request, response: Response, current_user: Curr
 
                 if any(kind == "user" and entity_id == current_user.id for kind, entity_id in update.changed):
                     return
-                snapshot = update.admin_snapshot if is_admin else update.common_snapshot
-                yield _snapshot_event(snapshot)
+                if update.snapshot:
+                    yield _snapshot_event(update.snapshot)
+                visible = _visible_resource_types(update.resource_types, is_admin)
+                if visible:
+                    yield _resources_event(update.revision, visible)
         finally:
             realtime_broker.unsubscribe(queue)
 
