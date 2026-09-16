@@ -16,7 +16,6 @@ export class DashboardComponent {
   private readonly dashboard = inject(DashboardService);
   private readonly destroyRef = inject(DestroyRef);
   readonly realtime = inject(RealtimeService);
-
   readonly summary = signal<DashboardSummary | null>(null);
   readonly incidents = signal<DashboardIncident[]>([]);
   readonly activity = signal<DashboardActivity[]>([]);
