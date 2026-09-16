@@ -12,7 +12,6 @@ import orion.api.interactive.orion_login_manager.orion_token_manager as auth_tok
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
 import orion.management.managers.service_manager as service_manager
 from orion.management.managers.service_manager import ServiceManager, Services
-from orion.shared_models.exceptions import NotFoundError
 from tests.scripts.service_manager.fixtures import reset_service_manager
 from tests.scripts.service_manager.helpers import _async_noop, _async_return, _engine, _fake_scheduler_class, _overview, _patch_init_infra, _placeholder_services
 
@@ -91,18 +90,32 @@ def test_admin_resources_gathers_every_service_listing():
     }
 
 
-def test_changed_monitor_details_filters_and_suppresses_not_found():
-    async def get_monitor_detail(entity_id):
-        if entity_id == "missing":
-            raise NotFoundError("missing")
-        return {"id": entity_id}
+def test_changed_monitor_details_forwards_only_monitor_ids():
+    received = {}
 
-    dashboard = SimpleNamespace(get_monitor_detail=get_monitor_detail)
+    async def build_monitor_details(overviews, monitor_ids):
+        received["overviews"] = overviews
+        received["monitor_ids"] = list(monitor_ids)
+        return {monitor_id: {"id": monitor_id} for monitor_id in monitor_ids if monitor_id != "missing"}
+
+    dashboard = SimpleNamespace(build_monitor_details=build_monitor_details)
     changed = [("monitor", "m1"), ("monitor", None), ("status_page", "s1"), ("monitor", "missing")]
+    overviews = [_overview("m1", "HTTP")]
 
-    details = asyncio.run(ServiceManager.changed_monitor_details(dashboard, changed))
+    details = asyncio.run(ServiceManager.changed_monitor_details(dashboard, changed, overviews))
 
+    assert received["monitor_ids"] == ["m1", "missing"]
+    assert received["overviews"] is overviews
     assert details == {"m1": {"id": "m1"}}
+
+
+def test_changed_monitor_details_skips_lookup_without_monitor_changes():
+    async def build_monitor_details(overviews, monitor_ids):
+        raise AssertionError("build_monitor_details should not be called")
+
+    dashboard = SimpleNamespace(build_monitor_details=build_monitor_details)
+
+    assert asyncio.run(ServiceManager.changed_monitor_details(dashboard, [("status_page", "s1")], [])) == {}
 
 
 def test_build_realtime_snapshot_raises_when_services_missing():
@@ -113,9 +126,15 @@ def test_build_realtime_snapshot_raises_when_services_missing():
 
 def test_build_realtime_snapshot_common_and_admin_views():
     overviews = [_overview("m1", "HTTP")]
+    detail_calls = []
+
+    async def build_monitor_details(passed_overviews, monitor_ids):
+        detail_calls.append((passed_overviews, list(monitor_ids)))
+        return {monitor_id: {"id": monitor_id} for monitor_id in monitor_ids}
+
     dashboard = SimpleNamespace(
         collect_snapshot_sections=_async_return(("summary", "incidents", "activity", overviews)),
-        get_monitor_detail=_async_return({"id": "m1"}),
+        build_monitor_details=build_monitor_details,
     )
     services = _placeholder_services(
         dashboard_service=dashboard,
@@ -138,11 +157,13 @@ def test_build_realtime_snapshot_common_and_admin_views():
     assert common["summary"] == "summary"
     assert common["changed_monitor_details"] == {"m1": {"id": "m1"}}
     assert common["resources"]["HTTP"][0]["id"] == "m1"
+    assert detail_calls == [(overviews, ["m1"])]
 
     common2, admin2 = asyncio.run(manager.build_realtime_snapshot([], include_admin=True))
     assert admin2 is not common2
     assert admin2["resources"] == {"HTTP": [], "API": [], "ping": [], "heartbeat": [], "orion_script": [], "auth_profiles": [], "users": [], "status_pages": [], "slack_integrations": [], "email_integrations": []}
     assert common2["resources"]["HTTP"][0]["id"] == "m1"
+    assert len(detail_calls) == 1
 
 
 def test_init_services_and_shutdown_wire_scheduler_and_teardown(monkeypatch):

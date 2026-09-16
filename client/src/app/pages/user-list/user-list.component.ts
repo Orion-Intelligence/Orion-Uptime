@@ -45,7 +45,9 @@ export class UserListComponent extends NoticePageBase {
         return;
       }
       this.users.set(snapshot.resources.users.filter((user) => user.role === 'viewer'));
-      this.error.set('');
+      if (this.loading() && this.error() === this.realtime.error()) {
+        this.error.set('');
+      }
       this.loading.set(false);
     });
   }
@@ -103,6 +105,7 @@ export class UserListComponent extends NoticePageBase {
       error: (error: unknown) => {
         this.error.set(ApiService.errorMessage(error));
         this.deletingId.set('');
+        this.deleteTarget.set(null);
       },
     });
   }

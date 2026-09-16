@@ -173,6 +173,7 @@ def test_create_indexes_runs_every_helper(monkeypatch):
     asyncio.run(manager._create_indexes())
 
     assert set(engine.database.collections) == {
+        Collections.USERS,
         Collections.MONITOR_RESULTS,
         Collections.INCIDENTS,
         Collections.HEARTBEAT_MONITORS,

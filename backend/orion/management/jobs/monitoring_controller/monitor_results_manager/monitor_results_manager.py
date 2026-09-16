@@ -6,7 +6,7 @@ from typing import Any
 
 from odmantic import AIOEngine
 
-from orion.constants.constant import Collections, OrionIntelligence
+from orion.constants.constant import Collections
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_monitor_result_model import MonitorResultModel
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
@@ -49,7 +49,8 @@ class MonitorResultManager:
         await self.collection.insert_many(documents)
 
     async def average_response_time(self) -> float:
-        pipeline = [{"$match": {"response_time_ms": {"$ne": None}}}, {"$group": {"_id": None, "avg": {"$avg": "$response_time_ms"}}}]
+        cutoff = datetime.now(UTC) - timedelta(hours=24)
+        pipeline = [{"$match": {"response_time_ms": {"$ne": None}, "checked_at": {"$gte": cutoff}}}, {"$group": {"_id": None, "avg": {"$avg": "$response_time_ms"}}}]
         result = await self.collection.aggregate(pipeline).to_list(1)
         if not result:
             return 0.0
@@ -62,8 +63,10 @@ class MonitorResultManager:
         results = await self.collection.aggregate(pipeline).to_list(None)
         return {result["_id"]: result["checked_at"] for result in results}
 
-    async def get_latest_per_monitor(self, limit: int = 20) -> list[MonitorResultModel]:
-        pipeline = [{"$match": {"monitor_id": {"$not": {"$regex": re.escape(OrionIntelligence.FEEDER_RESULT_SEPARATOR)}}}}, {"$sort": {"monitor_id": 1, "checked_at": -1}}, {"$group": {"_id": "$monitor_id", "latest": {"$first": "$$ROOT"}}}, {"$replaceRoot": {"newRoot": "$latest"}}, {"$sort": {"checked_at": -1}}, {"$limit": limit}]
+    async def get_latest_per_monitor(self, monitor_ids: list[str], limit: int = 20) -> list[MonitorResultModel]:
+        if not monitor_ids:
+            return []
+        pipeline = [{"$match": {"monitor_id": {"$in": monitor_ids}}}, {"$sort": {"monitor_id": 1, "checked_at": -1}}, {"$group": {"_id": "$monitor_id", "latest": {"$first": "$$ROOT"}}}, {"$replaceRoot": {"newRoot": "$latest"}}, {"$sort": {"checked_at": -1}}, {"$limit": limit}]
         results = await self.collection.aggregate(pipeline).to_list(None)
         return [MonitorResultModel(**with_string_id(document)) for document in results]
 

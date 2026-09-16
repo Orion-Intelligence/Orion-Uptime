@@ -47,7 +47,7 @@ describe('Log Manager', () => {
     cy.get(testId('log-page-number')).should('contain.text', 'Page 2');
     cy.get(testId('log-row')).should('have.length', 1);
     cy.get(testId('log-type-pill')).first().should('have.class', 'unknown');
-    cy.get(testId('log-page-next')).should('not.exist');
+    cy.get(testId('log-page-next')).should('be.visible').and('be.disabled');
 
     cy.get(testId('log-page-previous')).click();
     cy.wait('@systemLogs').then(({ request }) => {

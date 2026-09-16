@@ -20,7 +20,8 @@ class DashboardManager:
 
     async def get_summary(self) -> DashboardSummaryResponse:
         monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
-        latest_results = await self.monitor_result_service.get_latest_per_monitor(limit=max(len(monitors), 1))
+        monitor_ids = [m.id for m in monitors if m.id]
+        latest_results = await self.monitor_result_service.get_latest_per_monitor(monitor_ids, limit=max(len(monitors), 1))
         open_incidents = await self.incident_service.count_open()
         average_response_time = await self.monitor_result_service.average_response_time()
         overviews = await self._overviews_for(monitors)
@@ -32,8 +33,9 @@ class DashboardManager:
         return self._build_recent_incidents(incidents, monitor_map)
 
     async def get_recent_activity(self) -> list[DashboardActivityResponse]:
-        results = await self.monitor_result_service.get_latest_per_monitor()
-        _, monitor_map = await self.monitor_service.get_monitors_with_lookup()
+        monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
+        monitor_ids = [m.id for m in monitors if m.id]
+        results = await self.monitor_result_service.get_latest_per_monitor(monitor_ids)
         return self._build_recent_activity(results, monitor_map)
 
     async def get_monitor_overviews(self) -> list[MonitorOverviewResponse]:
@@ -46,7 +48,7 @@ class DashboardManager:
             self.monitor_result_service.get_first_check_times(monitor_ids),
             self.incident_service.get_for_monitors(monitor_ids),
             self.incident_service.get_recent(),
-            self.monitor_result_service.get_latest_per_monitor(limit=max(len(monitors), ACTIVITY_LIMIT)),
+            self.monitor_result_service.get_latest_per_monitor(monitor_ids, limit=max(len(monitors), ACTIVITY_LIMIT)),
             self.incident_service.count_open(),
             self.monitor_result_service.average_response_time(),
         )
@@ -145,6 +147,22 @@ class DashboardManager:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
 
         incidents = (await self.incident_service.get_for_monitors([monitor_id])).get(monitor_id, [])
+        return self._build_detail(overview, incidents)
+
+    async def build_monitor_details(self, overviews: list[MonitorOverviewResponse], monitor_ids) -> dict[str, MonitorDetailResponse]:
+        wanted = {monitor_id for monitor_id in monitor_ids if monitor_id is not None}
+        if not wanted:
+            return {}
+
+        selected = {overview.id: overview for overview in overviews if overview.id in wanted}
+        if not selected:
+            return {}
+
+        incidents_by_monitor = await self.incident_service.get_for_monitors(list(selected))
+        return {monitor_id: self._build_detail(overview, incidents_by_monitor.get(monitor_id, [])) for monitor_id, overview in selected.items()}
+
+    @staticmethod
+    def _build_detail(overview: MonitorOverviewResponse, incidents) -> MonitorDetailResponse:
         return MonitorDetailResponse(**overview.model_dump(), incidents=[MonitorIncidentResponse(id=incident.id, status="resolved" if incident.is_resolved else "open", reason=incident.reason, status_code=incident.status_code, started_at=incident.started_at, resolved_at=incident.resolved_at, duration_seconds=incident.duration_seconds) for incident in incidents if incident.id is not None])
 
     @staticmethod

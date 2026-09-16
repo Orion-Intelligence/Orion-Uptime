@@ -141,7 +141,7 @@ def test_get_latest_per_monitor_returns_models():
     ]
     collection.aggregate = lambda pipeline: SimpleNamespace(to_list=_async_return(documents))
 
-    result = asyncio.run(manager.get_latest_per_monitor())
+    result = asyncio.run(manager.get_latest_per_monitor(["m1", "m2"]))
 
     assert [item.monitor_id for item in result] == ["m1", "m2"]
     assert all(isinstance(item, MonitorResultModel) for item in result)

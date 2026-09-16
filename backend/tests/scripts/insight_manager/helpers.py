@@ -46,7 +46,7 @@ def _manager(
 
     monitor_service = SimpleNamespace(get_monitors_with_lookup=get_monitors_with_lookup, list_monitors=list_monitors, get_monitor=get_monitor_fn)
 
-    async def get_latest_per_monitor(limit=20):
+    async def get_latest_per_monitor(_monitor_ids=None, limit=20):
         return latest_results or []
 
     async def average_response_time_fn():

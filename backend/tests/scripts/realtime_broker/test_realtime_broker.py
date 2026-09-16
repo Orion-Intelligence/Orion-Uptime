@@ -57,7 +57,7 @@ def test_notify_broadcasts_update_to_subscribers():
         broker.configure(_factory())
         queue = broker.subscribe(is_admin=True)
         broker.notify("monitor", "monitor-1")
-        update = await asyncio.wait_for(queue.get(), timeout=1)
+        update = await asyncio.wait_for(queue.get(), timeout=3)
         broker.unsubscribe(queue)
         return update
 
@@ -75,8 +75,8 @@ def test_notify_replaces_stale_update_when_queue_is_full():
         stale = RealtimeUpdate(revision=0, changed=(), common_snapshot={}, admin_snapshot={})
         queue.put_nowait(stale)
         broker.notify("monitor", "monitor-1")
-        await asyncio.sleep(0.15)
-        update = await asyncio.wait_for(queue.get(), timeout=1)
+        await asyncio.sleep(2.15)
+        update = await asyncio.wait_for(queue.get(), timeout=3)
         broker.unsubscribe(queue)
         return update
 

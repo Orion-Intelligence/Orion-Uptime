@@ -40,7 +40,9 @@ export class StatusPageListComponent extends NoticePageBase {
       }
       this.pages.set(snapshot.resources.status_pages);
       this.overviews.set(Object.fromEntries(snapshot.overviews.map((overview) => [overview.id, overview])),);
-      this.error.set('');
+      if (this.loading() && this.error() === this.realtime.error()) {
+        this.error.set('');
+      }
       this.loading.set(false);
     });
   }
@@ -78,6 +80,7 @@ export class StatusPageListComponent extends NoticePageBase {
       },
       error: (error: unknown) => {
         this.deletingId.set('');
+        this.deleteTarget.set(null);
         this.error.set(ApiService.errorMessage(error));
       },
     });

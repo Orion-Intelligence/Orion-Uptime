@@ -100,6 +100,26 @@ def test_get_monitor_detail_raises_when_monitor_missing():
         asyncio.run(manager.get_monitor_detail("ghost"))
 
 
+def test_build_monitor_details_reuses_overviews_and_skips_unknown_monitors():
+    monitor = _monitor("m1", status=MonitorStatus.UP, is_active=False, created_at=NOW - timedelta(days=10), updated_at=NOW - timedelta(days=1))
+    incident = _incident(id="i1", monitor_id="m1", started_at=NOW - timedelta(days=2), resolved_at=NOW - timedelta(days=2) + timedelta(hours=1), duration_seconds=3600, is_resolved=True)
+    manager = _manager(monitors=[monitor], first_check_times={"m1": NOW - timedelta(days=5)}, incidents_by_monitor={"m1": [incident]})
+    overviews = asyncio.run(manager.get_monitor_overviews())
+
+    details = asyncio.run(manager.build_monitor_details(overviews, ["m1", "ghost", None]))
+
+    assert set(details) == {"m1"}
+    assert details["m1"].id == "m1"
+    assert [item.id for item in details["m1"].incidents] == ["i1"]
+
+
+def test_build_monitor_details_without_matching_ids_returns_empty():
+    manager = _manager(monitors=[])
+
+    assert asyncio.run(manager.build_monitor_details([], [])) == {}
+    assert asyncio.run(manager.build_monitor_details([], ["ghost"])) == {}
+
+
 def test_get_recent_activity_maps_monitor_names_and_falls_back_to_unknown():
     monitors = [_monitor("m1", name="Website")]
     results = [

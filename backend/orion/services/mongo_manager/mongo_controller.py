@@ -35,12 +35,17 @@ class DatabaseManager:
             self._engine = None
 
     async def _create_indexes(self) -> None:
+        await self._create_user_indexes()
         await self._create_monitor_result_indexes()
         await self._create_incident_indexes()
         await self._create_heartbeat_indexes()
         await self._create_status_page_indexes()
         await self._create_slack_integration_indexes()
         await self._create_email_integration_indexes()
+
+    async def _create_user_indexes(self) -> None:
+        collection = self.engine.database[Collections.USERS]
+        await collection.create_index("username", unique=True)
 
     async def _create_monitor_result_indexes(self) -> None:
         collection = self.engine.database[Collections.MONITOR_RESULTS]

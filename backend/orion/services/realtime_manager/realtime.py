@@ -74,12 +74,12 @@ class RealtimeBroker:
         self._subscribers.clear()
 
     async def _refresh_pending(self) -> None:
-        await asyncio.sleep(0.05)
         while self._pending_changes:
             changed = tuple(sorted(self._pending_changes, key=lambda item: (item[0], item[1] or "")))
             self._pending_changes.clear()
             with contextlib.suppress(Exception):
                 await self._rebuild(changed, broadcast=True, include_admin=any(self._subscribers.values()))
+            await asyncio.sleep(2.0)
 
     async def _rebuild(self, changed: tuple[tuple[str, str | None], ...], *, broadcast: bool, include_admin: bool) -> None:
         async with self._build_lock:
