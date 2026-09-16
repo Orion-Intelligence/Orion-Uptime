@@ -3,6 +3,7 @@ import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 @Component({
   selector: 'app-empty-state',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { class: 'tw:contents' },
   templateUrl: './empty-state.component.html',
 })
 export class EmptyStateComponent {
