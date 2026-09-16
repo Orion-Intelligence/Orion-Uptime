@@ -2,11 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
 from orion.constants.constant import Intervals
+
+logger = logging.getLogger("orion.uptime.realtime")
 
 SnapshotFactory = Callable[[tuple[tuple[str, str | None], ...], bool], Awaitable[tuple[dict[str, Any], dict[str, Any]]]]
 
@@ -79,8 +82,11 @@ class RealtimeBroker:
         while self._pending_changes:
             changed = tuple(sorted(self._pending_changes, key=lambda item: (item[0], item[1] or "")))
             self._pending_changes.clear()
-            with contextlib.suppress(Exception):
+            try:
                 await self._rebuild(changed, broadcast=True, include_admin=any(self._subscribers.values()))
+            except Exception:
+                self._pending_changes.update(changed)
+                logger.warning("Real-time snapshot rebuild failed; changes re-queued for retry.", exc_info=True)
             if self._pending_changes:
                 await asyncio.sleep(Intervals.REALTIME_COALESCE_SECONDS)
 

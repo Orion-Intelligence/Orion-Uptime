@@ -17,6 +17,7 @@ export class RealtimeService {
   private clockTimer: ReturnType<typeof setInterval> | undefined;
   private retryAttempt = 0;
   private stopped = true;
+  private acceptNextSnapshot = false;
 
   readonly snapshot = signal<RealtimeSnapshot | null>(null);
   readonly error = signal('');
@@ -125,6 +126,7 @@ export class RealtimeService {
     if (this.stopped || this.source) {
       return;
     }
+    this.acceptNextSnapshot = true;
     const source = new EventSource('/api/events', { withCredentials: true });
     this.source = source;
     source.onopen = () => {
@@ -134,9 +136,10 @@ export class RealtimeService {
     source.addEventListener('snapshot', (event) => {
       try {
         const snapshot = JSON.parse((event as MessageEvent<string>).data) as RealtimeSnapshot;
-        if (snapshot.revision <= (this.snapshot()?.revision ?? 0)) {
+        if (!this.acceptNextSnapshot && snapshot.revision <= (this.snapshot()?.revision ?? 0)) {
           return;
         }
+        this.acceptNextSnapshot = false;
         this.snapshot.set(snapshot);
         this.updates.next(snapshot);
         this.error.set('');

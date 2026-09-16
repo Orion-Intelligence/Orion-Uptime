@@ -7,7 +7,7 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 from orion.api.interactive.incident_manager.incident_manager import IncidentManager
-from orion.constants.constant import Collections, HttpStatus, Intervals
+from orion.constants.constant import Collections, HttpStatus, Intervals, Limits
 from orion.management.jobs.monitoring_controller.checkers.checker_factory import CheckerFactory
 from orion.management.jobs.monitoring_controller.monitor_repository import MonitorRepository
 from orion.management.jobs.monitoring_controller.monitor_results_manager.monitor_results_manager import MonitorResultManager
@@ -66,6 +66,7 @@ class MonitorManager:
 
             checker = self.checker_factory.get_checker(monitor.monitor_type)
             result = await self.run_check_with_deadline(checker, latest_monitor)
+            result = await self._confirm_api_downgrade(latest_monitor, checker, result)
             checked_at = datetime.now(UTC)
 
             state_result = await self.monitor_state_service.process_result(monitor_id=monitor.persisted_id, monitor_type=monitor.monitor_type, success=result.success, status_code=result.status_code, response_time_ms=result.response_time_ms, checked_at=checked_at)
@@ -100,6 +101,19 @@ class MonitorManager:
             logger.warning("Check for %s monitor %s exceeded its %.0fs deadline.", monitor.monitor_type, monitor.id, deadline)
             target = getattr(monitor, "url", None) or getattr(monitor, "host", None) or monitor.name
             return HealthCheckResponse(url=target, status=MonitorStatus.DOWN, status_code=None, response_time_ms=None, success=False, is_slow=False, error=f"The check did not complete within {deadline:.0f} seconds and was abandoned.", timed_out=True)
+
+    async def _confirm_api_downgrade(self, monitor: MonitorModel, checker, result):
+        if monitor.monitor_type != MonitorType.API or result.success:
+            return result
+        if not await self.monitor_state_service.failure_would_transition_down(monitor.persisted_id, monitor.monitor_type):
+            return result
+        for _ in range(Limits.API_TRANSITION_RETRY_MAX):
+            await asyncio.sleep(Intervals.API_TRANSITION_RETRY_GAP_SECONDS)
+            retry = await self.run_check_with_deadline(checker, monitor)
+            if retry.success:
+                return retry
+            result = retry
+        return result
 
     async def _handle_incident_transition(self, monitor: MonitorModel, result, state_result) -> IncidentModel | None:
         incident = None

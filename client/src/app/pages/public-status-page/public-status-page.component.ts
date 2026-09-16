@@ -114,7 +114,7 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
         this.feederBars.update((current) => ({ ...current, [cacheKey]: bars }));
       },
       error: () => {
-        this.feederBars.update((current) => ({ ...current, [cacheKey]: {} }));
+        this.requestedTabs.delete(cacheKey);
       },
     });
   }
