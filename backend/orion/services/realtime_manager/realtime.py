@@ -43,6 +43,9 @@ class RealtimeBroker:
             return
         self._pending_changes.add((kind, entity_id))
         if not self._subscribers:
+            self._common_snapshot = None
+            self._admin_snapshot = None
+            self._pending_changes.clear()
             return
         self._schedule_refresh()
 
@@ -61,8 +64,6 @@ class RealtimeBroker:
     async def get_snapshot(self, is_admin: bool) -> dict[str, Any]:
         if self._common_snapshot is None or (is_admin and self._admin_snapshot is None):
             await self._rebuild((), broadcast=False, include_admin=is_admin)
-        elif self._pending_changes:
-            self._schedule_refresh()
         snapshot = self._admin_snapshot if is_admin else self._common_snapshot
         if snapshot is None:
             raise RuntimeError("Real-time snapshot is unavailable.")

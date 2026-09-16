@@ -44,10 +44,10 @@ class SystemLogManager:
             params["date"] = date
         if log_type and log_type.lower() != "all":
             params["log_type"] = log_type
-        if date_from:
-            params["date_from"] = date_from
-        if date_to:
-            params["date_to"] = date_to
+        if date_from and date_to:
+            params["date_range"] = f"{date_from},{date_to}"
+        elif date_from:
+            params["date_range"] = date_from
 
         url = f"{self._origin(profile.login_url)}{OrionIntelligence.SYSTEM_LOGS_PATH}"
         try:
@@ -103,7 +103,7 @@ class SystemLogManager:
         if total is not None:
             has_more = page * limit < total
         elif not has_more:
-            has_more = len(entries) >= limit
+            has_more = len(entries) > 0
 
         return SystemLogPageResponse(logs=entries, page=page, limit=limit, total=total, has_more=has_more, source_profile_name=profile_name)
 

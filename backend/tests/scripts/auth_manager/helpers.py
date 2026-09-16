@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
@@ -24,7 +25,7 @@ def _auth_manager():
 
 def _store_user(collection, *, is_active=True, password=PASSWORD, refresh_hash=None, refresh_expires=None):
     object_id = ObjectId()
-    user = UserModel(username="alice", password_hash=PasswordManager().hash_password(password), role=UserRole.ADMIN, is_active=is_active, created_at=NOW, updated_at=NOW, refresh_token_hash=refresh_hash, refresh_token_expires_at=refresh_expires)
+    user = UserModel(username="alice", password_hash=asyncio.run(PasswordManager().hash_password(password)), role=UserRole.ADMIN, is_active=is_active, created_at=NOW, updated_at=NOW, refresh_token_hash=refresh_hash, refresh_token_expires_at=refresh_expires)
     document = user.model_dump(exclude={"id"})
     document["_id"] = object_id
     collection.documents.append(document)

@@ -20,7 +20,7 @@ def test_create_user_persists_viewer_and_hashes_password():
     assert created.is_active is True
     document = collection.documents[0]
     assert document["password_hash"] != PASSWORD
-    assert PasswordManager().verify_password(PASSWORD, document["password_hash"]) is True
+    assert asyncio.run(PasswordManager().verify_password(PASSWORD, document["password_hash"])) is True
 
 
 def test_create_user_rejects_duplicate_username():
@@ -66,7 +66,7 @@ def test_update_user_changes_username_password_and_active_flag():
     assert updated.username == "alice2"
     assert updated.is_active is False
     document = collection.documents[0]
-    assert PasswordManager().verify_password("newpassword1", document["password_hash"]) is True
+    assert asyncio.run(PasswordManager().verify_password("newpassword1", document["password_hash"])) is True
 
 
 def test_update_user_with_no_changes_returns_current_user():

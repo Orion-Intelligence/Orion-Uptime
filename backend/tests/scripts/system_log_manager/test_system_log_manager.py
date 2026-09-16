@@ -34,7 +34,7 @@ def test_get_logs_builds_page_from_list_payload():
 
     assert result.source_profile_name == "Primary"
     assert result.total is None
-    assert result.has_more is False
+    assert result.has_more is True
     assert len(result.logs) == 1
     assert result.logs[0].type == "ERROR"
     assert result.logs[0].message == "boom"
@@ -51,8 +51,9 @@ def test_get_logs_applies_filters_to_query_params():
     assert params["page"] == 2
     assert params["limit"] == 50
     assert params["date"] == "2024-01-01"
-    assert params["date_from"] == "2024-01-01"
-    assert params["date_to"] == "2024-01-31"
+    assert params["date_range"] == "2024-01-01,2024-01-31"
+    assert "start_date" not in params
+    assert "end_date" not in params
     assert "log_type" not in params
 
 

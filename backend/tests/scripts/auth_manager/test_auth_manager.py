@@ -42,14 +42,14 @@ def test_revoked_access_tokens_track_and_expire():
 
 def test_password_and_refresh_token_hashing_round_trip():
     password_manager = PasswordManager()
-    hashed = password_manager.hash_password(PASSWORD)
-    assert password_manager.verify_password(PASSWORD, hashed) is True
-    assert password_manager.verify_password("wrong-password", hashed) is False
+    hashed = asyncio.run(password_manager.hash_password(PASSWORD))
+    assert asyncio.run(password_manager.verify_password(PASSWORD, hashed)) is True
+    assert asyncio.run(password_manager.verify_password("wrong-password", hashed)) is False
 
     refresh_manager = RefreshTokenManager()
-    token_hash = refresh_manager.hash_token("refresh-token")
-    assert refresh_manager.verify_token("refresh-token", token_hash) is True
-    assert refresh_manager.verify_token("other", token_hash) is False
+    token_hash = asyncio.run(refresh_manager.hash_token("refresh-token"))
+    assert asyncio.run(refresh_manager.verify_token("refresh-token", token_hash)) is True
+    assert asyncio.run(refresh_manager.verify_token("other", token_hash)) is False
 
 
 def test_login_succeeds_and_issues_tokens():
@@ -116,8 +116,8 @@ def test_refresh_tokens_rotates_and_rejects_invalid():
     object_id = ObjectId()
     user_id = str(object_id)
     refresh_token, expires_at = manager.jwt_service.create_refresh_token(user_id=user_id, username="alice", role=UserRole.ADMIN)
-    refresh_hash = manager.refresh_token_service.hash_token(refresh_token)
-    user = UserModel(username="alice", password_hash=PasswordManager().hash_password(PASSWORD), role=UserRole.ADMIN, is_active=True, created_at=NOW, updated_at=NOW, refresh_token_hash=refresh_hash, refresh_token_expires_at=expires_at)
+    refresh_hash = asyncio.run(manager.refresh_token_service.hash_token(refresh_token))
+    user = UserModel(username="alice", password_hash=asyncio.run(PasswordManager().hash_password(PASSWORD)), role=UserRole.ADMIN, is_active=True, created_at=NOW, updated_at=NOW, refresh_token_hash=refresh_hash, refresh_token_expires_at=expires_at)
     document = user.model_dump(exclude={"id"})
     document["_id"] = object_id
     collection.documents.append(document)

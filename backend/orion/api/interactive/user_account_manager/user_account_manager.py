@@ -24,7 +24,7 @@ class UserManager:
             raise ConflictError(Messages.USERNAME_ALREADY_EXISTS)
 
         now = datetime.now(UTC)
-        user = UserModel(username=username, password_hash=self.password_service.hash_password(password), role=UserRole.VIEWER, is_active=True, refresh_token_hash=None, created_at=now, updated_at=now, last_login=None)
+        user = UserModel(username=username, password_hash=await self.password_service.hash_password(password), role=UserRole.VIEWER, is_active=True, refresh_token_hash=None, created_at=now, updated_at=now, last_login=None)
         document = user.model_dump()
         document.pop("id", None)
         result = await self.collection.insert_one(document)
@@ -70,7 +70,7 @@ class UserManager:
             update_data["username"] = username
 
         if password is not None:
-            update_data["password_hash"] = self.password_service.hash_password(password)
+            update_data["password_hash"] = await self.password_service.hash_password(password)
 
         if role is not None:
             if user.role == UserRole.ADMIN and role != UserRole.ADMIN:
@@ -100,7 +100,7 @@ class UserManager:
         password_hash = document.get("password_hash")
         if not isinstance(password_hash, str):
             return False
-        return self.password_service.verify_password(password=password, hashed_password=password_hash)
+        return await self.password_service.verify_password(password=password, hashed_password=password_hash)
 
     async def ensure_default_admin(self, username: str, password: str) -> bool:
         now = datetime.now(UTC)
@@ -109,7 +109,7 @@ class UserManager:
             await self.collection.update_one({"username": username}, {"$set": {"role": UserRole.ADMIN, "is_active": True, "updated_at": now}})
             return False
 
-        admin = UserModel(username=username, password_hash=self.password_service.hash_password(password), role=UserRole.ADMIN, refresh_token_hash=None, is_active=True, created_at=now, updated_at=now, last_login=None)
+        admin = UserModel(username=username, password_hash=await self.password_service.hash_password(password), role=UserRole.ADMIN, refresh_token_hash=None, is_active=True, created_at=now, updated_at=now, last_login=None)
         document = admin.model_dump()
         document.pop("id", None)
         await self.collection.insert_one(document)
