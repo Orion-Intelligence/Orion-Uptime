@@ -5,11 +5,12 @@ import { DashboardActivity, DashboardIncident, DashboardSummary, MonitorOverview
 import { ApiService } from '../../services/core/api.service';
 import { DashboardService } from '../../services/dashboard/dashboard.service';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
+import { EnterFadeDirective } from '../../shared/animations/enter-fade.directive';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
 @Component({
   selector: 'app-dashboard-page',
-  imports: [DatePipe, DecimalPipe, SkeletonComponent],
+  imports: [DatePipe, DecimalPipe, SkeletonComponent, EnterFadeDirective],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {

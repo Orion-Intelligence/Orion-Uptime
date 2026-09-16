@@ -6,10 +6,11 @@ import { finalize } from 'rxjs';
 import { ApiService } from '../../services/core/api.service';
 import { AuthService } from '../../services/authentication/auth.service';
 import { ThemeService } from '../../services/core/theme.service';
+import { EnterFadeDirective } from '../../shared/animations/enter-fade.directive';
 
 @Component({
   selector: 'app-login-page',
-  imports: [NgOptimizedImage, ReactiveFormsModule],
+  imports: [NgOptimizedImage, ReactiveFormsModule, EnterFadeDirective],
   templateUrl: './login.component.html',
 })
 export class LoginComponent {

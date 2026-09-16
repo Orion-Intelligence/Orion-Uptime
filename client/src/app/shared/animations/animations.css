@@ -142,12 +142,13 @@ html.orion-navigated .page-enter {
   animation: orion-fade-in 320ms ease-out both;
 }
 
-.dashboard-enter {
-  animation: orion-fade-in 350ms ease-out both;
+.orion-enter {
+  opacity: 0;
+  transition: opacity 400ms ease-out;
 }
 
-.login-enter {
-  animation: orion-fade-in 420ms ease-out both;
+.orion-enter.orion-enter-in {
+  opacity: 1;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -158,9 +159,12 @@ html.orion-navigated .page-enter {
   .overlay-in,
   .overlay-out,
   .list-item-enter,
-  .dashboard-enter,
-  .login-enter,
   html.orion-navigated .page-enter {
     animation: none;
+  }
+
+  .orion-enter {
+    opacity: 1;
+    transition: none;
   }
 }
