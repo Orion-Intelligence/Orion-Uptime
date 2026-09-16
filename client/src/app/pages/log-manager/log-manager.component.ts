@@ -25,6 +25,7 @@ export class LogManagerComponent {
   readonly logTypes = ['All', 'warning', 'info', 'error'];
   readonly weekdays = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
   readonly logs = signal<SystemLogEntry[]>([]);
+  readonly expandedIndex = signal<number | null>(null);
   readonly loading = signal(false);
   readonly error = signal('');
   readonly page = signal(1);
@@ -142,9 +143,14 @@ export class LogManagerComponent {
     this.applyFilters();
   }
 
+  toggleMessage(index: number): void {
+    this.expandedIndex.update((current) => (current === index ? null : index));
+  }
+
   loadLogs(): void {
     this.loading.set(true);
     this.error.set('');
+    this.expandedIndex.set(null);
     this.api
       .get<SystemLogPage>(this.buildPath())
       .pipe(finalize(() => {
