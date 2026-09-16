@@ -141,7 +141,11 @@ class OrionScriptChecker(HttpCheckerBase):
 
     @staticmethod
     def _section(rule_key: str | None, rule_paths: dict[str, str]) -> str | None:
-        if rule_key and rule_paths.get(rule_key) == OrionIntelligence.FEEDER_SOCIAL_PATH:
+        if not rule_key:
+            return rule_key
+        path = rule_paths.get(rule_key)
+        social_path = OrionIntelligence.FEEDER_SOCIAL_PATH
+        if path is not None and (path == social_path or path.startswith(f"{social_path}/")):
             return OrionIntelligence.FEEDER_SOCIAL_SECTION
         return rule_key
 

@@ -165,6 +165,23 @@ def test_build_feeders_handles_datetime_instances_duplicate_and_missing_ids():
     assert by_key["d3"].last_checked_at == datetime(2026, 9, 4, 7, tzinfo=UTC)
 
 
+def test_build_feeders_groups_nested_social_platform_paths_under_social_section():
+    scripts = [
+        {"id": "p1", "rule_key": "twitter", "file_name": "_twitter.py"},
+        {"id": "p2", "rule_key": "facebook", "file_name": "_facebook.py"},
+        {"id": "p3", "rule_key": "tiktok", "file_name": "_tiktok.py"},
+        {"id": "p4", "rule_key": "leak", "file_name": "_leak.py"},
+    ]
+    rule_paths = {"twitter": "social/platform", "facebook": "social/platform/facebook", "tiktok": "social/platform/tiktok", "leak": "leak_collector/leak"}
+    feeders = OrionScriptChecker.build_feeders(scripts, rule_paths)
+    by_key = {feeder.key: feeder for feeder in feeders}
+
+    assert by_key["p1"].section == "social"
+    assert by_key["p2"].section == "social"
+    assert by_key["p3"].section == "social"
+    assert by_key["p4"].section == "leak"
+
+
 def test_checker_reports_down_when_catalog_has_no_rules_array():
     checker = OrionScriptChecker(token_manager=FakeTokenManager([_profile()]), client=httpx.AsyncClient(transport=httpx.MockTransport(_route(httpx.Response(200, json=_scripts_payload()), catalog_response=lambda request: httpx.Response(200, json={"rules": "oops"})))))
     result = _run(checker, _monitor())

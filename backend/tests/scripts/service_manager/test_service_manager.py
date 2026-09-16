@@ -114,10 +114,7 @@ def test_build_realtime_snapshot_raises_when_services_missing():
 def test_build_realtime_snapshot_common_and_admin_views():
     overviews = [_overview("m1", "HTTP")]
     dashboard = SimpleNamespace(
-        get_summary=_async_return("summary"),
-        get_recent_incidents=_async_return("incidents"),
-        get_recent_activity=_async_return("activity"),
-        get_monitor_overviews=_async_return(overviews),
+        collect_snapshot_sections=_async_return(("summary", "incidents", "activity", overviews)),
         get_monitor_detail=_async_return({"id": "m1"}),
     )
     services = _placeholder_services(

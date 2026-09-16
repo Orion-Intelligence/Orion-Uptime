@@ -36,17 +36,20 @@ def test_notify_without_factory_is_a_noop():
     assert broker._pending_changes == set()
 
 
-def test_notify_without_subscribers_invalidates_cache():
+def test_notify_without_subscribers_keeps_cache_warm_and_refreshes_on_connect():
     async def run():
         broker = RealtimeBroker()
         broker.configure(_factory())
         first = await broker.get_snapshot(is_admin=False)
         broker.notify("monitor", "monitor-1")
-        second = await broker.get_snapshot(is_admin=False)
-        return first, second
+        served = await broker.get_snapshot(is_admin=False)
+        await asyncio.sleep(0.15)
+        refreshed = await broker.get_snapshot(is_admin=False)
+        return first, served, refreshed
 
-    first, second = asyncio.run(run())
-    assert second["revision"] > first["revision"]
+    first, served, refreshed = asyncio.run(run())
+    assert served["revision"] == first["revision"]
+    assert refreshed["revision"] > first["revision"]
 
 
 def test_notify_broadcasts_update_to_subscribers():

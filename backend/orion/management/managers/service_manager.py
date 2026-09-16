@@ -179,8 +179,8 @@ class ServiceManager:
         if services is None:
             raise RuntimeError("Services are not initialised.")
         dashboard_service = services.dashboard_service
-        summary, incidents, activity, overviews = await asyncio.gather(dashboard_service.get_summary(), dashboard_service.get_recent_incidents(), dashboard_service.get_recent_activity(), dashboard_service.get_monitor_overviews())
-        common = {"generated_at": datetime.now(UTC), "summary": summary, "incidents": incidents, "activity": activity, "overviews": overviews, "changed_monitor_details": await self.changed_monitor_details(dashboard_service, changed), "resources": self.viewer_resources(overviews)}
+        (summary, incidents, activity, overviews), changed_details = await asyncio.gather(dashboard_service.collect_snapshot_sections(), self.changed_monitor_details(dashboard_service, changed))
+        common = {"generated_at": datetime.now(UTC), "summary": summary, "incidents": incidents, "activity": activity, "overviews": overviews, "changed_monitor_details": changed_details, "resources": self.viewer_resources(overviews)}
         admin = common
         if include_admin:
             admin = {**common, "resources": await self.admin_resources(services)}
