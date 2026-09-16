@@ -24,7 +24,7 @@
 
   <section data-testid="slack-integration-list" class="page-grid tw:grid tw:grid-cols-[repeat(auto-fill,minmax(360px,1fr))] tw:items-stretch tw:gap-5 tw:max-[700px]:grid-cols-1" aria-label="Slack integrations">
     @for (integration of integrations(); track integration.id) {
-      <article data-testid="slack-integration-card" animate.enter="list-item-enter" class="panel integration-card tw:grid tw:min-h-full tw:min-w-0 tw:content-start tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
+      <article data-testid="slack-integration-card" animate.enter="list-item-enter" class="panel integration-card tw:flex tw:flex-col tw:min-h-full tw:min-w-0 tw:overflow-hidden tw:rounded-2xl tw:border-[#d7e2ef] tw:shadow-[0_8px_26px_rgb(30_64_105_/_5%)] tw:[transition:border-color_160ms_ease,_box-shadow_160ms_ease] tw:hover:border-[#a8c7e4] tw:hover:shadow-[0_12px_30px_rgb(15_23_42_/_7%)] tw:dark:border-white/9 tw:dark:hover:border-[#57a5eb]/28 tw:dark:hover:shadow-[0_12px_30px_rgb(0_0_0_/_14%)]">
         <header class="tw:flex tw:min-w-0 tw:items-start tw:justify-between tw:gap-4 tw:px-5.5 tw:pt-5.5 tw:pb-4.5">
           <div class="tw:min-w-0">
             <h2 data-testid="slack-integration-name" class="tw:m-0 tw:text-[16px] tw:leading-snug tw:font-semibold tw:tracking-[-0.015em] tw:wrap-anywhere">{{ integration.name }}</h2>
@@ -42,12 +42,12 @@
           }
         </section>
 
-        <div class="meta tw:flex tw:min-w-0 tw:items-center tw:justify-between tw:gap-4 tw:px-5.5 tw:pb-4.5 tw:font-mono tw:text-[11px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">
+        <div class="meta tw:mt-auto tw:flex tw:min-w-0 tw:items-center tw:justify-between tw:gap-4 tw:px-5.5 tw:pb-4.5 tw:font-mono tw:text-[11px] tw:text-[#71869c] tw:dark:text-[#8fa5bb]">
           <span>Created {{ integration.created_at | date: 'MMM d, y' }}</span>
           <span>{{ integration.monitor_count }} alert source{{ integration.monitor_count === 1 ? '' : 's' }}</span>
         </div>
 
-        <footer class="tw:mt-auto tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
+        <footer class="tw:flex tw:flex-wrap tw:items-center tw:justify-end tw:gap-2 tw:border-t tw:border-[#d7e2ef] tw:bg-[#f9fbff] tw:px-5.5 tw:py-4 tw:dark:border-white/9 tw:dark:bg-[#131e30]">
           <a data-testid="slack-integration-edit-link" class="tw:inline-flex tw:min-h-9 tw:items-center tw:rounded-lg tw:border tw:border-[#c4d5e7] tw:bg-white tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#5f738f] tw:no-underline tw:transition-colors tw:hover:border-[#57a5eb] tw:hover:text-[#1176d4] tw:dark:border-white/15 tw:dark:bg-[#172235] tw:dark:text-[#b9cee3] tw:dark:hover:text-[#87c4f5]" [routerLink]="['/integrations/slack', integration.id, 'edit']">Edit</a>
           <button data-testid="slack-integration-delete-button" class="tw:min-h-9 tw:cursor-pointer tw:rounded-lg tw:border tw:border-[#f97066]/35 tw:bg-transparent tw:px-3 tw:text-[11px] tw:font-semibold tw:text-[#b42318] tw:transition-colors tw:hover:border-[#f97066] tw:hover:bg-[#f97066]/8 tw:disabled:cursor-wait tw:disabled:opacity-50 tw:dark:text-[#fda29b]" type="button" (click)="requestDelete(integration)" [disabled]="deletingId() === integration.id">
             {{ deletingId() === integration.id ? 'Deleting…' : 'Delete' }}
