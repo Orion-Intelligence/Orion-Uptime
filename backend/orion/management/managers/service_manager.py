@@ -31,7 +31,6 @@ from orion.management.jobs.monitoring_controller.scheduler import MonitorSchedul
 from orion.services.email_template_manager import EmailTemplateManager
 from orion.services.mongo_manager.mongo_controller import db_manager
 from orion.services.realtime_manager.realtime import realtime_broker
-from orion.shared_models.exceptions import NotFoundError
 
 logger = logging.getLogger("orion.uptime")
 
@@ -149,14 +148,14 @@ class ServiceManager:
         )
 
     @staticmethod
-    async def changed_monitor_details(dashboard_service: DashboardManager, changed) -> dict:
-        details = {}
-        for kind, entity_id in changed:
-            if kind != "monitor" or entity_id is None:
-                continue
-            with suppress(NotFoundError):
-                details[entity_id] = await dashboard_service.get_monitor_detail(entity_id)
-        return details
+    async def changed_monitor_details(dashboard_service: DashboardManager, changed, overviews) -> dict:
+        changed_ids = {entity_id for kind, entity_id in changed if kind == "monitor" and entity_id is not None}
+        overview_map = {overview.id: overview for overview in overviews}
+        wanted = [entity_id for entity_id in changed_ids if entity_id in overview_map]
+        if not wanted:
+            return {}
+        incidents_by_monitor = await dashboard_service.incident_service.get_for_monitors(wanted)
+        return {entity_id: dashboard_service.build_monitor_detail(overview_map[entity_id], incidents_by_monitor.get(entity_id, [])) for entity_id in wanted}
 
     @staticmethod
     def viewer_resources(overviews) -> dict:
@@ -179,7 +178,8 @@ class ServiceManager:
         if services is None:
             raise RuntimeError("Services are not initialised.")
         dashboard_service = services.dashboard_service
-        (summary, incidents, activity, overviews), changed_details = await asyncio.gather(dashboard_service.collect_snapshot_sections(), self.changed_monitor_details(dashboard_service, changed))
+        summary, incidents, activity, overviews = await dashboard_service.collect_snapshot_sections()
+        changed_details = await self.changed_monitor_details(dashboard_service, changed, overviews)
         common = {"generated_at": datetime.now(UTC), "summary": summary, "incidents": incidents, "activity": activity, "overviews": overviews, "changed_monitor_details": changed_details, "resources": self.viewer_resources(overviews)}
         admin = common
         if include_admin:

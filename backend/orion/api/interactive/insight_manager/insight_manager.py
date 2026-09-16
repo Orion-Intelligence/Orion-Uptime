@@ -20,9 +20,10 @@ class DashboardManager:
 
     async def get_summary(self) -> DashboardSummaryResponse:
         monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
-        latest_results = await self.monitor_result_service.get_latest_per_monitor(limit=max(len(monitors), 1))
+        monitor_ids = [monitor.id for monitor in monitors if monitor.id is not None]
+        latest_results = await self.monitor_result_service.get_latest_per_monitor(monitor_ids, limit=max(len(monitors), 1))
         open_incidents = await self.incident_service.count_open()
-        average_response_time = await self.monitor_result_service.average_response_time()
+        average_response_time = await self.monitor_result_service.average_response_time(monitor_ids)
         overviews = await self._overviews_for(monitors)
         return self._build_summary(monitors, monitor_map, latest_results, open_incidents, average_response_time, overviews)
 
@@ -32,8 +33,9 @@ class DashboardManager:
         return self._build_recent_incidents(incidents, monitor_map)
 
     async def get_recent_activity(self) -> list[DashboardActivityResponse]:
-        results = await self.monitor_result_service.get_latest_per_monitor()
-        _, monitor_map = await self.monitor_service.get_monitors_with_lookup()
+        monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
+        monitor_ids = [monitor.id for monitor in monitors if monitor.id is not None]
+        results = await self.monitor_result_service.get_latest_per_monitor(monitor_ids)
         return self._build_recent_activity(results, monitor_map)
 
     async def get_monitor_overviews(self) -> list[MonitorOverviewResponse]:
@@ -46,9 +48,9 @@ class DashboardManager:
             self.monitor_result_service.get_first_check_times(monitor_ids),
             self.incident_service.get_for_monitors(monitor_ids),
             self.incident_service.get_recent(),
-            self.monitor_result_service.get_latest_per_monitor(limit=max(len(monitors), ACTIVITY_LIMIT)),
+            self.monitor_result_service.get_latest_per_monitor(monitor_ids, limit=max(len(monitors), ACTIVITY_LIMIT)),
             self.incident_service.count_open(),
-            self.monitor_result_service.average_response_time(),
+            self.monitor_result_service.average_response_time(monitor_ids),
         )
         overviews = self._build_overviews(monitors, first_check_times, incidents_by_monitor)
         summary = self._build_summary(monitors, monitor_map, latest_results, open_incidents, average_response_time, overviews)
@@ -145,6 +147,10 @@ class DashboardManager:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
 
         incidents = (await self.incident_service.get_for_monitors([monitor_id])).get(monitor_id, [])
+        return self.build_monitor_detail(overview, incidents)
+
+    @staticmethod
+    def build_monitor_detail(overview: MonitorOverviewResponse, incidents) -> MonitorDetailResponse:
         return MonitorDetailResponse(**overview.model_dump(), incidents=[MonitorIncidentResponse(id=incident.id, status="resolved" if incident.is_resolved else "open", reason=incident.reason, status_code=incident.status_code, started_at=incident.started_at, resolved_at=incident.resolved_at, duration_seconds=incident.duration_seconds) for incident in incidents if incident.id is not None])
 
     @staticmethod

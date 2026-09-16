@@ -124,6 +124,47 @@ def test_build_public_response_unknown_when_all_paused():
     assert public.monitors_paused == 1
 
 
+def test_build_public_response_memoizes_per_revision_and_refreshes_generated_at():
+    overviews = [_overview("m1", status=MonitorStatus.UP)]
+    manager, _ = _manager(monitors=[SimpleNamespace(id="m1")], overviews=overviews)
+    created = _create(manager, monitor_ids=["m1"])
+    page = asyncio.run(manager.get_page_by_slug(created.slug))
+
+    first = asyncio.run(manager.build_public_response(page, overviews, revision=7))
+    assert created.slug in StatusPageManager._public_response_cache
+    cached_response = StatusPageManager._public_response_cache[created.slug][2]
+    assert first is cached_response
+
+    second = asyncio.run(manager.build_public_response(page, overviews, revision=7))
+    assert second is not cached_response
+    assert second.monitors == cached_response.monitors
+    assert second.generated_at >= cached_response.generated_at
+
+
+def test_build_public_response_without_revision_does_not_cache():
+    overviews = [_overview("m1")]
+    manager, _ = _manager(monitors=[SimpleNamespace(id="m1")], overviews=overviews)
+    created = _create(manager, monitor_ids=["m1"])
+    page = asyncio.run(manager.get_page_by_slug(created.slug))
+
+    asyncio.run(manager.build_public_response(page, overviews))
+
+    assert created.slug not in StatusPageManager._public_response_cache
+
+
+def test_delete_page_evicts_public_response_cache():
+    overviews = [_overview("m1")]
+    manager, _ = _manager(monitors=[SimpleNamespace(id="m1")], overviews=overviews)
+    created = _create(manager, monitor_ids=["m1"])
+    page = asyncio.run(manager.get_page_by_slug(created.slug))
+    asyncio.run(manager.build_public_response(page, overviews, revision=1))
+    assert created.slug in StatusPageManager._public_response_cache
+
+    asyncio.run(manager.delete_page(created.id))
+
+    assert created.slug not in StatusPageManager._public_response_cache
+
+
 def test_get_public_page_uses_dashboard_overviews():
     overviews = [_overview("m1", status=MonitorStatus.UP)]
     manager, _ = _manager(monitors=[SimpleNamespace(id="m1")], overviews=overviews)

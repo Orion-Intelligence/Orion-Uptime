@@ -63,6 +63,8 @@ class OrionIntelligence:
     FEEDER_SCRIPTS_PATH = "/api/profile/feeder/scripts"
     FEEDER_SOCIAL_PATH = "social/platform"
     FEEDER_SOCIAL_SECTION = "social"
+    FEEDER_SOCIAL_CATEGORY = "social"
+    FEEDER_SOCIAL_SUBCATEGORY = "platform"
     FEEDER_ENTRY_TYPE = "scripts"
     FEEDER_PAGE_LIMIT = 1000
     FEEDER_MAX_PAGES = 10
@@ -88,6 +90,9 @@ class Intervals:
     WATCHDOG_INTERVAL_SECONDS = 30
     KEEP_ALIVE_SECONDS = 15
     PUBLIC_REFRESH_SECONDS = 60
+    REALTIME_DEBOUNCE_SECONDS = 0.05
+    REALTIME_COALESCE_SECONDS = 0.5
+    AVERAGE_RESPONSE_WINDOW_HOURS = 24
 
 
 class Cookies:

@@ -102,16 +102,24 @@ def test_average_response_time_rounds_result():
     manager, collection = _manager()
     collection.aggregate = lambda pipeline: SimpleNamespace(to_list=_async_return([{"avg": 123.456}]))
 
-    result = asyncio.run(manager.average_response_time())
+    result = asyncio.run(manager.average_response_time(["m1"]))
 
     assert result == 123.46
+
+
+def test_average_response_time_returns_zero_without_monitor_ids():
+    manager, _ = _manager()
+
+    result = asyncio.run(manager.average_response_time([]))
+
+    assert result == 0.0
 
 
 def test_average_response_time_defaults_to_zero():
     manager, collection = _manager()
     collection.aggregate = lambda pipeline: SimpleNamespace(to_list=_async_return([]))
 
-    result = asyncio.run(manager.average_response_time())
+    result = asyncio.run(manager.average_response_time(["m1"]))
 
     assert result == 0.0
 
@@ -141,10 +149,18 @@ def test_get_latest_per_monitor_returns_models():
     ]
     collection.aggregate = lambda pipeline: SimpleNamespace(to_list=_async_return(documents))
 
-    result = asyncio.run(manager.get_latest_per_monitor())
+    result = asyncio.run(manager.get_latest_per_monitor(["m1", "m2"]))
 
     assert [item.monitor_id for item in result] == ["m1", "m2"]
     assert all(isinstance(item, MonitorResultModel) for item in result)
+
+
+def test_get_latest_per_monitor_returns_empty_without_monitor_ids():
+    manager, _ = _manager()
+
+    result = asyncio.run(manager.get_latest_per_monitor([]))
+
+    assert result == []
 
 
 def test_get_response_history_filters_by_monitor():

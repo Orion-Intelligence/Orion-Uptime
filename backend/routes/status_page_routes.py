@@ -105,7 +105,7 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
         last_snapshot_at = asyncio.get_running_loop().time()
         try:
             yield "retry: 1000\n\n"
-            yield _event("snapshot", await service.build_public_response(page, snapshot["overviews"]), snapshot["revision"])
+            yield _event("snapshot", await service.build_public_response(page, snapshot["overviews"], snapshot["revision"]), snapshot["revision"])
             while not await request.is_disconnected():
                 elapsed = asyncio.get_running_loop().time() - last_snapshot_at
                 timeout = min(Intervals.KEEP_ALIVE_SECONDS, max(0.1, Intervals.PUBLIC_REFRESH_SECONDS - elapsed))
@@ -114,7 +114,7 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
                 except TimeoutError:
                     if asyncio.get_running_loop().time() - last_snapshot_at >= Intervals.PUBLIC_REFRESH_SECONDS:
                         current_snapshot = await realtime_broker.get_snapshot(is_admin=False)
-                        yield _event("snapshot", await service.build_public_response(page, current_snapshot["overviews"]), current_snapshot["revision"])
+                        yield _event("snapshot", await service.build_public_response(page, current_snapshot["overviews"], current_snapshot["revision"]), current_snapshot["revision"])
                         last_snapshot_at = asyncio.get_running_loop().time()
                         continue
                     yield ": keep-alive\n\n"
@@ -131,7 +131,7 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
                         return
                     page = updated_page
 
-                yield _event("snapshot", await service.build_public_response(page, update.common_snapshot["overviews"]), update.revision)
+                yield _event("snapshot", await service.build_public_response(page, update.common_snapshot["overviews"], update.revision), update.revision)
                 last_snapshot_at = asyncio.get_running_loop().time()
         finally:
             realtime_broker.unsubscribe(queue)

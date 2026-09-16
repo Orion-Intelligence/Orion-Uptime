@@ -12,7 +12,6 @@ import orion.api.interactive.orion_login_manager.orion_token_manager as auth_tok
 import orion.management.jobs.monitoring_controller.scheduler as scheduler_state
 import orion.management.managers.service_manager as service_manager
 from orion.management.managers.service_manager import ServiceManager, Services
-from orion.shared_models.exceptions import NotFoundError
 from tests.scripts.service_manager.fixtures import reset_service_manager
 from tests.scripts.service_manager.helpers import _async_noop, _async_return, _engine, _fake_scheduler_class, _overview, _patch_init_infra, _placeholder_services
 
@@ -91,18 +90,20 @@ def test_admin_resources_gathers_every_service_listing():
     }
 
 
-def test_changed_monitor_details_filters_and_suppresses_not_found():
-    async def get_monitor_detail(entity_id):
-        if entity_id == "missing":
-            raise NotFoundError("missing")
-        return {"id": entity_id}
+def test_changed_monitor_details_selects_from_overviews_and_skips_unknown():
+    async def get_for_monitors(ids):
+        return {"m1": ["incident"]}
 
-    dashboard = SimpleNamespace(get_monitor_detail=get_monitor_detail)
+    dashboard = SimpleNamespace(
+        build_monitor_detail=lambda overview, incidents: {"id": overview.id, "incidents": incidents},
+        incident_service=SimpleNamespace(get_for_monitors=get_for_monitors),
+    )
+    overviews = [SimpleNamespace(id="m1"), SimpleNamespace(id="m2")]
     changed = [("monitor", "m1"), ("monitor", None), ("status_page", "s1"), ("monitor", "missing")]
 
-    details = asyncio.run(ServiceManager.changed_monitor_details(dashboard, changed))
+    details = asyncio.run(ServiceManager.changed_monitor_details(dashboard, changed, overviews))
 
-    assert details == {"m1": {"id": "m1"}}
+    assert details == {"m1": {"id": "m1", "incidents": ["incident"]}}
 
 
 def test_build_realtime_snapshot_raises_when_services_missing():
@@ -115,7 +116,8 @@ def test_build_realtime_snapshot_common_and_admin_views():
     overviews = [_overview("m1", "HTTP")]
     dashboard = SimpleNamespace(
         collect_snapshot_sections=_async_return(("summary", "incidents", "activity", overviews)),
-        get_monitor_detail=_async_return({"id": "m1"}),
+        build_monitor_detail=lambda overview, incidents: {"id": overview.id},
+        incident_service=SimpleNamespace(get_for_monitors=_async_return({})),
     )
     services = _placeholder_services(
         dashboard_service=dashboard,

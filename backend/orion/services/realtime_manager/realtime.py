@@ -6,6 +6,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from orion.constants.constant import Intervals
+
 SnapshotFactory = Callable[[tuple[tuple[str, str | None], ...], bool], Awaitable[tuple[dict[str, Any], dict[str, Any]]]]
 
 
@@ -73,12 +75,14 @@ class RealtimeBroker:
         self._subscribers.clear()
 
     async def _refresh_pending(self) -> None:
-        await asyncio.sleep(0.05)
+        await asyncio.sleep(Intervals.REALTIME_DEBOUNCE_SECONDS)
         while self._pending_changes:
             changed = tuple(sorted(self._pending_changes, key=lambda item: (item[0], item[1] or "")))
             self._pending_changes.clear()
             with contextlib.suppress(Exception):
                 await self._rebuild(changed, broadcast=True, include_admin=any(self._subscribers.values()))
+            if self._pending_changes:
+                await asyncio.sleep(Intervals.REALTIME_COALESCE_SECONDS)
 
     async def _rebuild(self, changed: tuple[tuple[str, str | None], ...], *, broadcast: bool, include_admin: bool) -> None:
         async with self._build_lock:
