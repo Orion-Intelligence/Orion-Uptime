@@ -142,6 +142,10 @@ html.orion-navigated .page-enter {
   animation: orion-fade-in 320ms ease-out both;
 }
 
+.dashboard-enter {
+  animation: orion-fade-in 350ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .fade-in,
   .fade-out,
@@ -150,6 +154,7 @@ html.orion-navigated .page-enter {
   .overlay-in,
   .overlay-out,
   .list-item-enter,
+  .dashboard-enter,
   html.orion-navigated .page-enter {
     animation: none;
   }

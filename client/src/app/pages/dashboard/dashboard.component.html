@@ -1,9 +1,9 @@
-<div animate.enter="page-enter" id="dashboard-page" data-testid="dashboard-main" class="tw:mx-auto tw:max-w-[1600px]">
+<div id="dashboard-page" data-testid="dashboard-main" class="dashboard-enter tw:mx-auto tw:max-w-[1600px]">
 
   @if (loading()) {
     <div animate.enter="fade-in" animate.leave="fade-out" class="loading-line tw:fixed tw:inset-x-0 tw:top-0 tw:z-[1400]" role="status" aria-label="Loading dashboard"></div>
   }
-    <div animate.enter="fade-in" animate.leave="fade-out" class="dashboard-content">
+    <div class="dashboard-content">
       <header class="page-header tw:mb-7 tw:flex tw:items-start tw:justify-between tw:gap-6 tw:max-[640px]:flex-col tw:max-[640px]:gap-4">
         <div class="tw:min-w-0">
           <p class="eyebrow tw:mb-2 tw:flex tw:items-center tw:gap-2 tw:text-[10px] tw:font-semibold tw:tracking-[0.14em] tw:text-[#1176d4] tw:uppercase tw:dark:text-[#87c4f5]">
