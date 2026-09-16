@@ -1,6 +1,9 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
-import { DashboardIncident } from '../../shared/model/models';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DashboardActivity, DashboardIncident, DashboardSummary, MonitorOverview } from '../../shared/model/models';
+import { ApiService } from '../../services/core/api.service';
+import { DashboardService } from '../../services/dashboard/dashboard.service';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
@@ -10,12 +13,19 @@ import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.compo
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
+  private readonly dashboard = inject(DashboardService);
+  private readonly destroyRef = inject(DestroyRef);
   readonly realtime = inject(RealtimeService);
-  readonly summary = this.realtime.summary;
-  readonly incidents = this.realtime.incidents;
-  readonly activity = this.realtime.activity;
-  readonly loading = computed(() => this.realtime.snapshot() === null);
-  readonly error = this.realtime.error;
+
+  readonly summary = signal<DashboardSummary | null>(null);
+  readonly incidents = signal<DashboardIncident[]>([]);
+  readonly activity = signal<DashboardActivity[]>([]);
+  readonly overviews = signal<MonitorOverview[]>([]);
+  readonly summaryLoading = signal(true);
+  readonly incidentsLoading = signal(true);
+  readonly activityLoading = signal(true);
+  readonly error = signal('');
+  readonly loading = computed(() => this.summaryLoading() || this.incidentsLoading() || this.activityLoading());
   readonly healthSegments = computed(() => {
     const data = this.summary();
     if (!data) {
@@ -39,8 +49,7 @@ export class DashboardComponent {
     ];
   });
   readonly overallUptime = computed(() => {
-    const percentages = this.realtime
-      .overviews()
+    const percentages = this.overviews()
       .filter((overview) => overview.is_active)
       .map((overview) => this.realtime.liveUptimePercentage(overview))
       .filter((value): value is number => value !== null);
@@ -52,10 +61,51 @@ export class DashboardComponent {
 
   constructor() {
     this.realtime.connect();
+    this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => {
+      this.summary.set(snapshot.summary);
+      this.incidents.set(snapshot.incidents);
+      this.activity.set(snapshot.activity);
+      this.overviews.set(snapshot.overviews);
+      this.summaryLoading.set(false);
+      this.incidentsLoading.set(false);
+      this.activityLoading.set(false);
+    });
+    this.loadDashboard();
   }
 
   loadDashboard(): void {
-    this.realtime.reconnect();
+    this.error.set('');
+    this.summaryLoading.set(true);
+    this.incidentsLoading.set(true);
+    this.activityLoading.set(true);
+    this.dashboard.getSummary().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.summary.set(data);
+        this.summaryLoading.set(false);
+      },
+      error: (err) => {
+        this.error.set(ApiService.errorMessage(err));
+        this.summaryLoading.set(false);
+      },
+    });
+    this.dashboard.getActivity().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.activity.set(data);
+        this.activityLoading.set(false);
+      },
+      error: () => this.activityLoading.set(false),
+    });
+    this.dashboard.getIncidents().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        this.incidents.set(data);
+        this.incidentsLoading.set(false);
+      },
+      error: () => this.incidentsLoading.set(false),
+    });
+    this.dashboard.getOverviews().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => this.overviews.set(data),
+      error: () => undefined,
+    });
   }
 
   formatDuration(seconds: number | null): string {
