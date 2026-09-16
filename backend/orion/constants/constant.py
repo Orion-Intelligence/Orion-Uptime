@@ -65,6 +65,7 @@ class OrionIntelligence:
     FEEDER_SOCIAL_SECTION = "social"
     FEEDER_SOCIAL_CATEGORY = "social"
     FEEDER_SOCIAL_SUBCATEGORY = "platform"
+    FEEDER_FORUM_SUBCATEGORY = "forum"
     FEEDER_ENTRY_TYPE = "scripts"
     FEEDER_PAGE_LIMIT = 1000
     FEEDER_MAX_PAGES = 10

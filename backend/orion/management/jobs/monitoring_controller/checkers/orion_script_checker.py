@@ -141,7 +141,7 @@ class OrionScriptChecker(HttpCheckerBase):
 
     @staticmethod
     def _section(script: dict, rule_key: str | None, rule_paths: dict[str, str]) -> str | None:
-        if script.get("category_key") == OrionIntelligence.FEEDER_SOCIAL_CATEGORY and script.get("subcategory_key") == OrionIntelligence.FEEDER_SOCIAL_SUBCATEGORY:
+        if script.get("category_key") == OrionIntelligence.FEEDER_SOCIAL_CATEGORY and script.get("subcategory_key") != OrionIntelligence.FEEDER_FORUM_SUBCATEGORY:
             return OrionIntelligence.FEEDER_SOCIAL_SECTION
         path = script.get("path") or (rule_paths.get(rule_key) if rule_key else None)
         social_path = OrionIntelligence.FEEDER_SOCIAL_PATH
