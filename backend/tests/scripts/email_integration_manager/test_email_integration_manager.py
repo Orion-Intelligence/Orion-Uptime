@@ -209,7 +209,7 @@ def test_send_smtp_uses_ssl_client_without_login(monkeypatch):
     monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
     monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
     monkeypatch.setenv("SMTP_SECURITY", "ssl")
-    monkeypatch.delenv("SMTP_USERNAME", raising=False)
+    monkeypatch.setenv("SMTP_USERNAME", "")
     manager, _ = _manager()
     _, message = _smtp_message(manager)
 
@@ -227,7 +227,7 @@ def test_deliver_sends_via_smtp_when_no_sender_configured(monkeypatch):
     monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
     monkeypatch.setenv("SMTP_FROM_EMAIL", "alerts@example.com")
     monkeypatch.setenv("SMTP_SECURITY", "starttls")
-    monkeypatch.delenv("SMTP_USERNAME", raising=False)
+    monkeypatch.setenv("SMTP_USERNAME", "")
     manager, _ = _manager()
     integration, message = _smtp_message(manager)
 

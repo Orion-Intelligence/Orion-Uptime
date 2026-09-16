@@ -13,6 +13,7 @@ from bson import ObjectId
 from bson.errors import InvalidId
 from jwt import PyJWTError
 from odmantic import AIOEngine
+from starlette.concurrency import run_in_threadpool
 
 from configs.app_dependency import AppDependency
 from orion.constants.constant import Collections, Intervals, Limits, Messages
@@ -33,30 +34,30 @@ class RefreshReplay:
 
 class PasswordManager:
     def __init__(self) -> None:
-        self._hasher = PasswordHasher()
+        self._hasher = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
 
-    def hash_password(self, password: str) -> str:
-        return self._hasher.hash(password)
+    async def hash_password(self, password: str) -> str:
+        return await run_in_threadpool(self._hasher.hash, password)
 
-    def verify_password(self, password: str, hashed_password: str) -> bool:
+    async def verify_password(self, password: str, hashed_password: str) -> bool:
         try:
-            return self._hasher.verify(hashed_password, password)
+            return await run_in_threadpool(self._hasher.verify, hashed_password, password)
         except (VerifyMismatchError, VerificationError):
             return False
 
 
 class RefreshTokenManager:
     def __init__(self) -> None:
-        self._hasher = PasswordHasher()
+        self._hasher = PasswordHasher(time_cost=2, memory_cost=19456, parallelism=1)
         self._locks: dict[str, asyncio.Lock] = {}
         self._replays: dict[str, RefreshReplay] = {}
 
-    def hash_token(self, token: str) -> str:
-        return self._hasher.hash(token)
+    async def hash_token(self, token: str) -> str:
+        return await run_in_threadpool(self._hasher.hash, token)
 
-    def verify_token(self, token: str, hashed_token: str) -> bool:
+    async def verify_token(self, token: str, hashed_token: str) -> bool:
         try:
-            return self._hasher.verify(hashed_token, token)
+            return await run_in_threadpool(self._hasher.verify, hashed_token, token)
         except (VerifyMismatchError, VerificationError):
             return False
 
@@ -170,13 +171,13 @@ class AuthManager:
             raise AuthenticationError(Messages.INVALID_CREDENTIALS)
 
         user = UserModel(**with_string_id(document))
-        if user.id is None or not self.password_service.verify_password(password=password, hashed_password=user.password_hash):
+        if user.id is None or not await self.password_service.verify_password(password=password, hashed_password=user.password_hash):
             raise AuthenticationError(Messages.INVALID_CREDENTIALS)
         if not user.is_active:
             raise AuthenticationError(Messages.USER_DISABLED)
 
         refresh_token, refresh_token_expires_at = self.jwt_service.create_refresh_token(user_id=user.id, username=user.username, role=user.role)
-        refresh_token_hash = self.refresh_token_service.hash_token(refresh_token)
+        refresh_token_hash = await self.refresh_token_service.hash_token(refresh_token)
         now = datetime.now(UTC)
         updated = await self.collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"refresh_token_hash": refresh_token_hash, "refresh_token_expires_at": refresh_token_expires_at, "last_login": now, "updated_at": now}})
         if updated.matched_count == 0:
@@ -218,11 +219,11 @@ class AuthManager:
                 refresh_token_expires_at = refresh_token_expires_at.replace(tzinfo=UTC)
             if refresh_token_expires_at <= datetime.now(UTC):
                 raise AuthenticationError(Messages.INVALID_REFRESH_TOKEN)
-            if not self.refresh_token_service.verify_token(refresh_token, user.refresh_token_hash):
+            if not await self.refresh_token_service.verify_token(refresh_token, user.refresh_token_hash):
                 raise AuthenticationError(Messages.INVALID_REFRESH_TOKEN)
 
             new_refresh_token, new_refresh_token_expires_at = self.jwt_service.create_refresh_token(user_id=user.id, username=user.username, role=user.role)
-            new_refresh_token_hash = self.refresh_token_service.hash_token(new_refresh_token)
+            new_refresh_token_hash = await self.refresh_token_service.hash_token(new_refresh_token)
             rotated = await self.collection.update_one({"_id": object_id, "refresh_token_hash": user.refresh_token_hash}, {"$set": {"refresh_token_hash": new_refresh_token_hash, "refresh_token_expires_at": new_refresh_token_expires_at, "updated_at": datetime.now(UTC)}})
             if rotated.modified_count == 0:
                 raise AuthenticationError(Messages.INVALID_REFRESH_TOKEN)
