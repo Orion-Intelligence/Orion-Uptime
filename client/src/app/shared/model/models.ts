@@ -236,8 +236,21 @@ export interface PublicOrionFeeder {
   status: 'up' | 'down' | 'unknown';
   is_active: boolean;
   last_checked_at: string | null;
+}
+
+export interface PublicOrionFeederUptime {
+  key: string;
   uptime_90_days: number | null;
   daily_uptime: DailyUptime[];
+}
+
+export interface PublicOrionScriptUptime {
+  script_id: string;
+  generated_at: string;
+  refresh_interval_seconds: number;
+  section: string | null;
+  uptime_status: PublicUptimeStatus | null;
+  feeders: PublicOrionFeederUptime[];
 }
 
 export interface PublicOrionScript {

@@ -61,8 +61,6 @@ class PublicOrionFeederResponse(BaseModel):
     status: MonitorStatus
     is_active: bool
     last_checked_at: datetime | None
-    uptime_90_days: float | None
-    daily_uptime: list[DailyUptimeResponse]
 
 
 class PublicOrionScriptResponse(BaseModel):
@@ -79,6 +77,21 @@ class PublicUptimeStatusResponse(BaseModel):
     last_7_days: float | None
     last_30_days: float | None
     last_90_days: float | None
+
+
+class PublicOrionFeederUptimeResponse(BaseModel):
+    key: str
+    uptime_90_days: float | None
+    daily_uptime: list[DailyUptimeResponse]
+
+
+class PublicOrionScriptUptimeResponse(BaseModel):
+    script_id: str
+    generated_at: datetime
+    refresh_interval_seconds: int = 60
+    section: str | None = None
+    uptime_status: PublicUptimeStatusResponse | None = None
+    feeders: list[PublicOrionFeederUptimeResponse] = Field(default_factory=list)
 
 
 class PublicStatusPageResponse(BaseModel):

@@ -4,7 +4,7 @@ import asyncio
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from odmantic import AIOEngine
@@ -15,7 +15,7 @@ from orion.constants.constant import Intervals
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.auth.authorization import require_admin
 from orion.services.mongo_manager.mongo_controller import get_engine
-from orion.services.mongo_manager.shared_model.db_status_page_model import CreateStatusPageRequest, PublicMonitorDetailResponse, PublicStatusPageResponse, StatusPageResponse, UpdateStatusPageRequest
+from orion.services.mongo_manager.shared_model.db_status_page_model import CreateStatusPageRequest, PublicMonitorDetailResponse, PublicOrionScriptUptimeResponse, PublicStatusPageResponse, StatusPageResponse, UpdateStatusPageRequest
 from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_broker
 from orion.shared_models.exceptions import NotFoundError
 from orion.shared_models.responses import SuccessResponse, success_response
@@ -42,6 +42,12 @@ async def get_public_page(slug: str, service: StatusPageManager = Depends(get_st
 @router.get("/public/{slug}/monitors/{monitor_id}", response_model=SuccessResponse[PublicMonitorDetailResponse])
 async def get_public_monitor_detail(slug: str, monitor_id: str, service: StatusPageManager = Depends(get_status_page_service)):
     return success_response(message="Public monitor details retrieved successfully.", data=await service.get_public_monitor_detail(slug, monitor_id))
+
+
+@router.get("/public/{slug}/orion-scripts/{script_id}/uptime", response_model=SuccessResponse[PublicOrionScriptUptimeResponse])
+async def get_public_orion_script_uptime(slug: str, script_id: str, response: Response, section: str | None = None, service: StatusPageManager = Depends(get_status_page_service)):
+    response.headers["Cache-Control"] = "public, max-age=30"
+    return success_response(message="Public orion script uptime retrieved successfully.", data=await service.get_public_orion_script_uptime(slug, script_id, section))
 
 
 @router.get("/public/{slug}/monitors/{monitor_id}/events")

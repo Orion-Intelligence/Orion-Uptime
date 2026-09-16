@@ -25,7 +25,9 @@ from orion.services.mongo_manager.shared_model.db_status_page_model import (
     PublicMonitorEventResponse,
     PublicMonitorStatusResponse,
     PublicOrionFeederResponse,
+    PublicOrionFeederUptimeResponse,
     PublicOrionScriptResponse,
+    PublicOrionScriptUptimeResponse,
     PublicResponseTimeMetrics,
     PublicResponseTimePoint,
     PublicStatusPageResponse,
@@ -219,7 +221,7 @@ class StatusPageManager(IntegrationCollectionMixin):
         now = datetime.now(UTC)
         uptime_data = await self._uptime_data([overview.id for overview in selected], now)
         public_monitors = self._build_public_monitors(selected, uptime_data, now)
-        orion_scripts = await self._build_orion_scripts(orion_overviews, now)
+        orion_scripts = await self._build_orion_scripts(orion_overviews)
 
         return PublicStatusPageResponse(name=page.name, slug=page.slug, description=page.description, overall_status=overall_status, monitor_count=len(selected), monitors_up=monitors_up, monitors_down=monitors_down, monitors_unknown=monitors_unknown, monitors_paused=monitors_paused, generated_at=now, uptime_status=self._uptime_status(uptime_data), monitors=public_monitors, orion_scripts=orion_scripts)
 
@@ -227,14 +229,12 @@ class StatusPageManager(IntegrationCollectionMixin):
         lookup = self._uptime_lookup(uptime_data, now)
         return [PublicMonitorStatusResponse(**overview.model_dump(), **self._uptime_fields(overview.id, lookup)) for overview in overviews]
 
-    async def _build_orion_scripts(self, overviews: list[MonitorOverviewResponse], now: datetime) -> list[PublicOrionScriptResponse]:
+    async def _build_orion_scripts(self, overviews: list[MonitorOverviewResponse]) -> list[PublicOrionScriptResponse]:
         monitors: list[tuple[MonitorOverviewResponse, OrionScriptMonitorModel]] = []
         for overview in overviews:
             monitor = await self.monitor_service.get_monitor(overview.id, MonitorType.ORION_SCRIPT)
             if isinstance(monitor, OrionScriptMonitorModel):
                 monitors.append((overview, monitor))
-        feeder_ids = [feeder_result_id(overview.id, feeder.key) for overview, monitor in monitors for feeder in monitor.feeders]
-        lookup = self._uptime_lookup(await self._uptime_data(feeder_ids, now) if feeder_ids else {}, now)
         return [
             PublicOrionScriptResponse(
                 id=overview.id,
@@ -242,10 +242,31 @@ class StatusPageManager(IntegrationCollectionMixin):
                 status=overview.status,
                 is_active=overview.is_active,
                 last_checked_at=overview.last_checked_at,
-                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, section=feeder.section, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at, **self._uptime_fields(feeder_result_id(overview.id, feeder.key), lookup)) for feeder in monitor.feeders],
+                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, section=feeder.section, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at) for feeder in monitor.feeders],
             )
             for overview, monitor in monitors
         ]
+
+    async def get_public_orion_script_uptime(self, slug: str, script_id: str, section: str | None = None) -> PublicOrionScriptUptimeResponse:
+        page = await self.get_page_by_slug(slug)
+        if script_id not in page.monitor_ids:
+            raise NotFoundError("Monitor not found on this status page.")
+        monitor = await self.monitor_service.get_monitor(script_id, MonitorType.ORION_SCRIPT)
+        if not isinstance(monitor, OrionScriptMonitorModel):
+            raise NotFoundError("Monitor not found on this status page.")
+
+        feeders = [feeder for feeder in monitor.feeders if section is None or (feeder.section or feeder.rule_key or "") == section]
+        now = datetime.now(UTC)
+        feeder_ids = [feeder_result_id(script_id, feeder.key) for feeder in feeders]
+        uptime_data = await self._uptime_data(feeder_ids, now) if feeder_ids else {}
+        lookup = self._uptime_lookup(uptime_data, now)
+        return PublicOrionScriptUptimeResponse(
+            script_id=script_id,
+            generated_at=now,
+            section=section,
+            uptime_status=self._uptime_status(uptime_data),
+            feeders=[PublicOrionFeederUptimeResponse(key=feeder.key, **self._uptime_fields(feeder_result_id(script_id, feeder.key), lookup)) for feeder in feeders],
+        )
 
     @classmethod
     def _uptime_lookup(cls, uptime_data: dict, now: datetime) -> tuple[dict, dict, list[str]]:

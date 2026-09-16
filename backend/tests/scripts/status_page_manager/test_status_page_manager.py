@@ -9,6 +9,7 @@ from bson import ObjectId
 
 from orion.api.interactive.status_page_manager.status_page_manager import StatusPageManager
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
+from orion.services.mongo_manager.shared_model.db_orion_script_monitor_model import OrionFeederStatus, OrionScriptMonitorModel, feeder_result_id
 from orion.services.mongo_manager.shared_model.db_status_page_model import UpdateStatusPageRequest
 from orion.shared_models.exceptions import NotFoundError, ValidationError
 from tests.scripts.status_page_manager.fixtures import clear_caches
@@ -192,6 +193,65 @@ def test_get_public_monitor_detail_rejects_unknown_monitor():
     created = _create(manager, monitor_ids=["m1"])
     with pytest.raises(NotFoundError):
         asyncio.run(manager.get_public_monitor_detail(created.slug, "not-on-page"))
+
+
+def _orion_monitor(script_id="s1"):
+    return OrionScriptMonitorModel(
+        id=script_id,
+        name="Orion",
+        url="https://orion.example.com",
+        check_interval=300,
+        timeout=10,
+        created_at=NOW,
+        updated_at=NOW,
+        feeders=[
+            OrionFeederStatus(key="f1", name="_f1.py", rule_key="apt", section="apt", status=MonitorStatus.UP, enabled=True, last_checked_at=NOW),
+            OrionFeederStatus(key="f2", name="_f2.py", rule_key="twitter", section="social", status=MonitorStatus.UP, enabled=True, last_checked_at=NOW),
+        ],
+    )
+
+
+def _breakdown(script_id="s1"):
+    return {
+        "daily": [{"_id": {"monitor_id": feeder_result_id(script_id, "f1"), "date": NOW.date().isoformat()}, "successful": 9, "total": 10}],
+        "monitors_90": [{"_id": feeder_result_id(script_id, "f1"), "successful": 90, "total": 100}],
+        "overall_24": [{"uptime_percentage": 99.5}],
+        "overall_7": [{"uptime_percentage": 99.0}],
+        "overall_30": [{"uptime_percentage": 98.0}],
+        "overall_90": [{"uptime_percentage": 97.0}],
+    }
+
+
+def test_orion_script_uptime_returns_feeder_bars_and_windows():
+    manager, _ = _manager(monitors=[SimpleNamespace(id="s1")], get_monitor=_orion_monitor(), uptime_breakdown=_breakdown())
+    created = _create(manager, monitor_ids=["s1"])
+
+    result = asyncio.run(manager.get_public_orion_script_uptime(created.slug, "s1"))
+
+    assert result.script_id == "s1"
+    assert result.uptime_status.last_24_hours == 99.5
+    by_key = {feeder.key: feeder for feeder in result.feeders}
+    assert set(by_key) == {"f1", "f2"}
+    assert by_key["f1"].uptime_90_days == 90.0
+    assert len(by_key["f1"].daily_uptime) == 90
+    assert by_key["f2"].uptime_90_days is None
+
+
+def test_orion_script_uptime_filters_by_section():
+    manager, _ = _manager(monitors=[SimpleNamespace(id="s1")], get_monitor=_orion_monitor(), uptime_breakdown=_breakdown())
+    created = _create(manager, monitor_ids=["s1"])
+
+    result = asyncio.run(manager.get_public_orion_script_uptime(created.slug, "s1", section="social"))
+
+    assert [feeder.key for feeder in result.feeders] == ["f2"]
+
+
+def test_orion_script_uptime_rejects_unknown_script():
+    manager, _ = _manager(monitors=[SimpleNamespace(id="s1")], get_monitor=_orion_monitor())
+    created = _create(manager, monitor_ids=["s1"])
+
+    with pytest.raises(NotFoundError):
+        asyncio.run(manager.get_public_orion_script_uptime(created.slug, "not-on-page"))
 
 
 def test_percentage_and_window_helpers():
