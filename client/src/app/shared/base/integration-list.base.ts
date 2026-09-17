@@ -61,6 +61,7 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
       },
       error: (error: unknown) => {
         this.deletingId.set('');
+        this.deleteTarget.set(null);
         this.error.set(ApiService.errorMessage(error));
       },
     });
@@ -76,7 +77,9 @@ export abstract class IntegrationListBase<T extends IntegrationSummary> extends 
       }
       this.integrations.set(select(snapshot.resources));
       this.overviews.set(Object.fromEntries(snapshot.overviews.map((overview) => [overview.id, overview])));
-      this.error.set('');
+      if (this.loading() && this.error() === this.realtime.error()) {
+        this.error.set('');
+      }
       this.loading.set(false);
     });
   }

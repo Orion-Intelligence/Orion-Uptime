@@ -82,7 +82,7 @@ describe('Monitor list navigation', () => {
     cy.get(testId('log-source')).first().should('contain.text', 'ProfileManager');
     cy.get(testId('log-page-number')).should('contain.text', 'Page 1');
     cy.get(testId('log-page-previous')).should('not.exist');
-    cy.get(testId('log-page-next')).should('not.exist');
+    cy.get(testId('log-page-next')).should('be.visible').and('be.disabled');
     cy.get(testId('log-refresh-button')).click();
     cy.wait('@systemLogs');
     cy.get(testId('log-row')).should('have.length', 3);

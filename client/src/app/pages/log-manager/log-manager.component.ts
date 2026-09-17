@@ -164,7 +164,7 @@ export class LogManagerComponent {
           this.page.set(data?.page ?? 1);
           this.limit.set(data?.limit ?? this.limit());
           this.total.set(data?.total ?? null);
-          this.hasMore.set((data?.logs?.length ?? 0) > 0);
+          this.hasMore.set(Boolean(data?.has_more));
           this.sourceProfileName.set(data?.source_profile_name ?? null);
         },
         error: (error: unknown) => {

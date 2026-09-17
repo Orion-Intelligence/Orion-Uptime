@@ -123,7 +123,9 @@ export class MonitorListComponent extends NoticePageBase {
         return;
       }
       this.overviews.set(Object.fromEntries(snapshot.overviews.map((overview) => [overview.id, overview])),);
-      this.error.set('');
+      if (this.loading() && this.error() === this.realtime.error()) {
+        this.error.set('');
+      }
       this.loading.set(false);
     });
   }
@@ -221,6 +223,7 @@ export class MonitorListComponent extends NoticePageBase {
       error: (error: unknown) => {
         this.error.set(ApiService.errorMessage(error));
         this.deletingId.set('');
+        this.deleteTarget.set(null);
       },
     });
   }
