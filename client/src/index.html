@@ -6,20 +6,22 @@
     <base href="/" />
     <script>
       (function () {
+        var path = window.location.pathname;
+        var isPublicStatus = path.indexOf('/status/') === 0;
         var theme = 'light';
-        if (window.location.pathname.indexOf('/status/') !== 0) {
-          try {
-            var stored = window.localStorage.getItem('orion-uptime-theme');
-            if (stored === 'dark' || stored === 'light') {
-              theme = stored;
-            }
-          } catch (error) {
+        var signedIn = false;
+        try {
+          var stored = window.localStorage.getItem('orion-uptime-theme');
+          if (!isPublicStatus && (stored === 'dark' || stored === 'light')) {
+            theme = stored;
           }
+          signedIn = window.localStorage.getItem('orion-uptime-signed-in') === '1';
+        } catch (error) {
         }
         var root = document.documentElement;
         root.classList.remove('dark-theme', 'light-theme');
         root.classList.add(theme + '-theme');
-        if (window.location.pathname === '/login') {
+        if (!isPublicStatus && !signedIn) {
           root.classList.add('login-boot');
         }
         window.setTimeout(function () { root.classList.add('orion-ready'); }, 3000);
