@@ -143,12 +143,12 @@ html.orion-navigated .page-enter {
 }
 
 .orion-enter {
-  opacity: 0;
+  opacity: 0%;
   transition: opacity 400ms ease-out;
 }
 
 .orion-enter.orion-enter-in {
-  opacity: 1;
+  opacity: 100%;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -164,7 +164,7 @@ html.orion-navigated .page-enter {
   }
 
   .orion-enter {
-    opacity: 1;
+    opacity: 100%;
     transition: none;
   }
 }
