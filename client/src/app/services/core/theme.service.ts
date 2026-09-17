@@ -3,23 +3,48 @@ import { DOCUMENT, inject, Injectable, PLATFORM_ID, signal } from '@angular/core
 
 type AppTheme = 'dark' | 'light';
 
+const THEME_STORAGE_KEY = 'orion-uptime-theme';
+
 @Injectable({ providedIn: 'root' })
 export class ThemeService {
   private readonly document = inject(DOCUMENT);
   private readonly platformId = inject(PLATFORM_ID);
 
-  readonly theme = signal<AppTheme>('light');
+  readonly theme = signal<AppTheme>(this.storedTheme() ?? 'light');
 
   constructor() {
-    if (isPlatformBrowser(this.platformId)) {
-      window.localStorage.removeItem('orion-uptime-theme');
-    }
     this.applyTheme();
   }
 
   toggle(): void {
     this.theme.update((theme) => (theme === 'dark' ? 'light' : 'dark'));
+    this.persistTheme();
     this.applyTheme();
+  }
+
+  private storedTheme(): AppTheme | null {
+    if (!isPlatformBrowser(this.platformId)) {
+      return null;
+    }
+    try {
+      const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+      return stored === 'dark' || stored === 'light' ? stored : null;
+    }
+    catch {
+      return null;
+    }
+  }
+
+  private persistTheme(): void {
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
+    }
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, this.theme());
+    }
+    catch {
+      return;
+    }
   }
 
   private applyTheme(): void {

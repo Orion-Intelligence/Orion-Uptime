@@ -4,7 +4,41 @@
     <meta charset="utf-8" />
     <title>Orion Uptime · Orion Intelligence</title>
     <base href="/" />
-    <script src="/theme-init.js"></script>
+    <script>
+      (function () {
+        var theme = 'light';
+        if (window.location.pathname.indexOf('/status/') !== 0) {
+          try {
+            var stored = window.localStorage.getItem('orion-uptime-theme');
+            if (stored === 'dark' || stored === 'light') {
+              theme = stored;
+            }
+          } catch (error) {
+          }
+        }
+        var root = document.documentElement;
+        root.classList.remove('dark-theme', 'light-theme');
+        root.classList.add(theme + '-theme');
+        if (window.location.pathname === '/login') {
+          root.classList.add('login-boot');
+        }
+        window.setTimeout(function () { root.classList.add('orion-ready'); }, 3000);
+      })();
+    </script>
+    <style>
+      html, body { margin: 0; min-height: 100%; background-color: #edf4fb; }
+      html.dark-theme, html.dark-theme body { background-color: #0e1626; }
+      html.login-boot, html.login-boot body { background-color: #0e1626; }
+      @media (max-width: 943px) {
+        html.login-boot, html.login-boot body { background-color: #fff; }
+      }
+      app-root { display: block; opacity: 0; }
+      html.orion-ready app-root { opacity: 1; transition: opacity 260ms ease-out; }
+      @media (prefers-reduced-motion: reduce) {
+        app-root { opacity: 1; }
+        html.orion-ready app-root { transition: none; }
+      }
+    </style>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Orion Uptime monitors HTTP, API, ping and heartbeat targets, tracks incidents, and publishes public status pages." />
     <link rel="icon" type="image/png" href="/favicon.png" />
