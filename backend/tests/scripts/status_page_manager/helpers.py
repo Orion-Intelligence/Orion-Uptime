@@ -25,12 +25,12 @@ def _overview(monitor_id, *, monitor_type="HTTP", status=MonitorStatus.UP, is_ac
     return MonitorOverviewResponse(id=monitor_id, name=f"Monitor {monitor_id}", monitor_type=monitor_type, status=status, is_active=is_active, created_at=NOW, last_checked_at=NOW, uptime_percentage=None, current_uptime_seconds=0, latest_downtime_seconds=0, measurement_seconds=0, downtime_seconds=0, snapshot_at=NOW)
 
 
-def _dashboard(overviews, response_time=None, incidents=None):
+def _dashboard(overviews, response_time=None, incidents=None, uptime_breakdown=None):
     async def get_monitor_overviews():
         return overviews
 
     async def get_public_uptime_breakdown(ids, now):
-        return {}
+        return uptime_breakdown or {}
 
     async def get_public_response_time(monitor_id, now):
         return response_time or {"points": [], "metrics": []}
@@ -45,11 +45,15 @@ def _dashboard(overviews, response_time=None, incidents=None):
     )
 
 
-def _manager(monitors=None, overviews=None, response_time=None, incidents=None):
+def _manager(monitors=None, overviews=None, response_time=None, incidents=None, get_monitor=None, uptime_breakdown=None):
     collection = FakeCollection()
     engine = SimpleNamespace(database={Collections.STATUS_PAGES: collection})
-    monitor_service = SimpleNamespace(list_monitors=_async_return(monitors or []))
-    return StatusPageManager(engine, monitor_service, _dashboard(overviews or [], response_time, incidents)), collection
+
+    async def get_monitor_fn(_monitor_id, _monitor_type=None):
+        return get_monitor
+
+    monitor_service = SimpleNamespace(list_monitors=_async_return(monitors or []), get_monitor=get_monitor_fn)
+    return StatusPageManager(engine, monitor_service, _dashboard(overviews or [], response_time, incidents, uptime_breakdown)), collection
 
 
 def _create(manager, name="Public", description="", monitor_ids=None):

@@ -4,7 +4,7 @@ import asyncio
 import json
 from typing import Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import StreamingResponse
 from odmantic import AIOEngine
@@ -16,7 +16,7 @@ from orion.management.jobs.monitoring_controller.monitoring_controller import Mo
 from orion.services.auth.authorization import require_admin
 from orion.services.mongo_manager.mongo_controller import get_engine
 from orion.services.mongo_manager.shared_model.db_insight_model import MonitorOverviewResponse
-from orion.services.mongo_manager.shared_model.db_status_page_model import CreateStatusPageRequest, PublicMonitorDetailResponse, PublicStatusPageResponse, StatusPageResponse, UpdateStatusPageRequest
+from orion.services.mongo_manager.shared_model.db_status_page_model import CreateStatusPageRequest, PublicMonitorDetailResponse, PublicOrionScriptUptimeResponse, PublicStatusPageResponse, StatusPageResponse, UpdateStatusPageRequest
 from orion.services.realtime_manager.realtime import RealtimeUpdate, realtime_broker
 from orion.shared_models.exceptions import NotFoundError
 from orion.shared_models.responses import SuccessResponse, success_response
@@ -48,6 +48,12 @@ async def get_public_page(slug: str, service: StatusPageManager = Depends(get_st
 @router.get("/public/{slug}/monitors/{monitor_id}", response_model=SuccessResponse[PublicMonitorDetailResponse])
 async def get_public_monitor_detail(slug: str, monitor_id: str, service: StatusPageManager = Depends(get_status_page_service)):
     return success_response(message="Public monitor details retrieved successfully.", data=await service.get_public_monitor_detail(slug, monitor_id))
+
+
+@router.get("/public/{slug}/orion-scripts/{script_id}/uptime", response_model=SuccessResponse[PublicOrionScriptUptimeResponse])
+async def get_public_orion_script_uptime(slug: str, script_id: str, response: Response, section: str | None = None, service: StatusPageManager = Depends(get_status_page_service)):
+    response.headers["Cache-Control"] = "public, max-age=30"
+    return success_response(message="Public orion script uptime retrieved successfully.", data=await service.get_public_orion_script_uptime(slug, script_id, section))
 
 
 @router.get("/public/{slug}/monitors/{monitor_id}/events")
@@ -111,7 +117,7 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
         last_snapshot_at = asyncio.get_running_loop().time()
         try:
             yield "retry: 1000\n\n"
-            yield _event("snapshot", await service.build_public_response(page, _overviews_from(snapshot)), snapshot["revision"])
+            yield _event("snapshot", await service.build_public_response(page, _overviews_from(snapshot), snapshot["revision"]), snapshot["revision"])
             while not await request.is_disconnected():
                 elapsed = asyncio.get_running_loop().time() - last_snapshot_at
                 timeout = min(Intervals.KEEP_ALIVE_SECONDS, max(0.1, Intervals.PUBLIC_REFRESH_SECONDS - elapsed))
@@ -120,7 +126,7 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
                 except TimeoutError:
                     if asyncio.get_running_loop().time() - last_snapshot_at >= Intervals.PUBLIC_REFRESH_SECONDS:
                         current_snapshot = await realtime_broker.get_snapshot()
-                        yield _event("snapshot", await service.build_public_response(page, _overviews_from(current_snapshot)), current_snapshot["revision"])
+                        yield _event("snapshot", await service.build_public_response(page, _overviews_from(current_snapshot), current_snapshot["revision"]), current_snapshot["revision"])
                         last_snapshot_at = asyncio.get_running_loop().time()
                         continue
                     yield ": keep-alive\n\n"
@@ -137,7 +143,7 @@ async def stream_public_page(slug: str, request: Request, service: StatusPageMan
                         return
                     page = updated_page
 
-                yield _event("snapshot", await service.build_public_response(page, _overviews_from(await realtime_broker.get_snapshot())), update.revision)
+                yield _event("snapshot", await service.build_public_response(page, _overviews_from(await realtime_broker.get_snapshot()), update.revision), update.revision)
                 last_snapshot_at = asyncio.get_running_loop().time()
         finally:
             realtime_broker.unsubscribe(queue)

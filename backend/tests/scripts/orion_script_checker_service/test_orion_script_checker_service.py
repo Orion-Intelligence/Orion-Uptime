@@ -182,6 +182,24 @@ def test_build_feeders_groups_nested_social_platform_paths_under_social_section(
     assert by_key["p4"].section == "leak"
 
 
+def test_build_feeders_groups_every_social_category_script_under_social_section():
+    scripts = [
+        {"id": "p1", "rule_key": "facebook", "file_name": "_facebook.py", "category_key": "social", "subcategory_key": "platform"},
+        {"id": "p2", "rule_key": "linkedin", "file_name": "_linkedin.py", "category_key": "social", "subcategory_key": "__root__"},
+        {"id": "p3", "rule_key": "imgur", "file_name": "_imgur.py", "path": "social/platform"},
+        {"id": "p4", "rule_key": "leak", "file_name": "_leak.py", "category_key": "leak", "subcategory_key": "leak"},
+        {"id": "p5", "rule_key": "some_forum", "file_name": "_some_forum.py", "category_key": "social", "subcategory_key": "forum", "path": "social/forum"},
+    ]
+    feeders = OrionScriptChecker.build_feeders(scripts, {})
+    by_key = {feeder.key: feeder for feeder in feeders}
+
+    assert by_key["p1"].section == "social"
+    assert by_key["p2"].section == "social"
+    assert by_key["p3"].section == "social"
+    assert by_key["p4"].section == "leak"
+    assert by_key["p5"].section == "some_forum"
+
+
 def test_checker_reports_down_when_catalog_has_no_rules_array():
     checker = OrionScriptChecker(token_manager=FakeTokenManager([_profile()]), client=httpx.AsyncClient(transport=httpx.MockTransport(_route(httpx.Response(200, json=_scripts_payload()), catalog_response=lambda request: httpx.Response(200, json={"rules": "oops"})))))
     result = _run(checker, _monitor())

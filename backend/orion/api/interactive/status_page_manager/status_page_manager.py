@@ -25,7 +25,9 @@ from orion.services.mongo_manager.shared_model.db_status_page_model import (
     PublicMonitorEventResponse,
     PublicMonitorStatusResponse,
     PublicOrionFeederResponse,
+    PublicOrionFeederUptimeResponse,
     PublicOrionScriptResponse,
+    PublicOrionScriptUptimeResponse,
     PublicResponseTimeMetrics,
     PublicResponseTimePoint,
     PublicStatusPageResponse,
@@ -41,8 +43,25 @@ from orion.shared_models.exceptions import NotFoundError, ValidationError
 class StatusPageManager(IntegrationCollectionMixin):
     _uptime_cache: ClassVar[dict[tuple[str, ...], tuple[float, dict]]] = {}
     _detail_history_cache: ClassVar[dict[str, tuple[float, dict, list]]] = {}
+    _public_response_cache: ClassVar[dict[str, tuple[int, datetime, PublicStatusPageResponse]]] = {}
+    _uptime_locks: ClassVar[dict[tuple[str, ...], asyncio.Lock]] = {}
+    _detail_locks: ClassVar[dict[str, asyncio.Lock]] = {}
+    _response_locks: ClassVar[dict[str, asyncio.Lock]] = {}
     _uptime_cache_seconds = 55
-    _cache_lock = asyncio.Lock()
+
+    @staticmethod
+    def _lock_for(registry: dict, key) -> asyncio.Lock:
+        lock = registry.get(key)
+        if lock is None:
+            lock = asyncio.Lock()
+            registry[key] = lock
+        return lock
+
+    @staticmethod
+    def _prune_locks(registry: dict, cap: int = 512) -> None:
+        if len(registry) > cap:
+            for key in [key for key, lock in registry.items() if not lock.locked()]:
+                registry.pop(key, None)
 
     def __init__(self, engine: AIOEngine, monitor_service: MonitorManager, dashboard_service: DashboardManager) -> None:
         self.collection = engine.database[Collections.STATUS_PAGES]
@@ -121,9 +140,13 @@ class StatusPageManager(IntegrationCollectionMixin):
             object_id = ObjectId(page_id)
         except (InvalidId, TypeError) as exc:
             raise NotFoundError("Status page not found.") from exc
+        page = self._model(await self.collection.find_one({"_id": object_id}))
         result = await self.collection.delete_one({"_id": object_id})
         if result.deleted_count == 0:
             raise NotFoundError("Status page not found.")
+        if page is not None:
+            self._public_response_cache.pop(page.slug, None)
+            self._response_locks.pop(page.slug, None)
         realtime_broker.notify("status_page", page_id)
 
     async def get_public_page(self, slug: str) -> PublicStatusPageResponse:
@@ -158,7 +181,25 @@ class StatusPageManager(IntegrationCollectionMixin):
             recent_events=self._recent_events(overview, incidents),
         )
 
-    async def build_public_response(self, page: StatusPageModel, overviews: list[MonitorOverviewResponse]) -> PublicStatusPageResponse:
+    async def build_public_response(self, page: StatusPageModel, overviews: list[MonitorOverviewResponse], revision: int | None = None) -> PublicStatusPageResponse:
+        if revision is None:
+            return await self._build_public_response(page, overviews)
+        cached = self._public_response_cache.get(page.slug)
+        if cached is not None and cached[0] == revision and cached[1] == page.updated_at:
+            return self._emit_public_response(cached[2])
+        async with self._lock_for(self._response_locks, page.slug):
+            cached = self._public_response_cache.get(page.slug)
+            if cached is not None and cached[0] == revision and cached[1] == page.updated_at:
+                return self._emit_public_response(cached[2])
+            response = await self._build_public_response(page, overviews)
+            self._public_response_cache[page.slug] = (revision, page.updated_at, response)
+            return response
+
+    @staticmethod
+    def _emit_public_response(response: PublicStatusPageResponse) -> PublicStatusPageResponse:
+        return response.model_copy(update={"generated_at": datetime.now(UTC)})
+
+    async def _build_public_response(self, page: StatusPageModel, overviews: list[MonitorOverviewResponse]) -> PublicStatusPageResponse:
         overview_map = {overview.id: overview for overview in overviews}
         published = [overview_map[monitor_id] for monitor_id in page.monitor_ids if monitor_id in overview_map]
         orion_overviews = [overview for overview in published if overview.monitor_type == MonitorType.ORION_SCRIPT.value]
@@ -180,7 +221,7 @@ class StatusPageManager(IntegrationCollectionMixin):
         now = datetime.now(UTC)
         uptime_data = await self._uptime_data([overview.id for overview in selected], now)
         public_monitors = self._build_public_monitors(selected, uptime_data, now)
-        orion_scripts = await self._build_orion_scripts(orion_overviews, now)
+        orion_scripts = await self._build_orion_scripts(orion_overviews)
 
         return PublicStatusPageResponse(name=page.name, slug=page.slug, description=page.description, overall_status=overall_status, monitor_count=len(selected), monitors_up=monitors_up, monitors_down=monitors_down, monitors_unknown=monitors_unknown, monitors_paused=monitors_paused, generated_at=now, uptime_status=self._uptime_status(uptime_data), monitors=public_monitors, orion_scripts=orion_scripts)
 
@@ -188,14 +229,12 @@ class StatusPageManager(IntegrationCollectionMixin):
         lookup = self._uptime_lookup(uptime_data, now)
         return [PublicMonitorStatusResponse(**overview.model_dump(), **self._uptime_fields(overview.id, lookup)) for overview in overviews]
 
-    async def _build_orion_scripts(self, overviews: list[MonitorOverviewResponse], now: datetime) -> list[PublicOrionScriptResponse]:
+    async def _build_orion_scripts(self, overviews: list[MonitorOverviewResponse]) -> list[PublicOrionScriptResponse]:
         monitors: list[tuple[MonitorOverviewResponse, OrionScriptMonitorModel]] = []
         for overview in overviews:
             monitor = await self.monitor_service.get_monitor(overview.id, MonitorType.ORION_SCRIPT)
             if isinstance(monitor, OrionScriptMonitorModel):
                 monitors.append((overview, monitor))
-        feeder_ids = [feeder_result_id(overview.id, feeder.key) for overview, monitor in monitors for feeder in monitor.feeders]
-        lookup = self._uptime_lookup(await self._uptime_data(feeder_ids, now) if feeder_ids else {}, now)
         return [
             PublicOrionScriptResponse(
                 id=overview.id,
@@ -203,10 +242,31 @@ class StatusPageManager(IntegrationCollectionMixin):
                 status=overview.status,
                 is_active=overview.is_active,
                 last_checked_at=overview.last_checked_at,
-                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, section=feeder.section, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at, **self._uptime_fields(feeder_result_id(overview.id, feeder.key), lookup)) for feeder in monitor.feeders],
+                feeders=[PublicOrionFeederResponse(key=feeder.key, name=feeder.name, rule_key=feeder.rule_key, section=feeder.section, status=feeder.status, is_active=overview.is_active and feeder.enabled, last_checked_at=feeder.last_checked_at) for feeder in monitor.feeders],
             )
             for overview, monitor in monitors
         ]
+
+    async def get_public_orion_script_uptime(self, slug: str, script_id: str, section: str | None = None) -> PublicOrionScriptUptimeResponse:
+        page = await self.get_page_by_slug(slug)
+        if script_id not in page.monitor_ids:
+            raise NotFoundError("Monitor not found on this status page.")
+        monitor = await self.monitor_service.get_monitor(script_id, MonitorType.ORION_SCRIPT)
+        if not isinstance(monitor, OrionScriptMonitorModel):
+            raise NotFoundError("Monitor not found on this status page.")
+
+        feeders = [feeder for feeder in monitor.feeders if section is None or (feeder.section or feeder.rule_key or "") == section]
+        now = datetime.now(UTC)
+        feeder_ids = [feeder_result_id(script_id, feeder.key) for feeder in feeders]
+        uptime_data = await self._uptime_data(feeder_ids, now) if feeder_ids else {}
+        lookup = self._uptime_lookup(uptime_data, now)
+        return PublicOrionScriptUptimeResponse(
+            script_id=script_id,
+            generated_at=now,
+            section=section,
+            uptime_status=self._uptime_status(uptime_data),
+            feeders=[PublicOrionFeederUptimeResponse(key=feeder.key, **self._uptime_fields(feeder_result_id(script_id, feeder.key), lookup)) for feeder in feeders],
+        )
 
     @classmethod
     def _uptime_lookup(cls, uptime_data: dict, now: datetime) -> tuple[dict, dict, list[str]]:
@@ -251,7 +311,7 @@ class StatusPageManager(IntegrationCollectionMixin):
         if cached is not None and current_time - cached[0] < self._uptime_cache_seconds:
             return cached[1]
 
-        async with self._cache_lock:
+        async with self._lock_for(self._uptime_locks, cache_key):
             cached = self._uptime_cache.get(cache_key)
             current_time = time.monotonic()
             if cached is not None and current_time - cached[0] < self._uptime_cache_seconds:
@@ -267,7 +327,7 @@ class StatusPageManager(IntegrationCollectionMixin):
         if cached is not None and current_time - cached[0] < self._uptime_cache_seconds:
             return cached[1], cached[2]
 
-        async with self._cache_lock:
+        async with self._lock_for(self._detail_locks, monitor_id):
             cached = self._detail_history_cache.get(monitor_id)
             current_time = time.monotonic()
             if cached is not None and current_time - cached[0] < self._uptime_cache_seconds:
@@ -288,6 +348,11 @@ class StatusPageManager(IntegrationCollectionMixin):
             expired_details = [key for key, value in cls._detail_history_cache.items() if current_time - value[0] >= cls._uptime_cache_seconds]
             for key in expired_details:
                 cls._detail_history_cache.pop(key, None)
+        while len(cls._public_response_cache) > 256:
+            cls._public_response_cache.pop(next(iter(cls._public_response_cache)), None)
+        cls._prune_locks(cls._uptime_locks)
+        cls._prune_locks(cls._detail_locks)
+        cls._prune_locks(cls._response_locks)
 
     @staticmethod
     def _window_percentage(data: dict, key: str) -> float | None:

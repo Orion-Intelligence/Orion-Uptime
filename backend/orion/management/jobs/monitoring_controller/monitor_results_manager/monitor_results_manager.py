@@ -6,7 +6,7 @@ from typing import Any
 
 from odmantic import AIOEngine
 
-from orion.constants.constant import Collections
+from orion.constants.constant import Collections, Intervals
 from orion.services.mongo_manager.documents import with_string_id
 from orion.services.mongo_manager.shared_model.db_monitor_result_model import MonitorResultModel
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
@@ -48,9 +48,11 @@ class MonitorResultManager:
             documents.append(MonitorResultModel(monitor_id=result_id, monitor_type=MonitorType.ORION_SCRIPT, status=feeder.status, status_code=None, response_time_ms=None, success=feeder.status == MonitorStatus.UP, is_slow=False, checked_at=now).model_dump(exclude={"id"}))
         await self.collection.insert_many(documents)
 
-    async def average_response_time(self) -> float:
-        cutoff = datetime.now(UTC) - timedelta(hours=24)
-        pipeline = [{"$match": {"response_time_ms": {"$ne": None}, "checked_at": {"$gte": cutoff}}}, {"$group": {"_id": None, "avg": {"$avg": "$response_time_ms"}}}]
+    async def average_response_time(self, monitor_ids: list[str]) -> float:
+        if not monitor_ids:
+            return 0.0
+        window_start = datetime.now(UTC) - timedelta(hours=Intervals.AVERAGE_RESPONSE_WINDOW_HOURS)
+        pipeline = [{"$match": {"monitor_id": {"$in": monitor_ids}, "response_time_ms": {"$ne": None}, "checked_at": {"$gte": window_start}}}, {"$group": {"_id": None, "avg": {"$avg": "$response_time_ms"}}}]
         result = await self.collection.aggregate(pipeline).to_list(1)
         if not result:
             return 0.0

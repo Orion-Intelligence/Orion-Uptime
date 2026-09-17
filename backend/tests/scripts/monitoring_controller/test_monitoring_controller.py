@@ -406,3 +406,66 @@ def test_process_heartbeat_records_and_transitions():
     assert names == ["record", "update", "resolve"]
     assert calls[0][2]["monitor_id"] == "hb1"
     assert calls[1][2]["status"] == MonitorStatus.UP
+
+
+def _health(success: bool) -> HealthCheckResponse:
+    return HealthCheckResponse(url="https://x", status=MonitorStatus.UP if success else MonitorStatus.DOWN, status_code=200 if success else 503, response_time_ms=10, success=success, is_slow=False)
+
+
+class _QueuedChecker:
+    def __init__(self, results):
+        self._results = iter(results)
+        self.calls = 0
+
+    async def check(self, _monitor):
+        self.calls += 1
+        return next(self._results)
+
+
+def _api_monitor(status=MonitorStatus.UP):
+    return SimpleNamespace(persisted_id="api1", monitor_type=MonitorType.API, status=status, timeout=5, url="https://x", name="api", host=None)
+
+
+def _downgrade_manager(*, would_transition=True):
+    state = SimpleNamespace(failure_would_transition_down=_async_return(would_transition))
+    return _manager(state=state)
+
+
+def test_confirm_api_downgrade_recovers_when_a_retry_succeeds(monkeypatch):
+    monkeypatch.setattr(Intervals, "API_TRANSITION_RETRY_GAP_SECONDS", 0)
+    checker = _QueuedChecker([_health(True)])
+
+    result = asyncio.run(_downgrade_manager()._confirm_api_downgrade(_api_monitor(), checker, _health(False)))
+
+    assert result.success is True
+    assert checker.calls == 1
+
+
+def test_confirm_api_downgrade_commits_after_three_failed_retries(monkeypatch):
+    monkeypatch.setattr(Intervals, "API_TRANSITION_RETRY_GAP_SECONDS", 0)
+    checker = _QueuedChecker([_health(False), _health(False), _health(False)])
+
+    result = asyncio.run(_downgrade_manager()._confirm_api_downgrade(_api_monitor(), checker, _health(False)))
+
+    assert result.success is False
+    assert checker.calls == 3
+
+
+def test_confirm_api_downgrade_skips_when_failure_would_not_transition():
+    checker = _QueuedChecker([])
+    failure = _health(False)
+
+    result = asyncio.run(_downgrade_manager(would_transition=False)._confirm_api_downgrade(_api_monitor(), checker, failure))
+
+    assert result is failure
+    assert checker.calls == 0
+
+
+def test_confirm_api_downgrade_skips_non_api_and_success():
+    manager = _downgrade_manager()
+    failure = _health(False)
+    http_monitor = SimpleNamespace(persisted_id="h1", monitor_type=MonitorType.HTTP, status=MonitorStatus.UP)
+    assert asyncio.run(manager._confirm_api_downgrade(http_monitor, None, failure)) is failure
+
+    success = _health(True)
+    assert asyncio.run(manager._confirm_api_downgrade(_api_monitor(), None, success)) is success

@@ -5,7 +5,7 @@ from orion.api.interactive.incident_manager.incident_manager import IncidentMana
 from orion.constants.constant import Messages
 from orion.management.jobs.monitoring_controller.monitor_results_manager.monitor_results_manager import MonitorResultManager
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
-from orion.services.mongo_manager.shared_model.db_insight_model import DashboardActivityResponse, DashboardIncidentResponse, DashboardSummaryResponse, MonitorDetailResponse, MonitorIncidentResponse, MonitorOverviewResponse, ResponseHistoryPoint, ResponseHistoryResponse, StatusHistoryPoint, StatusHistoryResponse, UptimeResponse
+from orion.services.mongo_manager.shared_model.db_insight_model import DashboardActivityResponse, DashboardIncidentResponse, DashboardSnapshotResponse, DashboardSummaryResponse, MonitorDetailResponse, MonitorIncidentResponse, MonitorOverviewResponse, ResponseHistoryPoint, ResponseHistoryResponse, StatusHistoryPoint, StatusHistoryResponse, UptimeResponse
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from orion.shared_models.exceptions import NotFoundError
 
@@ -18,25 +18,9 @@ class DashboardManager:
         self.monitor_result_service = monitor_result_service
         self.incident_service = incident_service
 
-    async def get_summary(self) -> DashboardSummaryResponse:
-        monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
-        monitor_ids = [m.id for m in monitors if m.id]
-        latest_results = await self.monitor_result_service.get_latest_per_monitor(monitor_ids, limit=max(len(monitors), 1))
-        open_incidents = await self.incident_service.count_open()
-        average_response_time = await self.monitor_result_service.average_response_time()
-        overviews = await self._overviews_for(monitors)
-        return self._build_summary(monitors, monitor_map, latest_results, open_incidents, average_response_time, overviews)
-
-    async def get_recent_incidents(self) -> list[DashboardIncidentResponse]:
-        incidents = await self.incident_service.get_recent()
-        _, monitor_map = await self.monitor_service.get_monitors_with_lookup()
-        return self._build_recent_incidents(incidents, monitor_map)
-
-    async def get_recent_activity(self) -> list[DashboardActivityResponse]:
-        monitors, monitor_map = await self.monitor_service.get_monitors_with_lookup()
-        monitor_ids = [m.id for m in monitors if m.id]
-        results = await self.monitor_result_service.get_latest_per_monitor(monitor_ids)
-        return self._build_recent_activity(results, monitor_map)
+    async def get_snapshot(self) -> DashboardSnapshotResponse:
+        summary, incidents, activity, overviews = await self.collect_snapshot_sections()
+        return DashboardSnapshotResponse(summary=summary, incidents=incidents, activity=activity, overviews=overviews)
 
     async def get_monitor_overviews(self) -> list[MonitorOverviewResponse]:
         return await self._overviews_for(await self.monitor_service.list_monitors())
@@ -50,7 +34,7 @@ class DashboardManager:
             self.incident_service.get_recent(),
             self.monitor_result_service.get_latest_per_monitor(monitor_ids, limit=max(len(monitors), ACTIVITY_LIMIT)),
             self.incident_service.count_open(),
-            self.monitor_result_service.average_response_time(),
+            self.monitor_result_service.average_response_time(monitor_ids),
         )
         overviews = self._build_overviews(monitors, first_check_times, incidents_by_monitor)
         summary = self._build_summary(monitors, monitor_map, latest_results, open_incidents, average_response_time, overviews)
@@ -147,22 +131,10 @@ class DashboardManager:
             raise NotFoundError(Messages.MONITOR_NOT_FOUND)
 
         incidents = (await self.incident_service.get_for_monitors([monitor_id])).get(monitor_id, [])
-        return self._build_detail(overview, incidents)
-
-    async def build_monitor_details(self, overviews: list[MonitorOverviewResponse], monitor_ids) -> dict[str, MonitorDetailResponse]:
-        wanted = {monitor_id for monitor_id in monitor_ids if monitor_id is not None}
-        if not wanted:
-            return {}
-
-        selected = {overview.id: overview for overview in overviews if overview.id in wanted}
-        if not selected:
-            return {}
-
-        incidents_by_monitor = await self.incident_service.get_for_monitors(list(selected))
-        return {monitor_id: self._build_detail(overview, incidents_by_monitor.get(monitor_id, [])) for monitor_id, overview in selected.items()}
+        return self.build_monitor_detail(overview, incidents)
 
     @staticmethod
-    def _build_detail(overview: MonitorOverviewResponse, incidents) -> MonitorDetailResponse:
+    def build_monitor_detail(overview: MonitorOverviewResponse, incidents) -> MonitorDetailResponse:
         return MonitorDetailResponse(**overview.model_dump(), incidents=[MonitorIncidentResponse(id=incident.id, status="resolved" if incident.is_resolved else "open", reason=incident.reason, status_code=incident.status_code, started_at=incident.started_at, resolved_at=incident.resolved_at, duration_seconds=incident.duration_seconds) for incident in incidents if incident.id is not None])
 
     @staticmethod

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from orion.services.mongo_manager.shared_model.db_insight_model import DashboardSummaryResponse, MonitorDetailResponse, ResponseHistoryResponse, StatusHistoryResponse, UptimeResponse
+from orion.services.mongo_manager.shared_model.db_insight_model import DashboardSnapshotResponse, DashboardSummaryResponse, MonitorDetailResponse, ResponseHistoryResponse, StatusHistoryResponse, UptimeResponse
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 from routes import insight_routes
 from tests.model.fakes import FakeService
@@ -22,30 +22,19 @@ def _use(override, **returns):
     override(insight_routes.get_dashboard_service, lambda: FakeService(**returns))
 
 
-def test_get_summary(client, override, as_viewer):
-    _use(override, get_summary=_summary())
-    response = client.get("/api/dashboard/summary")
+def test_get_dashboard_snapshot(client, override, as_viewer):
+    _use(override, get_snapshot=DashboardSnapshotResponse(summary=_summary(), incidents=[], activity=[], overviews=[]))
+    response = client.get("/api/dashboard/snapshot")
     assert response.status_code == 200
-    assert response.json()["data"]["total_monitors"] == 1
+    body = response.json()["data"]
+    assert body["summary"]["total_monitors"] == 1
+    assert body["incidents"] == []
+    assert body["activity"] == []
+    assert body["overviews"] == []
 
 
-def test_get_dashboard_incidents(client, override, as_viewer):
-    _use(override, get_recent_incidents=[])
-    response = client.get("/api/dashboard/incidents")
-    assert response.status_code == 200
-    assert response.json()["data"] == []
-
-
-def test_get_dashboard_activity(client, override, as_viewer):
-    _use(override, get_recent_activity=[])
-    response = client.get("/api/dashboard/activity")
-    assert response.status_code == 200
-
-
-def test_get_monitor_overviews(client, override, as_viewer):
-    _use(override, get_monitor_overviews=[])
-    response = client.get("/api/dashboard/monitor-overviews")
-    assert response.status_code == 200
+def test_dashboard_snapshot_requires_authentication(client):
+    assert client.get("/api/dashboard/snapshot").status_code == 401
 
 
 def test_get_monitor_detail(client, override, as_viewer):

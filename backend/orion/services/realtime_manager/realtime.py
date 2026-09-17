@@ -2,17 +2,20 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
+from orion.constants.constant import Intervals
 from orion.management.managers.resource_catalog import resource_types_for
+
+logger = logging.getLogger("orion.uptime.realtime")
 
 SnapshotFactory = Callable[[tuple[tuple[str, str | None], ...]], Awaitable[dict[str, Any]]]
 
 METADATA_KEYS = ("generated_at", "revision", "changed")
 VOLATILE_SECTION_KEYS: dict[str, frozenset[str]] = {"overviews": frozenset({"snapshot_at"})}
-REFRESH_INTERVAL_SECONDS = 2.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -120,14 +123,20 @@ class RealtimeBroker:
         self._subscribers.clear()
 
     async def _refresh_pending(self) -> None:
+        await asyncio.sleep(Intervals.REALTIME_DEBOUNCE_SECONDS)
         while self._pending_changes or self._pending_resources:
             changed = tuple(sorted(self._pending_changes, key=lambda item: (item[0], item[1] or "")))
             resources = tuple(sorted(self._pending_resources))
             self._pending_changes.clear()
             self._pending_resources.clear()
-            with contextlib.suppress(Exception):
+            try:
                 await self._rebuild(changed, broadcast=True, resource_types=resources)
-            await asyncio.sleep(REFRESH_INTERVAL_SECONDS)
+            except Exception:
+                self._pending_changes.update(changed)
+                self._pending_resources.update(resources)
+                logger.warning("Real-time snapshot rebuild failed; changes re-queued for retry.", exc_info=True)
+            if self._pending_changes or self._pending_resources:
+                await asyncio.sleep(Intervals.REALTIME_COALESCE_SECONDS)
 
     async def _rebuild(self, changed: tuple[tuple[str, str | None], ...], *, broadcast: bool, resource_types: tuple[str, ...] = ()) -> None:
         async with self._build_lock:

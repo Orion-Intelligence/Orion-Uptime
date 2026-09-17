@@ -58,5 +58,13 @@ class MonitorStateManager:
 
         return MonitorStateResult(state=state, previous_status=previous_status, current_status=state.status, transition=transition)
 
+    async def failure_would_transition_down(self, monitor_id: str, monitor_type: MonitorType) -> bool:
+        state = await self.get_or_create(monitor_id, monitor_type)
+        if state.status == MonitorStatus.DOWN:
+            return False
+        load_dotenv()
+        failure_threshold = int(os.environ.get("MONITOR_FAILURE_THRESHOLD", str(Limits.DEFAULT_FAILURE_THRESHOLD)))
+        return state.consecutive_failures + 1 >= failure_threshold
+
     async def delete_for_monitor(self, monitor_id: str) -> None:
         await self.collection.delete_many({"monitor_id": monitor_id})

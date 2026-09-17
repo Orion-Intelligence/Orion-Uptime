@@ -1,9 +1,11 @@
 import { DatePipe, DecimalPipe, NgOptimizedImage, isPlatformBrowser } from '@angular/common';
-import { Component, computed, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Component, computed, effect, inject, PLATFORM_ID, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { PublicStreamPageBase } from '../../shared/base/public-stream.base';
+import { ApiService } from '../../services/core/api.service';
 import { buildUptimeWindows } from '../../shared/utils/uptime.util';
-import { PublicOrionFeeder, PublicOrionScript, PublicStatusMonitor, PublicStatusPage } from '../../shared/model/models';
+import { DailyUptime, PublicOrionFeeder, PublicOrionScript, PublicOrionScriptUptime, PublicStatusMonitor, PublicStatusPage } from '../../shared/model/models';
 
 const SOCIAL_SECTION = 'social';
 
@@ -38,7 +40,10 @@ interface OrionSection {
 })
 export class PublicStatusPageComponent extends PublicStreamPageBase {
   private readonly platformId = inject(PLATFORM_ID);
+  private readonly api = inject(ApiService);
   private readonly slug = inject(ActivatedRoute).snapshot.paramMap.get('slug') ?? '';
+  private readonly feederBars = signal<Record<string, Record<string, DailyUptime[]>>>({});
+  private readonly requestedTabs = new Set<string>();
 
   readonly page = signal<PublicStatusPage | null>(null);
   readonly monitorGroups = computed<MonitorGroup[]>(() => {
@@ -58,9 +63,17 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
     super();
     if (isPlatformBrowser(this.platformId)) {
       this.clockTimer = setInterval(() => {
-        this.now.set(Date.now()); 
+        this.now.set(Date.now());
       }, 1000);
       this.connect();
+      effect(() => {
+        for (const section of this.orionSections()) {
+          const tab = this.activeTab(section);
+          if (tab) {
+            this.loadTabUptime(section.script.id, tab.key);
+          }
+        }
+      });
     }
   }
 
@@ -71,6 +84,39 @@ export class PublicStatusPageComponent extends PublicStreamPageBase {
 
   selectTab(scriptId: string, tabKey: string): void {
     this.selectedTabs.update((tabs) => ({ ...tabs, [scriptId]: tabKey }));
+  }
+
+  barsReady(scriptId: string, tabKey: string): boolean {
+    return this.tabCacheKey(scriptId, tabKey) in this.feederBars();
+  }
+
+  feederDaily(scriptId: string, tabKey: string, feederKey: string): DailyUptime[] {
+    return this.feederBars()[this.tabCacheKey(scriptId, tabKey)]?.[feederKey] ?? [];
+  }
+
+  private tabCacheKey(scriptId: string, tabKey: string): string {
+    return scriptId + '::' + tabKey;
+  }
+
+  private loadTabUptime(scriptId: string, tabKey: string): void {
+    const cacheKey = this.tabCacheKey(scriptId, tabKey);
+    if (this.requestedTabs.has(cacheKey)) {
+      return;
+    }
+    this.requestedTabs.add(cacheKey);
+    const path = `/status-pages/public/${encodeURIComponent(this.slug)}/orion-scripts/${encodeURIComponent(scriptId)}/uptime?section=${encodeURIComponent(tabKey)}`;
+    this.api.get<PublicOrionScriptUptime>(path).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (response) => {
+        const bars: Record<string, DailyUptime[]> = {};
+        for (const feeder of response.data?.feeders ?? []) {
+          bars[feeder.key] = feeder.daily_uptime;
+        }
+        this.feederBars.update((current) => ({ ...current, [cacheKey]: bars }));
+      },
+      error: () => {
+        this.requestedTabs.delete(cacheKey);
+      },
+    });
   }
 
   feederName(feeder: PublicOrionFeeder): string {

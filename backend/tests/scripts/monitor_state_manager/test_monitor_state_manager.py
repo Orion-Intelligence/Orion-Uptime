@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 
 from orion.services.mongo_manager.shared_model.db_monitor_state_model import MonitorTransition
-from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
+from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus, MonitorType
 from tests.scripts.monitor_state_manager.helpers import _manager, _process
 
 
@@ -41,6 +41,26 @@ def test_first_success_from_unknown_becomes_up(monkeypatch):
     result = _process(manager, success=True)
     assert result.transition == MonitorTransition.UP
     assert result.current_status == MonitorStatus.UP
+
+
+def test_failure_would_transition_down_only_on_threshold_crossing(monkeypatch):
+    monkeypatch.setenv("MONITOR_FAILURE_THRESHOLD", "3")
+    manager, _ = _manager()
+
+    assert asyncio.run(manager.failure_would_transition_down("monitor-1", MonitorType.HTTP)) is False
+    _process(manager, success=False)
+    assert asyncio.run(manager.failure_would_transition_down("monitor-1", MonitorType.HTTP)) is False
+    _process(manager, success=False)
+    assert asyncio.run(manager.failure_would_transition_down("monitor-1", MonitorType.HTTP)) is True
+
+
+def test_failure_would_transition_down_is_false_when_already_down(monkeypatch):
+    monkeypatch.setenv("MONITOR_FAILURE_THRESHOLD", "2")
+    manager, _ = _manager()
+
+    _process(manager, success=False)
+    _process(manager, success=False)
+    assert asyncio.run(manager.failure_would_transition_down("monitor-1", MonitorType.HTTP)) is False
 
 
 def test_delete_for_monitor_removes_state(monkeypatch):

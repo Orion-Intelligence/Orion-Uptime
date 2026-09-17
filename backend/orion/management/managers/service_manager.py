@@ -169,10 +169,13 @@ class ServiceManager:
 
     @staticmethod
     async def changed_monitor_details(dashboard_service: DashboardManager, changed, overviews) -> dict:
-        monitor_ids = [entity_id for kind, entity_id in changed if kind == "monitor" and entity_id is not None]
-        if not monitor_ids:
+        changed_ids = {entity_id for kind, entity_id in changed if kind == "monitor" and entity_id is not None}
+        overview_map = {overview.id: overview for overview in overviews}
+        wanted = [entity_id for entity_id in changed_ids if entity_id in overview_map]
+        if not wanted:
             return {}
-        return await dashboard_service.build_monitor_details(overviews, monitor_ids)
+        incidents_by_monitor = await dashboard_service.incident_service.get_for_monitors(wanted)
+        return {entity_id: dashboard_service.build_monitor_detail(overview_map[entity_id], incidents_by_monitor.get(entity_id, [])) for entity_id in wanted}
 
     async def build_realtime_snapshot(self, changed):
         services = self.services

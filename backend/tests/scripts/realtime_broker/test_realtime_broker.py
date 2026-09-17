@@ -135,6 +135,29 @@ def test_notify_replaces_stale_update_when_queue_is_full():
     assert ("monitor", "monitor-1") in update.changed
 
 
+def test_failed_rebuild_requeues_change_and_recovers():
+    async def run():
+        broker = RealtimeBroker()
+        attempts = {"count": 0}
+
+        async def flaky_factory(_changed):
+            attempts["count"] += 1
+            if attempts["count"] == 1:
+                raise RuntimeError("transient rebuild failure")
+            return {"scope": "common"}
+
+        broker.configure(flaky_factory)
+        queue = broker.subscribe()
+        broker.notify("monitor", "monitor-1")
+        update = await asyncio.wait_for(queue.get(), timeout=5)
+        broker.unsubscribe(queue)
+        return update, attempts["count"]
+
+    update, attempts = asyncio.run(run())
+    assert attempts >= 2
+    assert ("monitor", "monitor-1") in update.changed
+
+
 def test_deliver_merges_partial_snapshot_for_followers():
     async def run():
         broker = RealtimeBroker()

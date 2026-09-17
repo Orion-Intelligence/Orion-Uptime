@@ -5,7 +5,7 @@ from orion.api.interactive.insight_manager.insight_manager import DashboardManag
 from orion.constants.constant import Messages
 from orion.management.jobs.monitoring_controller.monitoring_controller import MonitorManager
 from orion.services.auth.authorization import require_viewer
-from orion.services.mongo_manager.shared_model.db_insight_model import DashboardActivityResponse, DashboardIncidentResponse, DashboardSummaryResponse, MonitorDetailResponse, MonitorOverviewResponse, ResponseHistoryResponse, StatusHistoryResponse, UptimeResponse
+from orion.services.mongo_manager.shared_model.db_insight_model import DashboardSnapshotResponse, MonitorDetailResponse, ResponseHistoryResponse, StatusHistoryResponse, UptimeResponse
 from orion.shared_models.responses import SuccessResponse, success_response
 
 
@@ -22,24 +22,9 @@ def get_dashboard_service(monitor_service: MonitorManager = Depends(get_monitor_
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"], dependencies=[Depends(require_viewer())])
 
 
-@router.get("/summary", response_model=SuccessResponse[DashboardSummaryResponse])
-async def get_summary(service: DashboardManager = Depends(get_dashboard_service)):
-    return success_response(message=Messages.DASHBOARD_FETCHED, data=await service.get_summary())
-
-
-@router.get("/incidents", response_model=SuccessResponse[list[DashboardIncidentResponse]])
-async def get_dashboard_incidents(service: DashboardManager = Depends(get_dashboard_service)):
-    return success_response(message=Messages.DASHBOARD_FETCHED, data=await service.get_recent_incidents())
-
-
-@router.get("/activity", response_model=SuccessResponse[list[DashboardActivityResponse]])
-async def get_dashboard_activity(service: DashboardManager = Depends(get_dashboard_service)):
-    return success_response(message=Messages.DASHBOARD_FETCHED, data=await service.get_recent_activity())
-
-
-@router.get("/monitor-overviews", response_model=SuccessResponse[list[MonitorOverviewResponse]])
-async def get_monitor_overviews(service: DashboardManager = Depends(get_dashboard_service)):
-    return success_response(message=Messages.DASHBOARD_FETCHED, data=await service.get_monitor_overviews())
+@router.get("/snapshot", response_model=SuccessResponse[DashboardSnapshotResponse])
+async def get_dashboard_snapshot(service: DashboardManager = Depends(get_dashboard_service)):
+    return success_response(message=Messages.DASHBOARD_FETCHED, data=await service.get_snapshot())
 
 
 @router.get("/monitors/{monitor_id}", response_model=SuccessResponse[MonitorDetailResponse])

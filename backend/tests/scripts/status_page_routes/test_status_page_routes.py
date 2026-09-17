@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from types import SimpleNamespace
 
-from orion.services.mongo_manager.shared_model.db_status_page_model import PublicStatusPageResponse, PublicUptimeStatusResponse, StatusPageResponse
+from orion.services.mongo_manager.shared_model.db_status_page_model import PublicOrionFeederUptimeResponse, PublicOrionScriptUptimeResponse, PublicStatusPageResponse, PublicUptimeStatusResponse, StatusPageResponse
 from orion.shared_models.exceptions import NotFoundError
 from routes import status_page_routes
 from tests.model.fakes import FakeService
@@ -33,6 +33,21 @@ def test_get_public_page_is_public(client, override):
 def test_get_public_monitor_detail_not_found(client, override):
     _use(override, get_public_monitor_detail=NotFoundError("This public monitor is no longer available."))
     response = client.get("/api/status-pages/public/public/monitors/monitor-1")
+    assert response.status_code == 404
+
+
+def test_get_public_orion_script_uptime(client, override):
+    uptime = PublicOrionScriptUptimeResponse(script_id="s1", generated_at=NOW, feeders=[PublicOrionFeederUptimeResponse(key="f1", uptime_90_days=90.0, daily_uptime=[])])
+    _use(override, get_public_orion_script_uptime=uptime)
+    response = client.get("/api/status-pages/public/public/orion-scripts/s1/uptime")
+    assert response.status_code == 200
+    assert response.json()["data"]["script_id"] == "s1"
+    assert response.headers["cache-control"] == "public, max-age=30"
+
+
+def test_get_public_orion_script_uptime_not_found(client, override):
+    _use(override, get_public_orion_script_uptime=NotFoundError("Monitor not found on this status page."))
+    response = client.get("/api/status-pages/public/public/orion-scripts/nope/uptime")
     assert response.status_code == 404
 
 

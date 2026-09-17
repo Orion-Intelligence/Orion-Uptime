@@ -1,6 +1,9 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { Component, computed, inject } from '@angular/core';
-import { DashboardIncident } from '../../shared/model/models';
+import { Component, computed, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DashboardActivity, DashboardIncident, DashboardSummary, MonitorOverview, RealtimeSnapshot } from '../../shared/model/models';
+import { ApiService } from '../../services/core/api.service';
+import { DashboardService } from '../../services/dashboard/dashboard.service';
 import { RealtimeService } from '../../services/dashboard/realtime.service';
 import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.component';
 
@@ -10,12 +13,20 @@ import { SkeletonComponent } from '../../shared/partials/skeleton/skeleton.compo
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent {
+  private readonly dashboard = inject(DashboardService);
+  private readonly destroyRef = inject(DestroyRef);
+
   readonly realtime = inject(RealtimeService);
-  readonly summary = this.realtime.summary;
-  readonly incidents = this.realtime.incidents;
-  readonly activity = this.realtime.activity;
-  readonly loading = computed(() => this.realtime.snapshot() === null);
-  readonly error = this.realtime.error;
+  readonly summary = signal<DashboardSummary | null>(null);
+  readonly incidents = signal<DashboardIncident[]>([]);
+  readonly activity = signal<DashboardActivity[]>([]);
+  readonly overviews = signal<MonitorOverview[]>([]);
+  readonly summaryLoading = signal(true);
+  readonly incidentsLoading = signal(true);
+  readonly activityLoading = signal(true);
+  readonly refreshing = signal(false);
+  readonly error = signal('');
+  readonly loading = computed(() => this.summaryLoading() || this.incidentsLoading() || this.activityLoading());
   readonly healthSegments = computed(() => {
     const data = this.summary();
     if (!data) {
@@ -39,23 +50,80 @@ export class DashboardComponent {
     ];
   });
   readonly overallUptime = computed(() => {
-    const percentages = this.realtime
-      .overviews()
+    const overviews = this.overviews();
+    if (!overviews.length) {
+      return null;
+    }
+    const percentages = overviews
       .filter((overview) => overview.is_active)
       .map((overview) => this.realtime.liveUptimePercentage(overview))
       .filter((value): value is number => value !== null);
     if (!percentages.length) {
-      return 0;
+      return null;
     }
     return percentages.reduce((total, value) => total + value, 0) / percentages.length;
   });
 
   constructor() {
     this.realtime.connect();
+    this.realtime.snapshots$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((snapshot) => this.applySnapshot(snapshot));
+    if (!this.realtime.snapshot()) {
+      this.loadDashboard();
+    }
+  }
+
+  private applySnapshot(snapshot: RealtimeSnapshot): void {
+    this.summary.set(snapshot.summary);
+    this.incidents.set(snapshot.incidents);
+    this.activity.set(snapshot.activity);
+    this.overviews.set(snapshot.overviews);
+    this.summaryLoading.set(false);
+    this.incidentsLoading.set(false);
+    this.activityLoading.set(false);
+    this.refreshing.set(false);
+    this.error.set('');
+  }
+
+  refresh(): void {
+    this.error.set('');
+    if (this.realtime.snapshot()) {
+      this.refreshing.set(true);
+      this.realtime.reconnect();
+      return;
+    }
+    this.loadDashboard();
   }
 
   loadDashboard(): void {
-    this.realtime.reconnect();
+    this.error.set('');
+    if (!this.summary()) {
+      this.summaryLoading.set(true);
+    }
+    if (!this.activity().length) {
+      this.activityLoading.set(true);
+    }
+    if (!this.incidents().length) {
+      this.incidentsLoading.set(true);
+    }
+    this.dashboard.getSnapshot().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: (data) => {
+        if (!this.realtime.snapshot()) {
+          this.summary.set(data.summary);
+          this.incidents.set(data.incidents);
+          this.activity.set(data.activity);
+          this.overviews.set(data.overviews);
+        }
+        this.summaryLoading.set(false);
+        this.activityLoading.set(false);
+        this.incidentsLoading.set(false);
+      },
+      error: (err) => {
+        this.error.set(ApiService.errorMessage(err));
+        this.summaryLoading.set(false);
+        this.activityLoading.set(false);
+        this.incidentsLoading.set(false);
+      },
+    });
   }
 
   formatDuration(seconds: number | null): string {

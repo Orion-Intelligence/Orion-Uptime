@@ -19,6 +19,7 @@ export class RealtimeService {
   private clockTimer: ReturnType<typeof setInterval> | undefined;
   private retryAttempt = 0;
   private stopped = true;
+  private acceptNextSnapshot = false;
 
   readonly snapshot = signal<RealtimeSnapshot | null>(null);
   readonly error = signal('');
@@ -136,6 +137,7 @@ export class RealtimeService {
     if (this.stopped || this.source) {
       return;
     }
+    this.acceptNextSnapshot = true;
     const source = new EventSource('/api/events', { withCredentials: true });
     this.source = source;
     source.onopen = () => {
@@ -146,10 +148,11 @@ export class RealtimeService {
       try {
         const partial = JSON.parse((event as MessageEvent<string>).data) as Partial<RealtimeSnapshot>;
         const current = this.snapshot();
-        if ((partial.revision ?? 0) <= (current?.revision ?? 0)) {
+        if (!this.acceptNextSnapshot && (partial.revision ?? 0) <= (current?.revision ?? 0)) {
           return;
         }
-        const merged = { ...(current ?? {}), ...partial } as RealtimeSnapshot;
+        const merged = (this.acceptNextSnapshot ? partial : { ...(current ?? {}), ...partial }) as RealtimeSnapshot;
+        this.acceptNextSnapshot = false;
         this.snapshot.set(merged);
         this.updates.next(merged);
         this.error.set('');

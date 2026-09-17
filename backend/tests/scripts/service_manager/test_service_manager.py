@@ -48,32 +48,20 @@ def test_build_services_wires_dependencies():
     assert auth_token_state.token_manager.auth_profile_service is services.auth_profile_service
 
 
-def test_changed_monitor_details_forwards_only_monitor_ids():
-    received = {}
+def test_changed_monitor_details_selects_from_overviews_and_skips_unknown():
+    async def get_for_monitors(ids):
+        return {"m1": ["incident"]}
 
-    async def build_monitor_details(overviews, monitor_ids):
-        received["overviews"] = overviews
-        received["monitor_ids"] = list(monitor_ids)
-        return {monitor_id: {"id": monitor_id} for monitor_id in monitor_ids if monitor_id != "missing"}
-
-    dashboard = SimpleNamespace(build_monitor_details=build_monitor_details)
+    dashboard = SimpleNamespace(
+        build_monitor_detail=lambda overview, incidents: {"id": overview.id, "incidents": incidents},
+        incident_service=SimpleNamespace(get_for_monitors=get_for_monitors),
+    )
+    overviews = [SimpleNamespace(id="m1"), SimpleNamespace(id="m2")]
     changed = [("monitor", "m1"), ("monitor", None), ("status_page", "s1"), ("monitor", "missing")]
-    overviews = [_overview("m1", "HTTP")]
 
     details = asyncio.run(ServiceManager.changed_monitor_details(dashboard, changed, overviews))
 
-    assert received["monitor_ids"] == ["m1", "missing"]
-    assert received["overviews"] is overviews
-    assert details == {"m1": {"id": "m1"}}
-
-
-def test_changed_monitor_details_skips_lookup_without_monitor_changes():
-    async def build_monitor_details(overviews, monitor_ids):
-        raise AssertionError("build_monitor_details should not be called")
-
-    dashboard = SimpleNamespace(build_monitor_details=build_monitor_details)
-
-    assert asyncio.run(ServiceManager.changed_monitor_details(dashboard, [("status_page", "s1")], [])) == {}
+    assert details == {"m1": {"id": "m1", "incidents": ["incident"]}}
 
 
 def test_build_realtime_snapshot_raises_when_services_missing():
@@ -84,15 +72,10 @@ def test_build_realtime_snapshot_raises_when_services_missing():
 
 def test_build_realtime_snapshot_returns_encoded_sections():
     overviews = [_overview("m1", "HTTP")]
-    detail_calls = []
-
-    async def build_monitor_details(passed_overviews, monitor_ids):
-        detail_calls.append((passed_overviews, list(monitor_ids)))
-        return {monitor_id: {"id": monitor_id} for monitor_id in monitor_ids}
-
     dashboard = SimpleNamespace(
         collect_snapshot_sections=_async_return(("summary", "incidents", "activity", overviews)),
-        build_monitor_details=build_monitor_details,
+        build_monitor_detail=lambda overview, incidents: {"id": overview.id},
+        incident_service=SimpleNamespace(get_for_monitors=_async_return({})),
     )
     manager = ServiceManager()
     manager.services = _placeholder_services(dashboard_service=dashboard)
@@ -104,7 +87,6 @@ def test_build_realtime_snapshot_returns_encoded_sections():
     assert snapshot["overviews"][0]["id"] == "m1"
     assert isinstance(snapshot["generated_at"], str)
     assert "resources" not in snapshot
-    assert detail_calls == [(overviews, ["m1"])]
 
 
 def test_init_services_and_shutdown_wire_scheduler_and_teardown(monkeypatch):

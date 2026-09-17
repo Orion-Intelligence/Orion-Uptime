@@ -131,7 +131,7 @@ class OrionScriptChecker(HttpCheckerBase):
             if not script_id:
                 continue
             rule_key = script.get("rule_key") or None
-            section = cls._section(rule_key, rule_paths or {})
+            section = cls._section(script, rule_key, rule_paths or {})
             enabled = script.get("enabled") is not False
             if script.get("entry_kind") == "values":
                 continue
@@ -140,10 +140,10 @@ class OrionScriptChecker(HttpCheckerBase):
         return feeders
 
     @staticmethod
-    def _section(rule_key: str | None, rule_paths: dict[str, str]) -> str | None:
-        if not rule_key:
-            return rule_key
-        path = rule_paths.get(rule_key)
+    def _section(script: dict, rule_key: str | None, rule_paths: dict[str, str]) -> str | None:
+        if script.get("category_key") == OrionIntelligence.FEEDER_SOCIAL_CATEGORY and script.get("subcategory_key") != OrionIntelligence.FEEDER_FORUM_SUBCATEGORY:
+            return OrionIntelligence.FEEDER_SOCIAL_SECTION
+        path = script.get("path") or (rule_paths.get(rule_key) if rule_key else None)
         social_path = OrionIntelligence.FEEDER_SOCIAL_PATH
         if path is not None and (path == social_path or path.startswith(f"{social_path}/")):
             return OrionIntelligence.FEEDER_SOCIAL_SECTION

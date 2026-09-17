@@ -12,12 +12,12 @@ from orion.shared_models.exceptions import NotFoundError
 from tests.scripts.insight_manager.helpers import NOW, _incident, _manager, _monitor
 
 
-def test_get_summary_counts_and_defaults_uptime_to_zero_without_history():
+def test_snapshot_summary_counts_and_defaults_uptime_to_zero_without_history():
     monitors = [_monitor("m1", status=MonitorStatus.UP), _monitor("m2", is_active=False, status=MonitorStatus.DOWN), _monitor("m3", status=MonitorStatus.UNKNOWN)]
-    latest_results = [SimpleNamespace(monitor_id="m1", is_slow=True), SimpleNamespace(monitor_id="m2", is_slow=True), SimpleNamespace(monitor_id="ghost", is_slow=True)]
+    latest_results = [SimpleNamespace(monitor_id=monitor_id, is_slow=True, status=MonitorStatus.UP, status_code=200, response_time_ms=120, checked_at=NOW) for monitor_id in ("m1", "m2", "ghost")]
     manager = _manager(monitors=monitors, latest_results=latest_results, average_response_time=123.4, open_incidents=2)
 
-    summary = asyncio.run(manager.get_summary())
+    summary = asyncio.run(manager.get_snapshot()).summary
 
     assert summary.total_monitors == 3
     assert summary.active_monitors == 2
@@ -31,7 +31,7 @@ def test_get_summary_counts_and_defaults_uptime_to_zero_without_history():
     assert summary.overall_uptime_percentage == 0.0
 
 
-def test_get_recent_incidents_maps_monitor_names_and_falls_back_to_unknown():
+def test_snapshot_incidents_map_monitor_names_and_fall_back_to_unknown():
     monitors = [_monitor("m1", name="API")]
     incidents = [
         _incident(id="i1", monitor_id="m1", started_at=NOW - timedelta(hours=2), resolved_at=NOW - timedelta(hours=1), duration_seconds=3600, reason="Timeout", status_code=500),
@@ -39,7 +39,7 @@ def test_get_recent_incidents_maps_monitor_names_and_falls_back_to_unknown():
     ]
     manager = _manager(monitors=monitors, recent_incidents=incidents)
 
-    results = asyncio.run(manager.get_recent_incidents())
+    results = asyncio.run(manager.get_snapshot()).incidents
 
     assert [item.monitor_name for item in results] == ["API", "Unknown"]
     assert results[0].id == "i1"
@@ -100,27 +100,19 @@ def test_get_monitor_detail_raises_when_monitor_missing():
         asyncio.run(manager.get_monitor_detail("ghost"))
 
 
-def test_build_monitor_details_reuses_overviews_and_skips_unknown_monitors():
-    monitor = _monitor("m1", status=MonitorStatus.UP, is_active=False, created_at=NOW - timedelta(days=10), updated_at=NOW - timedelta(days=1))
-    incident = _incident(id="i1", monitor_id="m1", started_at=NOW - timedelta(days=2), resolved_at=NOW - timedelta(days=2) + timedelta(hours=1), duration_seconds=3600, is_resolved=True)
-    manager = _manager(monitors=[monitor], first_check_times={"m1": NOW - timedelta(days=5)}, incidents_by_monitor={"m1": [incident]})
-    overviews = asyncio.run(manager.get_monitor_overviews())
+def test_get_snapshot_bundles_every_section_from_one_pass():
+    monitors = [_monitor("m1", name="Website")]
+    manager = _manager(monitors=monitors, first_check_times={"m1": NOW - timedelta(days=1)})
 
-    details = asyncio.run(manager.build_monitor_details(overviews, ["m1", "ghost", None]))
+    snapshot = asyncio.run(manager.get_snapshot())
 
-    assert set(details) == {"m1"}
-    assert details["m1"].id == "m1"
-    assert [item.id for item in details["m1"].incidents] == ["i1"]
-
-
-def test_build_monitor_details_without_matching_ids_returns_empty():
-    manager = _manager(monitors=[])
-
-    assert asyncio.run(manager.build_monitor_details([], [])) == {}
-    assert asyncio.run(manager.build_monitor_details([], ["ghost"])) == {}
+    assert snapshot.summary.total_monitors == 1
+    assert [overview.id for overview in snapshot.overviews] == ["m1"]
+    assert isinstance(snapshot.incidents, list)
+    assert isinstance(snapshot.activity, list)
 
 
-def test_get_recent_activity_maps_monitor_names_and_falls_back_to_unknown():
+def test_snapshot_activity_maps_monitor_names_and_falls_back_to_unknown():
     monitors = [_monitor("m1", name="Website")]
     results = [
         SimpleNamespace(monitor_id="m1", status=MonitorStatus.UP, status_code=200, response_time_ms=120, checked_at=NOW, is_slow=False),
@@ -128,7 +120,7 @@ def test_get_recent_activity_maps_monitor_names_and_falls_back_to_unknown():
     ]
     manager = _manager(monitors=monitors, latest_results=results)
 
-    activity = asyncio.run(manager.get_recent_activity())
+    activity = asyncio.run(manager.get_snapshot()).activity
 
     assert [item.monitor_name for item in activity] == ["Website", "Unknown"]
     assert activity[0].status == MonitorStatus.UP

@@ -70,6 +70,13 @@ class DashboardActivityResponse(BaseModel):
     checked_at: datetime
 
 
+class DashboardSnapshotResponse(BaseModel):
+    summary: DashboardSummaryResponse
+    incidents: list[DashboardIncidentResponse]
+    activity: list[DashboardActivityResponse]
+    overviews: list[MonitorOverviewResponse]
+
+
 class ResponseHistoryPoint(BaseModel):
     checked_at: datetime
     response_time_ms: int | None
