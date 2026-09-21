@@ -1,6 +1,6 @@
 import time
 
-from orion.api.interactive.api_monitor_manager.json_matcher import json_matches
+from orion.api.interactive.api_monitor_manager.json_matcher import explain_mismatch, json_matches, resolve_request_refs
 from orion.management.jobs.monitoring_controller.checkers.base_checker import CheckState, HttpCheckerBase
 from orion.services.mongo_manager.shared_model.db_monitoring_controller_model import MonitorStatus
 
@@ -27,7 +27,8 @@ class ApiChecker(HttpCheckerBase):
         except ValueError:
             response_json = None
 
-        json_ok = json_matches(monitor.expected_json, response_json) if monitor.expected_json else True
+        resolved_json = resolve_request_refs(monitor.expected_json, monitor.request_body) if monitor.expected_json else None
+        json_ok = json_matches(resolved_json, response_json) if monitor.expected_json else True
 
         headers_ok = True
         if monitor.expected_headers:
@@ -50,7 +51,7 @@ class ApiChecker(HttpCheckerBase):
             if not status_ok:
                 pass
             elif not json_ok:
-                state.error = "The response JSON did not match the configured expected JSON."
+                state.error = explain_mismatch(resolved_json, response_json)
             elif not headers_ok:
                 state.error = "One or more response headers did not match the configured expected headers."
             elif not content_type_ok:

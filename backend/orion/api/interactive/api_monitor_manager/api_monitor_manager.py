@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 from bson import ObjectId
 from odmantic import AIOEngine
 
+from orion.api.interactive.api_monitor_manager.json_matcher import validate_expected_json
 from orion.api.interactive.orion_login_manager.orion_login_manager import AuthProfileManager
 from orion.constants.constant import Collections, Messages
 from orion.helper_manager.target_policy import validate_target_url
@@ -33,6 +34,7 @@ class ApiMonitorManager(MonitorRepository):
             raise ConflictError("API monitor for this URL already exists.")
 
         await self._validate_auth_profile(request.auth_profile_id)
+        validate_expected_json(request.expected_json, request.request_body)
         now = datetime.now(UTC)
         monitor = APIMonitorModel(
             name=request.name,
@@ -128,6 +130,8 @@ class ApiMonitorManager(MonitorRepository):
             raise ConflictError("API monitor for this URL already exists.")
         if "auth_profile_id" in update_data:
             await self._validate_auth_profile(update_data["auth_profile_id"])
+        if "expected_json" in update_data or "request_body" in update_data:
+            validate_expected_json(update_data.get("expected_json", monitor.expected_json), update_data.get("request_body", monitor.request_body))
 
         updated_monitor = await self._apply_update(monitor_id, update_data)
         return ApiMonitorManager._response(updated_monitor)
