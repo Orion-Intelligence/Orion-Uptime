@@ -47,7 +47,7 @@
     "cypress": "^16.0.0",
     "eslint": "^10.10.0",
     "istanbul-lib-instrument": "6.0.3",
-    "lighthouse": "13.4.1",
+    "lighthouse": "13.5.0",
     "postcss": "^8.5.28",
     "postcss-scss": "^4.0.9",
     "prettier": "^3.9.6",
